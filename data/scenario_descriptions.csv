@@ -1,0 +1,7 @@
+id_escenario,titulo_corto,descripcion_tooltip
+escenario_1,Reducción exentos ITBIS,"Reducción de exentos del ITBIS (con compensación)."
+escenario_2,Exentos + ISR + electricidad,"Reducción de exentos + ISR tramo alto y ajuste del subsidio eléctrico (con compensación)."
+escenario_3,Exentos al 10%,"Exentos al 10% (con compensación)."
+escenario_4,10% + ISR + electricidad,"Exentos al 10% + ISR tramo alto y ajuste del subsidio eléctrico (con compensación)."
+escenario_5,ISR tramo alto,"ISR tramo alto (con compensación)."
+escenario_6,Subsidio eléctrico,"Ajuste del subsidio eléctrico."

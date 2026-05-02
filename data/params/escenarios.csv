@@ -1,0 +1,38 @@
+escenario,activo,comparativo,sim_itbis,sim_renta,sim_sub,sim_com,des_escenario,des_corto
+1,1,1,1,0,0,1,Escenario  Reducción exentos    (Con compensación),Reducción exentos + compensacion
+2,1,1,1,1,1,1,Escenario  Reducción exentos + ISR tramo alto - ajuste subsidio eléctrico-  (Con compensación),Reducción exentos + ISR tramo alto + subsidio y compensación
+3,1,2,2,0,0,1,Escenario  Exentos al 10    (Con compensación),Exentos al 10  _ compensación
+4,1,2,2,1,1,1,Escenario  Exentos al 10 + ISR tramo alto - ajuste subsidio eléctrico-  (Con compensación),Exentos al 10  + ISR tramo alto + subsidio y compensación
+5,1,11,0,1,0,1,Escenario   ISR tramo alto  (Con compensación),ISR tramo alto
+6,1,21,0,0,1,0,Escenario    - ajuste subsidio eléctrico-,Ajuste subsidio
+7,0,2,2,1,1,0,Escenario  Exentos al 10 + ISR tramo alto - ajuste subsidio eléctrico-,
+8,0,2,2,1,1,1,Escenario  Exentos al 10 + ISR tramo alto - ajuste subsidio eléctrico-  (Con compensación),
+9,0,11,0,1,0,0,Escenario   ISR tramo alto,
+10,0,11,0,1,0,1,Escenario   ISR tramo alto  (Con compensación),
+11,0,21,0,0,1,0,Escenario    - ajuste subsidio eléctrico-,
+12,0,,0,0,1,0,Escenario    - ajuste subsidio eléctrico-,
+13,0,,4,1,,1,Escenario  ITBIS 16 (menos 11 productos) + ISR tramo alto  (Con compensación),
+14,0,,0,1,,1,Escenario   ISR tramo alto  (Con compensación),
+15,0,,1,0,,1,Escenario  Reducción exentos    (Con compensación),
+16,0,,2,0,,1,Escenario  Exentos al 10    (Con compensación),
+17,0,,3,0,,1,Escenario  ITBIS tasa única  16     (Con compensación),
+18,0,,4,0,,1,Escenario  ITBIS 16 (menos 11 productos)    (Con compensación),
+19,0,,3,2,,0,Escenario  ITBIS tasa única  16  +,
+20,0,,4,2,,0,Escenario  ITBIS 16 (menos 11 productos) +,
+21,0,,5,2,,0,Escenario   +,
+22,0,,6,2,,0,Escenario   +,
+23,0,,6,2,,0,Escenario   +,
+24,0,,6,2,,0,Escenario   +,
+25,0,,6,2,,0,Escenario   +,
+26,0,,6,2,,0,Escenario   +,
+27,0,1,1,0,0,0,Escenario  Reducción exentos,
+28,0,1,1,1,0,0,Escenario  Reducción exentos + ISR tramo alto,
+29,0,1,1,1,1,0,Escenario  Reducción exentos + ISR tramo alto - ajuste subsidio eléctrico-,
+30,0,1,1,1,1,1,Escenario  Reducción exentos + ISR tramo alto - ajuste subsidio eléctrico-  (Con compensación),
+31,0,2,2,0,0,0,Escenario  Exentos al 10,
+32,0,2,2,1,0,0,Escenario  Exentos al 10 + ISR tramo alto,
+33,0,2,2,1,1,0,Escenario  Exentos al 10 + ISR tramo alto - ajuste subsidio eléctrico-,
+34,0,2,2,1,1,1,Escenario  Exentos al 10 + ISR tramo alto - ajuste subsidio eléctrico-  (Con compensación),
+35,0,11,0,1,0,0,Escenario   ISR tramo alto,
+36,0,11,0,1,0,1,Escenario   ISR tramo alto  (Con compensación),
+37,0,21,0,0,1,0,Escenario    - ajuste subsidio eléctrico-,

@@ -1,0 +1,1114 @@
+cod_variedad,cod_articulo,variedad,itbis_alt1,itbis_alt2,itbis_alt3,itbis_alt4
+1,11111,Pan de agua,0,0,16,0
+2,11111,Pan sobado,0,0,16,0
+3,11111,Pan de leche,0,0,16,0
+4,11113,Pan de maíz entero,,10,16,
+5,11111,Pan de mantequilla,0,0,16,0
+6,11111,Pan baguette blanco,0,0,16,0
+7,11111,Pan baguette integral,0,0,16,0
+8,11111,Pan camarón,0,0,16,0
+9,11111,Pan integral,0,0,16,0
+10,11111,Pan telera,0,0,16,0
+12,11111,Pan de pita,0,0,16,0
+13,11111,Pan de sándwich rebanado blanco,0,0,16,0
+14,11111,Pan de sándwich rebanado integral,0,0,16,0
+15,11111,Pan de hot dog,0,0,16,0
+17,11112,Galletas con ajonjolí,,10,16,
+18,11112,Galletas de harina / Galleta de manteca,,10,16,
+20,11112,Galletas dulces,,10,16,
+21,11112,Galletas integrales,,10,16,
+22,11112,Galletas María,,10,16,
+23,11112,Galletas saladas,,10,16,
+24,11112,Galletas de Avena / Granola,,10,16,
+29,11113,Polvorones,,10,16,
+35,11113,Violados,,10,,
+41,11132,Gofio,,10,16,
+47,11113,Mantecados,,10,16,
+48,11113,Masitas,,10,16,
+49,11113,Conconete,,10,16,
+51,11113,Cazabe,,10,16,
+53,11113,Tortilla de maíz (para tacos),,10,16,
+57,11121,Maicena (fécula de maíz) /Maicera (harina de maíz procesada),,10,16,
+58,11121,Harina de trigo,,10,16,
+62,11121,Sémola de maíz,,10,16,
+65,11131,Arroz súper-selecto o premium,0,0,16,0
+66,11131,Arroz selecto,0,0,16,0
+67,11131,Arroz corriente,0,0,16,0
+69,11131,Arroz integral,0,0,16,0
+71,11132,Avena en hojuela o entera,,10,16,
+73,11132,Cereales de arroz,,10,16,
+75,11132,Cereales de trigo,,10,16,
+80,11132,Trigo,,10,16,
+81,11132,Germen de trigo,,10,16,
+82,11132,Maíz en mazorca seco,,10,16,
+83,11132,Maíz en grano,,10,16,
+86,11141,Coditos,,10,16,
+87,11141,Fideos,,10,16,
+88,11141,Spag1hetti,,10,16,
+89,11141,Tallarines,,10,16,
+94,11211,Bola de lomo,,10,16,
+95,11211,Boliche limpio,,10,16,
+96,11211,Cadera limpia,,10,16,
+97,11211,Carne molida de res,,10,16,
+98,11211,Carne no. 7,,10,16,
+99,11211,Carne preparada para bistec,,10,16,
+100,11211,Rotí,,10,16,
+101,11211,Pecho,,10,16,
+104,11211,Filete,,10,16,
+105,11211,Bistec de palomilla,,10,16,
+106,11241,Rabo de res,,10,16,
+107,11211,Pata de res,,10,16,
+108,11211,Carne corriente de res,,10,16,
+110,11212,Pollo fresco,0,0,16,0
+111,11212,Pollo congelado,0,0,16,0
+112,11212,Pechuga de pollo,0,0,16,0
+113,11212,Filete de pechuga (deshuesada) de pollo,0,0,16,0
+114,11212,Muslos de pollo,0,0,16,0
+115,11212,Alitas de pollo,0,0,16,0
+116,11212,Carne molida de pollo,0,0,16,0
+117,11212,Carne de gallina,0,0,16,0
+118,11212,Carne de guinea,,10,16,
+119,11212,Carne de pato,,10,16,
+120,11212,Carne de pavo,,10,16,
+121,11242,Hígado de pollo,0,0,16,0
+122,11242,Molleja de pollo,0,0,16,0
+123,11212,Pico y pala de pollo,0,0,16,0
+125,11213,Lomo de Cerdo,,10,16,
+126,11213,Masa de cerdo,,10,16,
+127,11213,Pierna de cerdo,,10,16,
+128,11213,Carne corriente de cerdo,,10,16,
+129,11213,Carne de cabeza decerdo,,10,16,
+130,11213,Capa de carne cerdo,,10,16,
+131,11213,Chuleta de cerdo fresca,,10,16,
+132,11213,Costillas-pecho de cerdo,,10,16,
+133,11213,Carne molida de cerdo,,10,16,
+134,11213,Patica de cerdo,,10,16,
+135,11243,Rabo de cerdo,,10,16,
+137,11214,Carne de chivo,,10,16,
+140,11241,Bofe de res,,10,16,
+141,11241,Corazón de res,,10,16,
+142,11241,Lengua de res,,10,16,
+143,11241,Hígado de res,,10,16,
+145,11241,Mondongo de res,,10,16,
+146,11243,Lengua de cerdo,,10,16,
+147,11241,Riñón de res,,10,16,
+149,11243,Mondongo de cerdo,,10,16,
+151,11243,Entresijo de cerdo,,10,16,
+159,11221,Chuleta ahumada,,10,16,
+164,11222,Chorizos,,10,16,
+165,11222,Jamón ahumado,,10,16,
+166,11222,Jamón bolo,,10,16,
+167,11222,Jamón cocido,,10,16,
+169,11222,Jamón de pavo,,10,16,
+170,11222,Jamón de pollo,,10,16,
+171,11222,Jamón picnic,,10,16,
+172,11222,Jamón serrano,,10,16,
+173,11222,Jamoneta,,10,16,
+174,11222,Longaniza,,10,16,
+175,11222,Morcillas,,10,16,
+176,11222,Mortadela,,10,16,
+177,11222,Salami corriente,,10,16,
+178,11222,Salami súper especial,,10,16,
+179,11222,Salami vegetal,,10,16,
+182,11222,Salchichas de carne de cerdo,,10,16,
+183,11222,Salchichas de hot-dog,,10,16,
+184,11222,Salchichas de freír,,10,16,
+185,11222,Salchichas tipo Viena,,10,16,
+186,11222,Salchichas de carne de pavo,,10,16,
+192,11243,Patica de cerdo hervida,,10,16,
+193,11241,Mondongo de res sancochado o cocido,,10,16,
+194,11243,Pipián,,10,16,
+195,11231,Pollos vivos,0,0,16,0
+196,11231,Gallinas vivas,0,0,16,0
+197,11231,Patos vivos,18,10,16,16
+199,11231,Guineas vivas,18,10,16,16
+200,11311,Bocayate,,10,16,
+201,11311,Bonito,,10,16,
+202,11311,Carite,,10,16,
+203,11311,Chillo,,10,16,
+204,11311,Cojinúa,,10,16,
+205,11311,Colirubia,,10,16,
+206,11311,Colorado,,10,16,
+207,11311,Dorado,,10,16,
+208,11311,Merluza,,10,16,
+210,11311,Picúa,,10,16,
+211,11311,Róbalo,,10,16,
+212,11311,Salmón,,10,16,
+213,11311,Sardinas frescas,,10,16,
+214,11311,Tilapia,,10,16,
+215,11311,Banano,,10,16,
+216,11311,Atún,,10,16,
+220,11311,Calamares,,10,16,
+224,11311,Langosta y langostino,,10,16,
+225,11311,Lambí,,10,16,
+227,11311,Pulpo,,10,16,
+228,11321,Arenque,,10,16,
+231,11321,Filete de arenque,,10,16,
+232,11321,Bacalao,,10,16,
+233,11321,Filete de bacalao,,10,16,
+242,11411,Leche fresca o cruda de vaca,0,0,16,0
+243,11411,Leche entera liquida con UHT,0,0,16,0
+245,11411,Leche semidescremada liquida con UHT,0,0,16,0
+247,11411,Leche descremada liquida con UHT,0,0,16,0
+251,11421,Leche en polvo entera,0,0,16,0
+252,11421,Leche en polvo semidescremada,0,0,16,0
+253,11421,Leche en polvo descremada,0,0,16,0
+254,11421,Leche evaporada,,10,16,
+256,11421,"Leches reforzadas con hierro y minerales (fórmula infantil),",,10,16,
+257,11421,"Leche maternizada (sustituto de lactancia materna, hasta 1 año)",,10,16,
+259,11421,Suplementos alimenticios (Ensure y similares),,10,16,
+262,11431,Queso blanco corriente,,10,16,
+263,11431,Queso blanco de freír,,10,16,
+280,11451,Crema de leche,,10,16,
+281,11451,Leche de soya,,10,16,
+287,11461,Huevos criollos (gallina),0,0,16,0
+288,11461,Huevos de granja (gallina),0,0,16,0
+289,11461,Huevos de codorniz,0,0,16,0
+290,11461,Huevos de pato,0,0,16,0
+311,11611,Aguacate,,10,16,
+312,11611,Mango,,10,16,
+313,11611,Plátano maduro,0,0,16,0
+314,11611,Plátano verde,0,0,16,0
+315,11611,Rulo,,10,16,
+316,11611,Cereza,,10,16,
+317,11611,Chinola,,10,16,
+318,11611,Coco de agua,,10,16,
+319,11611,Fresa,,10,16,
+320,11611,Granadillo,,10,16,
+321,11611,Guanábana,,10,16,
+322,11611,Guayaba,,10,16,
+324,11611,Guineo verde (guineíto),,10,16,
+325,11611,Jagua,,10,16,
+326,11611,Lechosa,,10,16,
+327,11611,Zapote,,10,16,
+328,11611,Limón agrio,,10,16,
+329,11611,Limón dulce,,10,16,
+330,11611,Limoncillo,,10,16,
+331,11611,Mandarina,,10,16,
+332,11611,Manzana de oro,,10,16,
+334,11611,Melón cantaloupe redondo,,10,16,
+335,11611,Melón liso,,10,16,
+336,11611,Naranja agria,,10,16,
+337,11611,Naranja/china,,10,16,
+339,11611,Toronja,,10,16,
+340,11611,Piña,,10,16,
+341,11611,Uvas rojas,,10,16,
+342,11611,Uvas verdes,,10,16,
+344,11611,Níspero,,10,16,
+345,11611,Pan de fruta,,10,16,
+346,11611,Pera,,10,16,
+347,11611,Sandía (patilla),,10,16,
+348,11611,Tamarindo,,10,16,
+350,11611,Cajuil,,10,16,
+351,11611,Carambola,,10,16,
+352,11611,Buen pan o castaña,,10,16,
+356,11621,Nueces y semillas surtidas,,10,16,
+359,11621,Cocos secos,18,10,16,16
+365,11621,Ajonjolí,,10,16,
+366,11711,Habichuelas blancas secas,,10,16,
+367,11711,Habichuelas negras secas,,10,16,
+368,11711,Habichuelas pintas secas,,10,16,
+369,11711,Habichuelas rojas secas,,10,16,
+370,11711,Habichuelas verdes,,10,16,
+371,11711,Habichuelas blanditas,,10,16,
+372,11711,Frijolitos,,10,16,
+373,11711,Garbanzos,,10,16,
+374,11711,Guandules verdes en cáscara,,10,16,
+375,11711,Guandules secos,,10,16,
+376,11711,Guandules verdes desgranados,,10,16,
+377,11711,Habas,,10,16,
+378,11711,Arvejas,,10,16,
+379,11711,Lentejas,,10,16,
+380,11711,"Maní con o sin cáscara, sin procesar",,10,16,
+382,11712,Yautía amarilla,18,10,16,0
+383,11712,Yautía blanca,18,10,16,0
+384,11712,Yautía coco o pipiota,18,10,16,0
+385,11712,Yuca,0,0,16,0
+386,11712,Papas,18,10,16,0
+388,11712,Mapuey,,10,16,
+389,11712,Batata,18,10,16,0
+390,11712,Cepa de apio,,10,16,
+392,11713,Ají grande (cubanela),,10,16,
+393,11713,Ají gustoso o cachucha,,10,16,
+394,11713,Ají picante,,10,16,
+395,11713,Ají morrón,,10,16,
+396,11713,"Apio planta, apio gusto",,10,16,
+397,11713,Rábano,,10,16,
+398,11713,Remolacha,,10,16,
+399,11713,Auyama,,10,16,
+400,11713,Zanahoria,,10,16,
+401,11713,Tomates de ensalada,,10,16,
+402,11713,Berenjena china,,10,16,
+403,11713,Berenjena corriente,,10,16,
+404,11713,Berro,,10,16,
+405,11713,Brócolis,,10,16,
+406,11713,Brócolis y coliflores congelados,,10,16,
+407,11713,Cebolla blanca,,10,16,
+408,11713,Cebolla roja,,10,16,
+409,11713,Cebollín,,10,16,
+410,11713,Ajo,,10,16,
+412,11713,Coliflor,,10,16,
+413,11713,Espinaca,,10,16,
+414,11713,Pepino,,10,16,
+415,11713,Puerro,,10,16,
+416,11713,Repollo chino,,10,16,
+418,11713,Repollo morado,,10,16,
+419,11713,Tayota,,10,16,
+420,11713,Tomate Barceló o Bugalú,,10,16,
+422,11713,Tomates chinos (cherry),,10,16,
+423,11713,Vainitas chinas,,10,16,
+426,11713,Lechuga romana,,10,16,
+427,11713,Lechuga repollada,,10,16,
+429,11713,Zucchini,,10,16,
+430,11713,Molondrones,,10,16,
+431,11713,Maíz en mazorca tierno,,10,16,
+480,11113,Pan de batata,,10,16,
+481,11113,Pudín de pan,,10,16,
+496,11831,Hielo industrializado,18,10,16,16
+497,11831,Hielo casero,18,10,16,16
+511,11921,Jengibre,,10,16,
+512,11921,Perejil,,10,16,
+513,11921,Albahaca,,10,16,
+514,11921,Cilantro,,10,16,
+515,11921,Cilantrico o verdura,,10,16,
+518,11921,Hojas de Menta,,10,16,
+519,11921,Romero,,10,16,
+520,11921,Hierbabuena,,10,16,
+521,11921,Ajinomoto,,10,16,
+522,11921,Anís,,10,16,
+524,11921,Canelilla,,10,16,
+525,11921,Clavo dulce,,10,16,
+527,11921,Malagueta,,10,16,
+528,11921,Nuez moscada,,10,16,
+529,11921,Manzanilla,,10,16,
+530,11921,Flor de tilo,,10,16,
+532,11921,Pimienta en polvo,,10,16,
+660,23111,"Estupefacientes: marihuana, opio, cocaína y sus derivados",0,0,0,0
+922,32221,Servicio de limpieza (lustrado) de calzados,0,0,0,0
+924,41111,"Alquiler de vivienda principal (sin muebles, linea blanca ni servicios básicos agregados)",0,0,0,0
+926,41111,Alquiler de vivienda principal con muebles,0,0,0,0
+927,41111,Alquiler de garaje o estacionamiento relacionado con la vivienda,0,0,0,0
+987,44111,"Agua corriente (CAASD, CORAASAN, CORAAMOCA, CORAAPPLATA, CORAAVEGA, COAAROM,CORAABO, etc.)",0,0,0,0
+988,44111,pag1o de factura de agua privada,0,0,0,0
+991,44211,pag1o de recogida y eliminación de basura,0,0,0,0
+994,44311,"Alcantarillado (CAASD, INAPA, corporación acueducto pública)",0,0,0,0
+995,44411,Gastos comunes (en copropiedad de área común) en vivienda principal,0,0,0,0
+997,44411,"Limpieza de tanques de agua, tinacos y cisternas",0,0,0,0
+998,45111,pag1o de contrato de electricidad,0,0,0,0
+999,45111,pag1o de factura de energía eléctrica,0,0,0,0
+1000,45111,pag1o de re-conexión,0,0,0,0
+1002,45211,Adquisición de gas licuado en tanques de 100 libras o menos,0,0,0,0
+1004,45311,Kerosén,0,0,0,0
+1005,45311,Trementina,0,0,0,0
+1007,45411,Carbón vegetal de leña,0,0,0,0
+1008,45411,Leña,0,0,0,0
+1009,45411,Cuaba,0,0,0,0
+1276,56113,Insecticida,,10,16,
+1277,56113,Velas repelentes de mosquitos,,10,16,
+1278,56113,Fungicidas,,10,16,
+1317,56211,Servicios de doméstica con dormida,0,0,0,0
+1318,56211,Servicios de doméstica sin dormida,0,0,0,0
+1319,56211,Servicio doméstico ocasional,0,0,0,0
+1321,127111,Alquiler de mobiliario y equipo para el hogar para fiestas,0,0,0,0
+1325,61111,"Analgésicos no narcóticos, antifebriles, antipirético",0,0,0,0
+1328,61111,Antiartrósicos o antirreumáticos,0,0,0,0
+1329,61111,Antiinflamatorios no esteroides (AINE),0,0,0,0
+1331,61111,Analgésicos oftálmicos (gotas para los ojos),0,0,0,0
+1332,61111,Antiinflamatorios esteroides,0,0,0,0
+1334,61111,"Analgésicos - Antiinflamatorios tópicos (ungüento, gel )",0,0,0,0
+1336,61111,Antimigrañosos,0,0,0,0
+1338,61111,Analgésicos narcóticos,0,0,0,0
+1340,61121,Antileprosos,0,0,0,0
+1341,61121,Antimicóticos vía oral,0,0,0,0
+1342,61121,Antivirales,0,0,0,0
+1343,61121,Medicamento oncológico,0,0,0,0
+1344,61131,Antiácidos,0,0,0,0
+1345,61131,Antidiarréicos,0,0,0,0
+1346,61131,Antidispéptico,0,0,0,0
+1347,61131,Antieméticos,0,0,0,0
+1348,61131,Antiespasmódicos,0,0,0,0
+1349,61131,Antiespasmódicos con analgésicos (ELIXIR),0,0,0,0
+1350,61131,Antiflatulentos,0,0,0,0
+1351,61131,Antihemorroidales,0,0,0,0
+1352,61131,Antiinfecciosos gastrointestinales,0,0,0,0
+1354,61131,Antisépticos - Astringentes intestinales,0,0,0,0
+1355,61131,Antiulcerosos y antisecretores,0,0,0,0
+1356,61131,Laxantes/purgantes,0,0,0,0
+1358,61131,Enzimas pancreáticas,0,0,0,0
+1359,61131,Gastrocinéticos,0,0,0,0
+1360,61131,Restauradores de la flora intestinal,0,0,0,0
+1361,61171,Rehidratantes orales (suero),0,0,0,0
+1363,61141,Antiasmáticos,0,0,0,0
+1364,61141,Antigripales,0,0,0,0
+1366,61141,"Antitusivos,broncodilatadores, expectorantes y mucolíticos",0,0,0,0
+1369,61141,Descongestivos para las vías respiratorias,0,0,0,0
+1371,61141,Humectantes de la mucosa nasal,0,0,0,0
+1372,61141,Oxigenadores,0,0,0,0
+1373,61141,Medicamentos para dejar el tabaquismo,0,0,0,0
+1374,61141,Corticosteroides,0,0,0,0
+1376,61151,Aminoácidos,0,0,0,0
+1378,61151,Complejo B,0,0,0,0
+1379,61151,Vitamina A,0,0,0,0
+1380,61151,Vitamina C,0,0,0,0
+1381,61151,Vitamina E,0,0,0,0
+1382,61151,Complejo B más vitamina C,0,0,0,0
+1383,61151,Complejo oseínico mineral,0,0,0,0
+1384,61151,Compuestos de calcio,0,0,0,0
+1387,61151,Emulsión de lípidos,0,0,0,0
+1389,61151,Oligometales endovenosos,0,0,0,0
+1390,61151,Suplementos de hierro,0,0,0,0
+1393,61151,Multivitamínicos,0,0,0,0
+1394,61161,"Antihipertensivos, hipotensores y vasodilatadores (medicamentos para la presión arterial)",0,0,0,0
+1395,61161,"Antiarrítmicos, cardiotónicos, antianginosos, beta-adrenérgicos y betabloqueadores",0,0,0,0
+1400,61161,"Antivaricosos - Capilaroprotectores, vasoprotectores",0,0,0,0
+1404,61121,"Antiparasitarios (Antichagásicos, antihelmínticos, antipalúdico )",0,0,0,0
+1409,61171,Estimulantes de granulocitos y macrófagos,0,0,0,0
+1410,61171,Hormonas y antagonistas hormonales,0,0,0,0
+1415,61171,Anticonceptivos y anovulatorios,0,0,0,0
+1416,61171,Inductores de la ovulación,0,0,0,0
+1418,61161,Diuréticos y antidiuréticos,0,0,0,0
+1421,61121,Antiinfecciosos y antisépticos urinarios,0,0,0,0
+1426,61171,Lubricantes vaginales,0,0,0,0
+1429,61171,Soluc. p/diálisis peritoneal y hemodiálisis,0,0,0,0
+1432,62311,Análisis de próstata,0,0,0,0
+1433,61171,Terapia de reemplazo hormonal (TRH),0,0,0,0
+1436,61171,Antioxidantes,0,0,0,0
+1439,61171,Medicamento para tiroides,0,0,0,0
+1444,61171,Insulinas,0,0,0,0
+1446,61171,Prostaglandinas,0,0,0,0
+1447,61171,Estimulantes Sexuales,0,0,0,0
+1449,61171,Sueros e inmunoglobulinas,0,0,0,0
+1450,61171,Toxoides tetánicos,0,0,0,0
+1451,61171,Vacunas,0,0,0,0
+1455,61171,"Ansiolíticos, hipnóticos y sedantes",0,0,0,0
+1457,61171,Anticonvulsivos,0,0,0,0
+1458,61171,Antidepresivos,0,0,0,0
+1459,61171,Antiepilépticos,0,0,0,0
+1460,61171,Antineuríticos,0,0,0,0
+1461,61171,Antiparkinsonianos,0,0,0,0
+1463,61171,Antipsicóticos,0,0,0,0
+1464,61171,Antivertiginosos - Anticinetósicos,0,0,0,0
+1469,61171,Neurolépticos,0,0,0,0
+1475,61171,Tratamiento del Alzheimer,0,0,0,0
+1476,61171,Anestésicos odontológicos,0,0,0,0
+1483,61121,Antimicóticos oftálmicos,0,0,0,0
+1488,61171,Gotas lubricantes oculares,0,0,0,0
+1491,61141,Antialérgicos nasales,0,0,0,0
+1496,61171,Antiacneicos,0,0,0,0
+1497,61141,Antialérgicos tópicos,0,0,0,0
+1499,61121,Antibióticos tópicos,0,0,0,0
+1501,61121,Antimicóticos tópicos,0,0,0,0
+1504,61171,Antiseborreicos,0,0,0,0
+1508,61171,Cicatrizantes,0,0,0,0
+1514,61171,Sangre lista para trasfundir,0,0,0,0
+1518,61171,Anticoagulantes,0,0,0,0
+1519,61171,Antihemofílicos,0,0,0,0
+1520,61171,Antitrombóticos,0,0,0,0
+1521,61171,Estimulante de la eritropoyesis,0,0,0,0
+1523,61171,Aceite de higuereta,0,0,0,0
+1530,61211,Ácido bórico,0,0,0,0
+1531,61211,Agua oxigenada,0,0,0,0
+1532,61211,Alcanfor,0,0,0,0
+1533,61211,Alcohol isopropílico,0,0,0,0
+1534,61211,Bálsamo o ungüento,0,0,0,0
+1535,61211,Bay rum,0,0,0,0
+1536,61211,Bicarbonato de sodio,0,0,0,0
+1537,61211,Desinfectantes de heridas,0,0,0,0
+1538,61211,Mentol,0,0,0,0
+1543,61211,Prueba de embarazo (comprada en farmacia **),0,0,0,0
+1544,61211,Preservativos,0,0,0,0
+1548,61211,Medias ortopédicas,0,0,0,0
+1549,61211,Soportes para rodilla,0,0,0,0
+1554,61311,Muletas,0,0,0,0
+1556,61311,Soportes ortopédicos,0,0,0,0
+1557,61311,Calzado ortopédico,0,0,0,0
+1559,61311,"Dentaduras postizas, prótesis y piezas dentales (sin incluir",0,0,0,0
+1560,61311,Marcapasos,0,0,0,0
+1561,61311,Aparato para medir la glucemia (Medidor personal),0,0,0,0
+1562,61311,Aparato para medir presión arterial,0,0,0,0
+1564,62111,Consulta médico general,0,0,0,0
+1565,62111,Consulta médico pediatra,0,0,0,0
+1566,62111,Consulta médico ginecólogo/obstetra,0,0,0,0
+1567,62111,"Consulta médico nariz, garganta y oído (Otorrinolaringólogo)",0,0,0,0
+1568,62111,Consulta médico gastroenterólogo,0,0,0,0
+1569,62111,Consulta médico cardiólogo,0,0,0,0
+1570,62111,Consulta médico oftalmólogo,0,0,0,0
+1571,62111,Consulta médico neumólogo,0,0,0,0
+1572,62111,Consulta médico psiquiatra,0,0,0,0
+1573,62111,Consulta general,0,0,0,0
+1577,62311,Servicios médicos en emergencia,0,0,0,0
+1581,62211,Consulta odontológica,0,0,0,0
+1582,62211,Empastes,0,0,0,0
+1583,62211,Extracciones de piezas dentales,0,0,0,0
+1584,62211,Profilaxis (Limpieza),0,0,0,0
+1585,62211,Tratamiento de canal,0,0,0,0
+1586,62211,Tratamiento de flúor,0,0,0,0
+1587,62211,"Servicios de especialistas en ortodoncia (Consultas, etc.)",0,0,0,0
+1588,62211,"Posturas de aparatos de ortodoncia (Brackets, etc.)",0,0,0,0
+1589,62211,Posturas/instalación de piezas y prótesis dentales,0,0,0,0
+1590,62311,Examen hemograma (análisis de sangre),0,0,0,0
+1591,62311,Tipificación sanguínea,0,0,0,0
+1592,62311,Análisis coprológico,0,0,0,0
+1593,62311,Análisis de orina,0,0,0,0
+1594,62311,Análisis de glicemia,0,0,0,0
+1595,62311,Análisis de falcemia,0,0,0,0
+1597,62311,Análisis de Acido úrico,0,0,0,0
+1598,62311,Examen HIV (SIDA),0,0,0,0
+1599,62311,Examen VDRL,0,0,0,0
+1600,62311,Antígenos febriles,0,0,0,0
+1601,62311,Prueba de embarazo en laboratorio,0,0,0,0
+1603,62311,Prueba de testosterona,0,0,0,0
+1604,62311,Análisis de factor reumatoide,0,0,0,0
+1605,62311,Análisis de biopsia,0,0,0,0
+1606,62311,Análisis de hepatitis,0,0,0,0
+1607,62311,Análisis de cultivo de semen,0,0,0,0
+1609,62311,Análisis de Albumina,0,0,0,0
+1610,62311,Análisis de toxoplasmosis,0,0,0,0
+1611,62311,Papanicolaou,0,0,0,0
+1612,62311,Endoscopía,0,0,0,0
+1614,62311,Centellogramas,0,0,0,0
+1616,62311,Urografía,0,0,0,0
+1617,62311,Gastrocopía,0,0,0,0
+1618,62311,Sonografía,0,0,0,0
+1619,62311,Electrocardiograma,0,0,0,0
+1620,62311,Radiografías,0,0,0,0
+1621,62311,Tomografías,0,0,0,0
+1622,62311,Mamografía,0,0,0,0
+1623,62311,Sonomamografía,0,0,0,0
+1624,62311,Ecocardiograma,0,0,0,0
+1625,62311,Ecografía o ultrasonido,0,0,0,0
+1626,62311,Colonoscopía,0,0,0,0
+1627,62311,Prueba de esfuerzo,0,0,0,0
+1628,62311,Encefalograma,0,0,0,0
+1629,62311,Holter/mapa,0,0,0,0
+1630,62311,Quimioterapia,0,0,0,0
+1631,62311,Terapias físicas y rehabilitación,0,0,0,0
+1632,62311,Postura de yeso,0,0,0,0
+1633,62111,Servicios de traumatólogo,0,0,0,0
+1635,62311,Servicios de fisioterapista,0,0,0,0
+1638,62311,Tratamientos de acupuntura,0,0,0,0
+1639,62311,Consulta medicina natural,0,0,0,0
+1640,62311,Aplicación de vacunas,0,0,0,0
+1643,62311,Servicio de ambulancia y paramédico (pag1o periódico),0,0,0,0
+1645,63111,Cirugía mayor,0,0,0,0
+1646,62311,Cirugía menor (ambulatoria),0,0,0,0
+1647,63111,Servicios médicos (honorarios),0,0,0,0
+1648,63111,Servicio de internamiento en clínica u hospital,0,0,0,0
+1649,63111,Parto normal sin cesárea (incluye pag1o al ginecólogo),0,0,0,0
+1650,63111,Parto con cesárea (incluye pag1o al ginecólogo),0,0,0,0
+1651,63111,Servicio de internación por tratamiento de adicciones,0,0,0,0
+1652,63111,"Cirugías plásticas, liposucción, lipoescultura, tratamientos con láser, de belleza",0,0,0,0
+1653,63111,Legrados y curetajes hospitalario,0,0,0,0
+1694,72211,Gasolina regular,0,0,0,0
+1695,72211,Gasolina premium,0,0,0,0
+1696,72211,Gas licuado (GLP),0,0,0,0
+1697,72211,Gasoil regular,0,0,0,0
+1698,72211,Gasoil premium,0,0,0,0
+1721,72411,Alquiler de automóviles sin chofer (Rent a Car y similares),0,0,0,0
+1722,72411,Alquiler de motores y bicicletas,,10,16,
+1725,72411,Peajes,0,0,0,0
+1727,73111,Metro,0,0,0,0
+1728,73211,Carro público (de concho),0,0,0,0
+1729,73211,Autobús (guagua) OMSA,0,0,0,0
+1730,73211,Autobús urbano y suburbano (incluye guagua y minibus),0,0,0,0
+1731,73211,Motoconcho (en motocicleta),0,0,0,0
+1732,73211,Taxi urbano y suburbano,0,0,0,0
+1733,73211,Transporte de pasajero urbano y suburbano en camioneta,0,0,0,0
+1736,73211,Transporte en vehículos de la empresa,0,0,0,0
+1741,73221,Pasajes por viajes en guaguas sindicalizadas (no expreso) / guaguas voladoras,0,0,0,0
+1742,73221,Pasajes por viajes en guaguas sindicalizadas de expreso,0,0,0,0
+1743,73221,"Pasajes viajes por guaguas de empresas privadas (Metro, Caribe Tours y similares)",0,0,0,0
+1744,73221,Transporte de pasajero interurbano en camioneta,0,0,0,0
+1745,73221,Transporte de pasajero interurbano en motocicleta,0,0,0,0
+1746,73221,Taxi interurbano,0,0,0,0
+1747,73221,Transporte en vehículos alquilado con chofer,0,0,0,0
+1749,73611,"Mudanzas, acarreo y otros servicios de traslado de muebles y enseres etc.",0,0,0,0
+1751,73222,Servicio de transporte escolar,0,0,0,0
+1752,73311,Pasaje de avión,0,0,0,0
+1753,73411,Transporte de pasajeros por mar y cursos de agua interiores,0,0,0,0
+1754,73511,Transporte combinado de metro y teleférico,0,0,0,0
+1758,81111,"Servicio de correo privado y envío de paquetes (Federal Express, UPS, Business Mail y similares etc",18,10,0,16
+1868,93111,"Disfraces, máscaras, (no incluir alquiler de disfraces)",,10,,
+1892,93411,Alimentos para animales,,10,,
+1894,93411,Animales domésticos,,10,,
+1900,93511,Servicio de paseo y cuidados de animales domésticos,0,0,0,0
+1902,93511,Cirugía quirúrgica para animales domésticos (mascotas),,10,,
+1903,94111,Entrada a partidos de béisbol,,10,,
+1908,94121,Cuota de gimnasio,,10,,
+1909,94121,Cuota por membresía en clubes sociales y deportivos,,10,,
+1910,105111,Clases de repostería,,10,,
+1911,105111,Clases de belleza,,10,,
+1912,105111,Clases de modelaje y refinamiento personal,,10,,
+1914,94211,Entradas a cine,,10,,
+1916,94211,Entradas a teatro,,10,,
+1917,94211,Entradas a conciertos,,10,,
+1918,94211,Espectáculos,,10,,
+1920,94211,Esparcimiento en viajes (espectáculos artísticos y deportivos),,10,,
+1923,94221,"Entrada a eventos, exposiciones y seminarios",,10,,
+1924,94231,Alquiler de Blue Ray/DVD,,10,,
+1927,83111,"Servicio pag1ado de descarga multimedia (audio y video) por red de internet (Netflix, Claro Video, I",0,0,0,0
+1930,94311,Bingo,0,0,0,0
+1931,94311,"Casino, maquinitas, tragamonedas, slots",0,0,0,0
+1932,94311,Fracatán (Tarjetas de raspado),0,0,0,0
+1933,94311,Loterías diarias (Nacional y LEIDSA) quinielas y palés,0,0,0,0
+1938,94311,Juegos de Gallos,0,0,0,0
+1939,94311,Carreras de caballos,0,0,0,0
+1940,94311,"Apuestas deportivas (MLB, NBA, NFL, NHL y similares)",0,0,0,0
+1941,94311,"Gastos en apuestas de juegos a azar (Dados, cartas, etc.)",0,0,0,0
+1947,95111,Libros de poesía,,10,,
+1948,95111,Libros religiosos,,10,,
+1949,95111,Libros culturales,,10,,
+1950,95111,Libros de crecimiento personal,,10,,
+1951,95111,"Novelas, ensayos, cuentos",,10,,
+1954,95121,Libros de enseñanza primaria,,10,,
+1955,95121,Libros de enseñanza secundaria,,10,,
+1956,95121,Textos universitarios y de formación profesional,,10,,
+1957,95121,Diccionarios,,10,,
+1958,95121,Enciclopedias,,10,,
+1960,95211,Diarios/periódicos,,10,,
+1962,95221,Revistas de moda,,10,,
+1964,95221,Revistas misceláneas,,10,,
+1966,95221,Revistas científicas,,10,,
+1982,95411,"Pegamento de uso escolar (UHU, etc.)",,10,,
+1984,95411,Papel crepé,,10,,
+1988,95411,Papel de escribir con líneas,,10,,
+1993,96111,"Excursiones turísticas al interior tours (parques naturales, museos, montañas, playas, carnaval, etc.)",,10,,
+1995,101111,Cuota mensual enseñanza preescolar,0,0,0,0
+1996,101111,Matriculación enseñanza preescolar,0,0,0,0
+1998,101121,Cuota mensual enseñanza primaria,0,0,0,0
+1999,101121,Matriculación en enseñanza primaria,0,0,0,0
+2002,102111,Matriculación en enseñanza secundaria,0,0,0,0
+2003,102111,Cuota mensual enseñanza secundaria,0,0,0,0
+2004,102111,Matriculación en enseñanza técnica de nivel medio,0,0,0,0
+2005,102111,Cuota mensual enseñanza técnica de nivel medio,0,0,0,0
+2008,103111,Formación docente,0,0,0,0
+2012,104111,pag1o por derecho a exámenes,0,0,0,0
+2015,105111,"Cursos técnicos de computadoras (sistema operativo Windows, paquete de Office, diseño página web)",,10,,
+2016,105111,"Cursos técnicos de todo tipo (técnico aduanal, visitador a médicos y similares)",,10,,
+2018,105111,"Cuota en cursos de educación no formal: cocina, corte, peluquería",,10,,
+2019,105111,Secretariado ejecutivo y comercial,,10,,
+2020,105111,"Cursos comerciales (auxiliar de contabilidad, cajero bancario)",,10,,
+2022,105111,"Cursos de formación en oficios o similares (tapicería, mecánica, decoración, electrónica)",,10,,
+2173,11113,Croissant,,10,16,
+2282,121111,Corte de pelo para hombre,,10,,
+2283,121111,Corte de pelo para niño,,10,,
+2284,121111,Corte de pelo para mujer,,10,,
+2285,121111,"Lavado, peinado y secado de pelo",,10,,
+2286,121111,Aplicación de desrizado,,10,,
+2287,121111,Aplicación de Queratina,,10,,
+2288,121111,Aplicación de tintes o cellophane (celofén),,10,,
+2289,121111,Aplicación de reflejos (rayitos),,10,,
+2290,121111,Aplicación de tratamiento profundo de pelo,,10,,
+2292,121111,"Afeitadas, arreglo de barba, Cerquillo",,10,,
+2293,121111,Arreglo de cejas,,10,,
+2294,121111,Postura de pelo postizo (extensiones),,10,,
+2295,121111,Arreglo de uñas (Manicure),,10,,
+2296,121111,Arreglo de pies (Pedicure),,10,,
+2297,121121,Limpieza de cutis,,10,,
+2298,121121,Masajes no terapéuticos,,10,,
+2299,121111,Depilación con cera,,10,,
+2300,121111,Postura de uñas,,10,,
+2315,61211,Algodón para usos varios,0,0,0,0
+2430,124111,Residenciales de ancianos y discapacitados,0,0,0,0
+2431,124111,Centros de rehabilitación,0,0,0,0
+2432,125311,pag1o de cuota de seguro médico,0,0,0,0
+2434,125311,Cuota mutual de servicios médicos,0,0,0,0
+2438,125411,Seguros de vehículo de motor,0,0,0,0
+2439,125411,Seguro de motocicletas,0,0,0,0
+2441,125511,"Seguro de responsabilidad civil por lesiones, daños a tercero",0,0,0,0
+2444,126211,Costo o renovación de tarjeta de crédito o débito,0,0,0,0
+2445,126211,pag1o de servicios de cajero automático,0,0,0,0
+2448,127111,Honorarios servicios de abogados,0,0,0,0
+2449,127111,Honorarios servicios de notario,0,0,0,0
+2451,125511,"Cuota de previsión de servicios funerarios, servicios mutuales",0,0,0,0
+2452,127111,Servicios funerarios,,10,16,
+2455,127111,pag1o emisión acta de nacimiento,0,0,0,0
+2457,127111,Trámite de la Cédula de identidad (incluye renovación),0,0,0,0
+2459,127111,Trámite para obtención del pasaporte (incluye renovación),0,0,0,0
+2462,127111,"pag1os por servicios de: celebraciones religiosas (bodas, bautizos)",0,0,0,0
+2463,127111,"pag1os por servicios de: trabajos y ayudas espirituales, astrales.",0,0,0,0
+2465,72411,Trámite de la licencia de conducir (incluye renovación),0,0,0,0
+2466,201123,Revista de vehículo,,10,,
+2473,11921,Azafrán,,10,16,
+2475,201123,Marbete de vehículo,,10,,
+2479,61151,Omega 3,0,0,0,0
+2498,61171,Medicamento para la diabetes (no insulina),0,0,0,0
+2499,201111,pag1o de tarjeta de crédito,,10,,
+2500,201111,"pag1o préstamo (Superlímite, extralimite, extracrédito)",,10,,
+2501,126211,Comisión por consulta de saldo,0,0,0,0
+2502,126211,Comisión por transferencia a terceros,0,0,0,0
+2504,126211,pag1o por administración de productos financieros,0,0,0,0
+2505,125511,pag1o por seguro de tarjeta de crédito,0,0,0,0
+2506,201111,Costo por financiamiento de tarjeta de crédito,,10,,
+2510,127111,pag1o de licencia de porte de armas de fuego,0,0,0,0
+2511,127111,pag1o de licencia de tenencia de armas de fuego,0,0,0,0
+2512,127111,pag1o de visa,0,0,0,0
+2515,11231,Cerdo vivo,0,0,0,0
+2524,201111,Préstamos a personas no miembros del hogar,,10,,
+2525,62311,Resonancia magnética,0,0,0,0
+2536,125411,pag1os por daños ocasionados a terceros,0,0,0,0
+2538,11113,Quipe de pollo,,10,,
+2541,11113,Quipe de queso,,10,16,
+2542,61161,"Medicamento para el colesterol (estatina, lípidos, triglicéridos, grasa)",0,0,0,0
+2543,61171,Medicamento para la próstata,0,0,0,0
+2548,105111,Cuota de sala de tareas,,10,,
+2549,11113,Quipe de res,,10,16,
+2550,61121,Antiinfecciosos vaginales,0,0,0,0
+2552,94121,Entrenador físico,,10,,
+2560,44111,Instalación de agua del acueducto,0,0,0,0
+2561,44111,Reconexión de agua del acueducto,0,0,0,0
+2562,45111,Pre-pag1o de electricidad,0,0,0,0
+2568,56211,Cuidado de otro familiar en el hogar,0,0,0,0
+2570,56211,Servicio doméstico en vivienda vacacional o veraneo,0,0,0,0
+2575,41211,Alquiler de vivienda secundaria sin muebles,0,0,0,0
+2576,41211,Alquiler de vivienda secundaria con muebles,0,0,0,0
+2580,94221,Entrada al museo,,10,,
+2581,94121,Entradas a bares y Discotecas,,10,,
+2582,94121,Inscripción de gimnasio,,10,,
+2583,94121,Inscripciones de clubes,,10,,
+2584,94121,"Servicio de entrenamiento físico (samba, crossfit, baile del tubo, yoga, etc.)",,10,,
+2586,125111,Seguro de vida,0,0,0,0
+2588,61151,Vitamina B9 (ácido fólico),0,0,0,0
+2591,62311,Radioterapia,0,0,0,0
+2592,104111,Inscripción de diplomado (desglose),0,0,0,0
+2594,95311,Encuadernación,,10,,
+2601,102111,pag1o derecho a examen enseñanza secundaria,0,0,0,0
+2602,95411,pag1o de materiales de preescolar,,10,,
+2603,201123,"Sanción o infracción (tributarias, financieras, etc.)",,10,,
+2632,11113,Yaniqueques,18,10,16,16
+2665,111132,"Agua purificada servida (Dasani, Planeta Azul y similares)",,10,16,
+2670,111132,Guarapo de caña servido,,10,16,
+2724,201123,Multa de tránsito,,10,,
+2731,94231,Alquiler de libros,,10,,
+2869,11243,Hígado de cerdo,,10,16,
+2870,61151,Vitamina D,0,0,0,0
+2871,62311,Análisis para ver la vitamina D,0,0,0,0
+2881,11113,Pan de yautía,,10,16,
+2901,101111,Servicio estancia infantil pública,0,0,0,0
+2919,104111,pag1os por derecho a examen de educación terciaria o universitaria,0,0,0,0
+2920,104111,pag1o por legalización de certificados de estudios,0,0,0,0
+2921,104111,Inscripción de grado en la universidad,0,0,0,0
+2922,104111,Inscripción de maestría en la universidad,0,0,0,0
+2923,104111,Inscripción de especialidad en la universidad,0,0,0,0
+2924,104111,Inscripción de doctorado en la universidad,0,0,0,0
+2925,104111,Cuota de grado en la universidad,0,0,0,0
+2926,104111,Cuota de maestría en la universidad,0,0,0,0
+2927,104111,Cuota de especialidad en la universidad,0,0,0,0
+2928,104111,Cuota de doctorado en la universidad,0,0,0,0
+2930,62311,Alquiler de aparatos y equipos terapéuticos,0,0,0,0
+2934,94231,Alquiler de equipos de sonidos,,10,,
+2935,201123,Impuesto por entrada de bienes del extranjero,,10,,
+2936,201123,Impuesto a vivienda de lujos o suntuarias,,10,,
+2937,201123,Placa de vehículo (primer impuesto de placa),,10,,
+2951,124111,Inscripción en guardería,0,0,0,0
+2952,124111,Cuota de guardería,0,0,0,0
+2956,105111,Inscripción en curso por internet,,10,,
+2957,105111,Cuotas en curso por internet,,10,,
+2958,72411,pag1o por lecciones de conducir,,10,16,
+2964,95111,Libro electrónico,,10,,
+2965,95111,Libro técnico,,10,,
+2968,61171,Medicamento para Osteoporosis,0,0,0,0
+2970,62111,Consulta psicológica,0,0,0,0
+2971,61171,Productos Homeopáticos,0,0,0,0
+2975,61311,Audífonos para personas con problemas de audición,0,0,0,0
+2979,95411,pag1os de materiales escolares de primaria,,10,,
+2980,102111,pag1os por derecho a examen de secundaria técnica,0,0,0,0
+2983,61131,Medicamento Digestivo,0,0,0,0
+3007,11211,Cabeza de res,,10,16,
+3021,11421,Leche evaporada con sabor a queso,,10,16,
+3073,11711,Guandules blanditos,,10,16,
+3074,62111,Consulta médica urología,0,0,0,0
+3075,62111,Consulta médica Ortopeda,0,0,0,0
+3077,201113,Pensión alimenticias (manutención),,10,,
+3078,201111,"Seguro para producciones agrícola contra desastres naturales (huracanes, terremotos, etc.)",,10,,
+3079,11121,Masa de pastelitos,,10,16,
+3080,11713,Vegetales mixtos empacados,,10,16,
+3081,62311,Densitometría (estudio de los huesos),0,0,0,0
+3133,93411,Polvo para pulgas (animales),,10,,
+3148,73611,Servicio de transporte en animal,0,0,0,0
+3151,111121,Domplin preparado,,10,16,
+3212,73222,Transporte universitario,0,0,0,0
+3213,201123,Impuesto de estadía o permanencia en el país,,10,,
+3214,127111,Cedulación para extranjeros residentes,0,0,0,0
+3215,127111,Documento de regularización migratoria,0,0,0,0
+3274,62111,Consulta médica nefrólogo,0,0,0,0
+3294,62311,Espirometría (Prueba pulmonar),0,0,0,0
+3298,62311,Análisis de esteroides,0,0,0,0
+3299,62111,Consulta oncológica,0,0,0,0
+3300,62111,Consulta endocrinólogo (diabetes),0,0,0,0
+3302,62111,Consulta médica neurólogo,0,0,0,0
+3372,53311,Alquiler de lavadora,0,0,0,0
+3419,121121,Sauna,,10,,
+3424,121111,Retoques de uñas postizas,,10,,
+3425,121121,Tinturado de cejas semi-permanentes,,10,,
+3426,121111,Servicios de maquillaje,,10,,
+3461,72211,Gas natural,0,0,0,0
+3498,11112,Galletas de huevo,,10,16,
+3500,11111,Pan de avena,0,0,16,0
+3501,11111,Pan de hamburguer,0,0,16,0
+3520,11821,Pulpa de frutas,18,10,16,16
+3526,11111,Pan de cereal,0,0,16,0
+3527,11111,Pan de papa,0,0,16,0
+3529,11113,Pastelito de pollo,,10,,
+3530,11113,Pastelito de res,,10,16,
+3531,11113,Pastelito de queso amarillo,,10,16,
+3533,11113,Pastelito de jamón y queso,,10,16,
+3534,11113,"Pastelito de queso, pollo y maíz",,10,16,
+3539,11113,Quipes de camarón,,10,16,
+3541,11113,Croquetas de pollo y jamón,,10,16,
+3543,11113,Croquetas de chorizo,,10,16,
+3584,11311,Pescado trucha,,10,16,
+3586,11712,Ñame diablón,18,10,16,0
+3587,11712,Ñame blanco,18,10,16,0
+3588,11712,Ñame amarillo,18,10,16,0
+3807,11141,Macarrones,,10,16,
+3810,11141,Espirales,,10,16,
+3812,11141,Mostachones,,10,16,
+3813,11141,Linguinis,,10,16,
+3832,104111,pag1o monográfico,0,0,0,0
+3833,105111,Inscripción curso de inglés,,10,,
+3834,105111,Cuota curso de inglés,,10,,
+3835,105111,Inscripción curso de francés,,10,,
+3836,105111,Cuota curso de francés,,10,,
+3838,105111,Cuota curso de italiano,,10,,
+3844,62111,Consulta médico dermatólogo,0,0,0,0
+3845,62111,Consulta médico alergista,0,0,0,0
+3846,62111,Consulta médico vascular,0,0,0,0
+3849,62311,Consulta médica nutricionista,0,0,0,0
+3852,62111,Consulta médica peri-natólogos,0,0,0,0
+3853,61211,Jeringas,0,0,0,0
+3855,62311,Examen de Triglicéridos,0,0,0,0
+3856,62311,Perfil bio-físico,0,0,0,0
+3857,62311,Dopler (análisis vascular),0,0,0,0
+3871,95411,Cuadernos,,10,,
+3873,95411,Lapiceros,,10,,
+3874,95411,Lápices,,10,,
+3875,95411,Minas,,10,,
+3876,95411,Portaminas,,10,,
+3877,95411,Compás,,10,,
+3878,95411,Regla,,10,,
+3879,95411,Cartabón,,10,,
+3881,95411,Estuches para lápices,,10,,
+3882,95411,Porta-lápices,,10,,
+3884,95411,Tempera,,10,,
+3885,95411,Acuarela,,10,,
+3887,95411,Lápices de color,,10,,
+3888,95411,Crayones,,10,,
+3889,95411,Marcadores,,10,,
+3891,95411,Pizarra,,10,,
+3892,95411,Tiza,,10,,
+3893,95411,Tijera para papel,,10,,
+3894,95411,Grapadora,,10,,
+3898,95411,Masilla,,10,,
+3901,95411,Hojas de papel en blanco,,10,,
+3974,62311,Análisis de coagulación,0,0,0,0
+3975,62311,Consulta fisiatra,0,0,0,0
+3978,103111,Inscripción de educación técnico superior,0,0,0,0
+3979,103111,Cuota de técnico superior,0,0,0,0
+3992,11611,Manzana roja,,10,16,
+3993,11611,Manzana verde,,10,16,
+3994,11611,Manzana amarilla,,10,16,
+4063,94221,Entrada a parque zoológico,,10,,
+4064,94221,Entrada a Jardines botánicos,,10,,
+4068,94231,Contratación de Disc Jockey,,10,,
+4143,62311,Estudios de imágenes con medio de contraste,0,0,0,0
+4148,11112,Galletas de ajo,,10,16,
+4149,11112,Galletas rellenas de queso,,10,16,
+4151,201122,pag1o de ruta de vehículo,,10,,
+4152,62311,Análisis de creatinina,0,0,0,0
+4153,62311,Estudio de gammagrafía,0,0,0,0
+4167,61151,Vitamina K,0,0,0,0
+4190,104111,Revisión de grado,0,0,0,0
+4199,11222,Salchicha de pollo,,10,16,
+4253,95111,Libro de inglés,,10,,
+4257,61311,Anteojos de corrección sin prescripción médica (lentillas),0,0,0,0
+4258,61311,Lentes de contacto sin prescripción médica,0,0,0,0
+4259,61311,Silla de rueda,0,0,0,0
+4263,62111,Consulta con médico internista,0,0,0,0
+4269,11611,Mamón,,10,16,
+4270,62111,Consulta infectólogo,0,0,0,0
+4271,62111,Consulta hematólogo,0,0,0,0
+4273,62311,Análisis Alfa Feto Proteína,0,0,0,0
+4274,62311,Análisis amilasa / Lipasa,0,0,0,0
+4275,62311,Análisis de amonio,0,0,0,0
+4276,62311,Análisis de anti-TG,0,0,0,0
+4277,62311,Análisis de anti-TPO,0,0,0,0
+4278,62311,Análisis de ASO,0,0,0,0
+4279,62311,Análisis de AST,0,0,0,0
+4280,62311,Análisis de ALT,0,0,0,0
+4281,62311,Análisis de Bilirrubina (total / fracciones),0,0,0,0
+4282,62311,Análisis de B-hcg,0,0,0,0
+4283,62311,Análisis de Calcio,0,0,0,0
+4284,62311,Análisis de clamidia (IgG/IgM),0,0,0,0
+4285,62311,Análisis de colesterol total,0,0,0,0
+4286,62311,Análisis de colesterol (HDL/LDL),0,0,0,0
+4292,62311,Análisis de CA,0,0,0,0
+4297,62311,Análisis de digestión en heces,0,0,0,0
+4298,62311,Análisis de electroforesis,0,0,0,0
+4301,62311,Análisis de eritrosedimentación,0,0,0,0
+4305,62311,Análisis de ferritina,0,0,0,0
+4307,62311,Análisis de fosfatasa alcalina,0,0,0,0
+4308,62311,Análisis de fosfatasa acida,0,0,0,0
+4309,62311,Análisis de FTA-Abs,0,0,0,0
+4311,62311,Análisis de GTP,0,0,0,0
+4312,62311,Análisis de hemocultivo,0,0,0,0
+4313,62311,Análisis de herpes I y II (IgG/IgM),0,0,0,0
+4315,62311,Análisis de hemoglobina glucosilada (HbA1c),0,0,0,0
+4318,62311,Análisis de inmunoglobulinas(IgA-IgG-IgM),0,0,0,0
+4319,62311,Análisis de LDH,0,0,0,0
+4320,62311,Análisis de magnesio,0,0,0,0
+4321,62311,Análisis de microambumina cuantitativa (24h),0,0,0,0
+4322,62311,Análisis de monotest,0,0,0,0
+4323,62311,Análisis de progesterona,0,0,0,0
+4324,62311,Análisis de prolactina,0,0,0,0
+4325,62311,Análisis de proteínas (totales/fraccionada),0,0,0,0
+4326,62311,Análisis de PCR,0,0,0,0
+4327,62311,Análisis de potasio (k),0,0,0,0
+4328,62311,Análisis de PSA (total/%),0,0,0,0
+4330,62311,Análisis de TS,0,0,0,0
+4331,62311,Análisis de TC,0,0,0,0
+4332,62311,Análisis de TP,0,0,0,0
+4333,62311,Análisis de TTP,0,0,0,0
+4334,62311,Análisis de Toxo (igG/IgM),0,0,0,0
+4335,62311,Análisis de T3,0,0,0,0
+4336,62311,Análisis de T4,0,0,0,0
+4337,62311,Análisis de T4 libre,0,0,0,0
+4338,62311,Análisis de TSH,0,0,0,0
+4339,62311,Análisis de nitrógeno ureico (BUN),0,0,0,0
+4340,62311,Análisis de urocultivo,0,0,0,0
+4374,11921,Agrio de naranja,,10,16,
+4379,11921,Alhucema,,10,16,
+4399,11921,Cilantro molido,,10,16,
+4400,11921,Comino,,10,16,
+4401,11921,Diten o tomillo,,10,16,
+4403,11711,Habichuela Yacomelo,,10,16,
+4404,11921,Hoja de ruda,,10,16,
+4405,11921,Hoja de sen,,10,16,
+4406,11132,"Maíz triturado (para chaca, chenchén, etc.)",,10,16,
+4413,11911,Sal en grano,,10,16,
+4414,11311,Pescado lisa o anguila,,10,16,
+4538,104111,pag1o de materiales de la universidad,0,0,0,0
+4540,104111,Derecho a graduación,0,0,0,0
+4541,104111,Derecho a tesis,0,0,0,0
+4690,95311,Folleto,,10,,
+4698,62111,Consulta maxilofacial,0,0,0,0
+4704,62311,Placa panorámica,0,0,0,0
+4707,11222,Salami de pavo,,10,16,
+4708,104111,Cuota de diplomado,0,0,0,0
+4709,62111,Consulta de traumatológico,0,0,0,0
+4813,105111,Inscripción curso de farmacia,,10,,
+4823,62311,Electromiografía,0,0,0,0
+4882,11222,Salami de pollo,,10,16,
+4884,11921,Perejil seco el polvo,,10,16,
+4888,11311,Pescado sable,,10,16,
+4901,62311,Análisis osteoporosis,0,0,0,0
+4904,61311,Placa metálica para pierna,0,0,0,0
+4905,61311,Placa metálica para cadera,0,0,0,0
+4906,62311,Cultivo de Secreción vaginal,0,0,0,0
+4913,11113,Arepa dulce,,10,16,
+4914,11113,Arepa salada,,10,16,
+4921,11411,Leche líquida con fresa,,10,,
+4925,61311,Anteojos de corrección con prescripción médica,0,0,0,0
+4926,61311,Lentes de contacto con prescripción médico,0,0,0,0
+4948,11921,Cilantro en grano,,10,16,
+4969,105111,Cuota de curso de música,,10,,
+4974,101111,pag1o por derecho a exámenes de educación preescolar,0,0,0,0
+4986,11113,Croquetas de pollo,,10,,
+4988,11113,Pastelito de pollo y vegetales,,10,16,
+5001,62311,Análisis de SGP3,0,0,0,0
+5002,62311,Análisis de Transaminasa glutámico (SGOT),0,0,0,0
+5042,11113,Palitos de ajo,,10,16,
+5102,95221,Revista cristiana,,10,,
+5129,95121,Caligrafía,,10,,
+5150,61171,Gotas de oídos,0,0,0,0
+5161,62311,Radiograma de cráneo,0,0,0,0
+5170,104111,pag1o de mora por inscripción,0,0,0,0
+5185,62111,Consulta medica reumatólogo,0,0,0,0
+5205,122111,Servicios sexuales (prostitución),0,0,0,0
+5209,105111,Inscripción en curso de desarrollo de redes,,10,,
+5262,121121,Peeling corporal,,10,,
+5280,61171,Medicamento para el higado,0,0,0,0
+5281,104111,Reinscripción o reactivación de matrícula en la universidad,0,0,0,0
+5302,62311,Examén de tina (piel),0,0,0,0
+5377,11132,Maíz molido,,10,16,
+5401,61311,Andador de adultos,0,0,0,0
+5403,62311,Examen de Alergia,0,0,0,0
+5404,61311,Férula ortopédica,0,0,0,0
+5446,62311,Cultivo de faringe,0,0,0,0
+5451,105111,Inscripción de curso de hotelería,,10,,
+5452,105111,Cuota de curso de hotelería,,10,,
+5487,62311,Análisis (Helicobacter Pylori),0,0,0,0
+5489,61151,Aceite de bacalao,0,0,0,0
+5491,105111,Cuota para estudio de la biblia,,10,,
+5493,61171,Medicamento para oxigenar el cerebro,0,0,0,0
+5567,11212,Asadura de pollo,0,0,16,0
+5572,62311,Análisis PSA libre,0,0,0,0
+5595,11222,Jamón Corriente,,10,16,
+5596,94121,Cuota de cursos de artes marciales,,10,,
+5599,11111,Pan dulce,0,0,16,0
+5600,11213,Filete de cerdo,,10,16,
+5616,61171,Medicamento para los riñones,0,0,0,0
+5617,61311,Tapones (anti ruidos),0,0,0,0
+5672,62311,Análisis de glucosa,0,0,0,0
+5674,62311,Análisis de trombofilia,0,0,0,0
+5675,62311,Análisis de Protrombina,0,0,0,0
+5677,62111,Consulta de cirujano,0,0,0,0
+5682,62311,Diálisis (tratamiento),0,0,0,0
+5683,11211,Hueso de vaca,,10,16,
+5691,93111,Figura de animales de juguetes,,10,,
+5753,62311,Curva de lactosa (análisis),0,0,0,0
+5775,44411,Servicio de limpieza de séptico,0,0,0,0
+5776,61211,Botiquín,0,0,0,0
+5779,105111,Curso de manualidades,,10,,
+5780,105111,pag1o de materiales (curso de manualidades),,10,,
+5784,61151,Vitamina B12,0,0,0,0
+5790,11111,Pan de linaza,0,0,16,0
+5801,121111,Servicio de pintado de uñas,,10,,
+5834,11132,Avena integral,,10,16,
+5842,11213,Escalopines de cerdo,,10,16,
+5843,11212,Escalopines de pollo,0,0,16,0
+5845,94121,Curso de natación,,10,,
+5847,62311,Cultivo nasal,0,0,0,0
+5873,94211,Entrada a eventos patronales,,10,,
+5878,104111,pag1o de record de notas,0,0,0,0
+5905,101121,pag1o por derecho a examen enseñanza primaria,0,0,0,0
+5908,11621,Almendras,,10,16,
+5914,11611,Granada (fruta),,10,16,
+5926,94121,Servicio de juego de billar,,10,,
+5931,11461,Huevo de guinea,0,0,16,0
+5932,11111,Pan quimbo (rizo),0,0,16,0
+5939,62311,Topografía craneal,0,0,0,0
+5957,101121,Inscripción de educación especial,0,0,0,0
+5958,11113,Tortilla de trigo,,10,16,
+5959,11212,Muslo de pavo,,10,16,
+5963,94121,Inscripción a cursos de béisbol,,10,,
+5969,62311,Baciloscopia,0,0,0,0
+5971,61171,Medicamentos para la artritis,0,0,0,0
+6005,61171,Medicamentos para las nauseas,0,0,0,0
+6012,11113,Pastelito de huevo,,10,16,
+6030,11821,Jalao (dulce),18,10,16,16
+6032,95121,Libros de preescolar,,10,,
+6051,105111,"Simposio (conferencia, reunión profesionales)",,10,,
+6060,93411,Vacuna para animales,,10,,
+6062,62311,Calcio por colorimetría,0,0,0,0
+6065,62311,Deshidrogenasa láctica,0,0,0,0
+6068,11211,Costillas de res,,10,16,
+6071,11311,Pescado loro,,10,16,
+6072,61171,Retrovirales (VIH) tratamiento,0,0,0,0
+6106,11111,Pan de ajonjolí,0,0,16,0
+6109,95311,Tabla periódica,,10,,
+6125,94121,Entrada a piscina privada,,10,,
+6140,105111,Curso de ingeniería electromecánica,,10,,
+6141,105111,Cuota de curso de ingeniería electromecánica,,10,,
+6144,62311,Examen de campo visual,0,0,0,0
+6181,62111,Consulta anestesiólogo,0,0,0,0
+6199,11221,Costillita ahumada,,10,16,
+6217,62311,Análisis de fósforo,0,0,0,0
+6218,62311,Examén de refracción ocular,0,0,0,0
+6219,44311,Servicio de limpieza de cloacas,0,0,0,0
+6225,62311,Análisis de doping (droga),0,0,0,0
+6239,105111,Inscripción de curso de contabilidad,,10,,
+6242,94121,Cuota de curso de ajedrez,,10,,
+6246,94121,Inscripción de cursos de baile,,10,,
+6249,105111,Inscripción de cursos de oratoria,,10,,
+6250,111121,Platos de frutas,0,0,0,0
+6274,11321,Filete de basa (pescado),,10,16,
+6282,105111,Cuota de curso de secretaria recepcionista,,10,,
+6285,105111,Inscripción en curso de electrónica digital,,10,,
+6286,105111,Cuota de curso de electrónica digital,,10,,
+6288,105111,Cuota de curso de caja (cajera bancaria),,10,,
+6310,95111,Libros de colorear,,10,,
+6312,62111,Consulta de neurocirujano,0,0,0,0
+6327,62311,Prueba IGRA (análisis de tuberculosis),0,0,0,0
+6333,101121,Cuota de educación especial,0,0,0,0
+6340,105111,Cuota de curso de enfermería,,10,,
+6343,61171,Gotas oftálmicas para el glaucoma,0,0,0,0
+6346,105111,Inscripción de cursos de maquillaje profesional,,10,,
+6360,105111,Terapia ocupacional (niños especiales),,10,,
+6367,105111,pag1o de materiales (curso de belleza),,10,,
+6371,11113,Pan de licor,,10,16,
+6379,11113,Pastelito de pollo y maíz,,10,16,
+6382,11113,Pastelito de pepperoni y queso,,10,16,
+6392,105111,Inscripción de curso de refrigeración,,10,,
+6419,105111,Cuota de curso de mercadeo y ventas,,10,,
+6428,94121,Inscripción de curso de música,,10,,
+6433,11113,Quipe precocido de res,,10,16,
+6436,11113,Croqueta precocida de queso,,10,16,
+6446,11132,Avena molida no saborizada,,10,16,
+6447,11211,Carne molida de ternera,,10,16,
+6451,11411,Leche entera liquida sin lactosa,0,0,16,0
+6453,11411,Leche descremada liquida sin lactosa,0,0,16,0
+6454,11411,Leche líquida saborizada sin lactosa,0,0,16,0
+6455,11411,Leche liquida pasteurizada (no UHT),0,0,16,0
+6456,11421,Leche en polvo entera sin lactosa,0,0,16,0
+6465,11621,Pistacho,,10,16,
+6533,112111,Servicios de alojamientos vivienda familiar o amigos,0,0,0,0
+6544,73511,"Transporte de turismo, pag1ado por separado (trenes, lanchas, barcos)",0,0,0,0
+6559,11311,Pescado puerco,,10,16,
+6650,93411,Spray acondicionador para animales,,10,,
+6653,11113,Cazabe con ajo,,10,16,
+6669,93411,Vitamina y minerales para animales,,10,,
+6670,93411,Antibiótico para animales,,10,,
+6738,105111,Inscripción en sala de tarea,,10,,
+6739,105111,Servicio de clase o tutoría particular,,10,,
+6740,105111,"Inscripción en cursos de educación no formal: cocina, corte, peluquería",,10,,
+6742,62111,Consulta de Geriatría,0,0,0,0
+6822,61141,Antialérgicos y antihistamínicos,0,0,0,0
+6823,61311,Yeso removible ortopédico,0,0,0,0
+6824,61211,Plantillas ortopédicas,0,0,0,0
+6831,93511,Servicio de veterinaria (consulta),,10,,
+6861,44411,Gastos comunes (en copropiedad de área común) en vivienda secundaria,0,0,0,0
+6862,44411,Gastos comunes (en copropiedad de área común) en vivienda vacacional o de veraneo,0,0,0,0
+7348,61121,Antibióticos,0,0,0,0
+7361,62311,Prueba widal (fiebre tifoidea),0,0,0,0
+7366,62311,Análisis leucodistrofia metacromática (LDM),0,0,0,0
+7370,11621,Semillas de cajuil,,10,16,
+7376,62311,Análisis de plomo,0,0,0,0
+7382,62311,Análisis de fertilidad,0,0,0,0
+7386,11311,Pescado machuelo,,10,16,
+7388,61211,"Botella de raíces (curanderos, brujos, etc.)",0,0,0,0
+7389,61171,Medicamentos para adenoides,0,0,0,0
+7392,11611,Jobo,,10,16,
+7451,61171,Medicamentos para el lupus,0,0,0,0
+7470,127111,pag1o certificado médico,0,0,0,0
+7474,94121,Cuota de clases de baile,,10,,
+7476,61171,Medicamento para la alopecia,0,0,0,0
+7516,201123,pag1o por mora de marbete de vehículo,,10,,
+7557,61311,Catéter,0,0,0,0
+7700,95311,Impresión y encuadernación,,10,,
+7758,61311,Silla baño portátil para enfermos,0,0,0,0
+7760,127111,Trámite para residencia o cuidadanía,0,0,0,0
+7837,11111,Pan de puerro y cebolla,0,0,16,0
+7838,11212,Alas de pollo,0,0,16,0
+7893,93411,Antimicótico en crema para animales,,10,,
+8234,61211,Gasa,0,0,0,0
+8236,62311,Prueba de paternidad o de A.D.N.,0,0,0,0
+8245,62311,Cultivo de secreción del oído,0,0,0,0
+8246,11111,Pan de anís,0,0,16,0
+8247,93511,Aplicación de vacuna para animales,,10,,
+8250,61311,Nebulizador (aparato),0,0,0,0
+8251,61171,Medicamentos para adelgazar,0,0,0,0
+8252,105111,pag1o de materiales (curso operador de electrocardiograma),,10,,
+8261,61211,"Vendas adhesivas o no adhesivas (parches adhesivos, vendas deportivas)",0,0,0,0
+8263,61211,Curitas,0,0,0,0
+8268,105111,Cuota de curso de español,,10,,
+8269,94121,Cuota de curso de futbol,,10,,
+8271,105111,Cuota de curso de electricidad,,10,,
+8344,105111,Cuota de curso de etiqueta y protocolo,,10,,
+8370,61171,Medicamento para incontinencia urinaria,0,0,0,0
+8371,105111,Inscripción en curso de costura,,10,,
+8372,105111,Cuota de curso de costura,,10,,
+8402,105111,Cuota de curso de soldadura,,10,,
+8611,11212,Alas de pavo,,10,16,
+8615,62311,Prueba de cloruro,0,0,0,0
+8616,62311,Prueba de sodio,0,0,0,0
+8620,94221,Entrada a parque acuático,,10,,
+8808,62311,Análisis de hormona paratiroidea (PTH) ,0,0,0,0
+8810,93411,Arena para animales domésticos,,10,,
+8823,61311,Prótesis ortopédica,0,0,0,0
+8824,61151,Fibra dietética,0,0,0,0
+8858,94221,Entrada a parques naturales,,10,,
+8859,94121,Entrada a Gallera,0,0,0,0
+8860,61211,Tobillera ortopédica,0,0,0,0
+8866,95311,Mapas educativos,,10,,
+8877,11211,Albondiga de res,,10,16,

@@ -1,0 +1,18 @@
+descripcion,valor,observaciones
+Escenario Base,0,
+Tasa general ITBIS base,18,Porcentaje
+Ajustar transferencias?,1,"0 = No, 1= Sí"
+Simular transferencias compensatorias?,1,"0 = No, 1= Sí"
+Enviar resultados a Excel,1,"0 = No, 1= Sí"
+Grupo a ser compensado,2,1: Fpobre 1 y 2 2:Fpobre 1 al 3
+Tipo de establecimiento,4,"1: 66% formales, 2: 83% formales 3:100% formales 4;86% formales (!nuevo)"
+Valor de compensación,1145,Pesos dominicanos al mes
+Valor de comer es primero,1650,Pesos dominicanos
+Resumen,1,
+Sensibilidad,1,
+valor fijo superate,1,agregado oct 2024
+valor nuevo superate,350,agregado oct 2024
+total subsidios,92356.60956,millones 2024
+total ITBIS,375087.6,millones 2024
+total impuesto sobre la renta,91423.69,millones 2024
+PIB,5866760.45815111,millones 2024

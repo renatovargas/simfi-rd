@@ -1,0 +1,6 @@
+Grupo,Descripción
+Decil de ingreso disponible,La población se agrupa en diez grupos ordenados según el ingreso per cápita del hogar (deciles 1 a 10).
+Estrato de ingreso,"Clasificación por niveles de ingreso o consumo según marcos habituales de análisis (pobreza, vulnerabilidad, clase media, etc.), definidos para el país y la encuesta de referencia."
+Área de residencia,Urbano o rural según la definición de la encuesta de hogares utilizada en el modelo.
+Sexo del jefe del hogar,El hogar se clasifica según el sexo de la persona reportada como jefa o jefe de hogar.
+Tipo de hogar,"Conformación del hogar respecto a presencia de niños o adolescentes (hasta 15 años) y adultos mayores (65 años o más): cuatro categorías según si hay niños, adultos mayores, ambos o ninguno."

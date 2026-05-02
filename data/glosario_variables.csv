@@ -1,0 +1,23 @@
+VARIABLE,DESCRIPCIÓN
+pov_gral,pobreza según línea de pobreza general
+pov_ext,pobreza según línea de pobreza extrema
+pov_int,pobreza según línea de pobreza internacional
+ineq,indicadores de desigualdad
+deccon,concentración de impuestos y transferencias por decil
+decsum,totales % del PIB de impuestos y transferencias por decil
+decinc,incidencia fiscal de impuestos y transferencias por decil
+estrcon,concentración de impuestos y transferencias por estrato económico
+estrsum,totales % del PIB de impuestos y transferencias por estrato económico
+estrinc,incidencia fiscal de impuestos y transferencias por estrato económico
+urbcon,concentración de impuestos y transferencias por área de residencia
+urbsum,totales % del PIB de impuestos y transferencias por área de residencia
+urbinc,incidencia fiscal de impuestos y transferencias por área de residencia
+sexcon,concentración de impuestos y transferencias por sexo del jefe del hogar
+sexsum,totales % del PIB de impuestos y transferencias por sexo del jefe del hogar
+sexinc,incidencia fiscal de impuestos y transferencias por sexo del jefe del hogar
+catcon,concentración de impuestos y transferencias por categorías de hogar
+catsum,totales % del PIB de impuestos y transferencias por categorías de hogar
+catinc,incidencia fiscal de impuestos y transferencias por categorías de hogar
+depcon,concentración de impuestos y transferencias por región geográfica
+depsum,totales % del PIB de impuestos y transferencias por región geográfica
+depinc,incidencia fiscal de impuestos y transferencias por región geográfica

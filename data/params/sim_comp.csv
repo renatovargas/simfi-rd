@@ -1,0 +1,6 @@
+sim_comp,activo,grupo_com,metodo_com,valor_com,decil_com,icv_com,decil_est
+0,1,2,2,0,,,4
+1,1,1,1,,2,2,4
+2,0,,2,500,4,,
+3,0,,,,,,
+4,0,,,,,,

@@ -1,0 +1,203 @@
+id_tipo_establecimiento,des_tipo_establecimiento,pag1_u,pag1_r,pag2_u,pag2_r,pag3_u,pag3_r,pag4_u,pag4_r
+1,Acueductos,0,0,0,0,1,1,0,0
+2,Agencia online de turismo,1,1,1,1,1,1,1,1
+3,Agencias de viaje internacionales,1,1,1,1,1,1,1,1
+4,Agencias de viaje nacionales,1,1,1,1,1,1,1,1
+5,Almacenes de provisiones,1,1,1,1,1,1,1,1
+6,Armería,1,1,1,1,1,1,1,1
+7,Aseguradoras,1,1,1,1,1,1,1,1
+8,Asociación de ahorros y prestamos,1,1,1,1,1,1,1,1
+9,Asociaciones de choferes /prestadores independientes,0,0,0,0,1,1,1,1
+10,"Ayuntamiento, recolectora de basura",0,0,0,0,1,1,0,0
+11,Banca comercial,1,1,1,1,1,1,1,1
+12,Banca de apuestas deportivas,1,1,1,1,1,1,1,1
+13,Banca solidaria,1,1,1,1,1,1,1,1
+14,Banco de ahorros y créditos,1,1,1,1,1,1,1,1
+15,Bares,1,1,1,1,1,1,1,1
+16,Botica popular,1,1,1,1,1,1,0,0
+17,Cabina de peaje,0,0,0,1,1,1,0,0
+18,Cadenas de comida rápida,1,1,1,1,1,1,1,1
+19,Cafeterías,1,1,1,1,1,1,1,1
+20,Car wash,1,1,1,1,1,1,1,1
+21,Carnicerías,1,1,1,1,1,1,1,1
+22,"Centro de copia, impresión y encuadernación",1,1,1,1,1,1,1,1
+23,"Centro deportivo (estadio, cancha)",1,0,1,0,1,1,1,0
+24,Centros diagnóstico especial e imágenes,1,1,1,1,1,1,1,1
+25,"Centros médicos, clínicas",1,1,1,1,1,1,1,1
+26,Cines,1,1,1,1,1,1,1,1
+27,Colegios,1,1,1,1,1,1,1,1
+28,"Colmados, supercolmado y colmadones",0,0,0,1,1,1,1,1
+29,Comedor económico y popular,0,0,0,0,1,1,0,0
+30,Comedor universitario,1,1,1,1,1,1,1,1
+31,Comedores y/o fonda de comida,0,0,1,1,1,1,1,1
+32,Compañías de servicios telefónicos y comunicaciones,1,1,1,1,1,1,1,1
+33,Compañías de taxis,1,1,1,1,1,1,1,1
+34,Compañías de televisión pag1ada (Telecable),1,1,1,1,1,1,1,1
+35,Compra por internet,1,1,1,1,1,1,1,1
+36,Constructora,1,1,1,1,1,1,1,1
+37,Consultorios dentales,1,1,1,1,1,1,1,1
+38,Consultorios médicos,1,1,1,1,1,1,1,1
+39,Cooperativas de ahorros y créditos,0,0,0,0,1,1,1,1
+40,Corporaciones de créditos,1,1,1,1,1,1,1,1
+41,"Distribuidora de electricidad (EDESTE, EDESUR, EDENORTE, ETC.)",1,1,1,1,1,1,1,1
+42,Distribuidoras de gas,1,1,1,1,1,1,1,1
+43,Editoras de periódicos,1,1,1,1,1,1,1,1
+44,Empresa de organización de eventos,1,1,1,1,1,1,1,1
+45,Empresa de servicios de lavandería,1,1,1,1,1,1,1,1
+46,Empresas de servicio de agua en camiones,0,0,1,1,1,1,1,1
+47,Empresas de servicio de pintura,1,1,1,1,1,1,1,1
+48,Envasadoras de gas o GLP,1,1,1,1,1,1,1,1
+49,Escuela pública,0,0,0,0,1,1,0,0
+50,Estación del metro,1,0,1,0,1,1,1,0
+51,Estacionamiento,1,1,1,1,1,1,1,1
+52,Estaciones de gasolina,1,1,1,1,1,1,1,1
+53,"Estaciones, terminales, paradas de autobuses de empresas o sindicatos",0,0,1,1,1,1,1,1
+54,Estudios fotográficos,1,1,1,1,1,1,1,1
+55,Fantasías,0,0,1,1,1,1,1,1
+56,Farmacias y superfarmacias,1,1,1,1,1,1,1,1
+57,Ferreterías,1,1,1,1,1,1,1,1
+58,Funerarias,1,1,1,1,1,1,1,1
+59,Gimnasios,1,1,1,1,1,1,1,1
+60,Heladerías,1,0,1,1,1,1,1,1
+61,Hipermercados (tiendas por departamentos con supermercado),1,1,1,1,1,1,1,1
+62,Hogares,0,0,0,0,1,1,0,0
+63,Hospitales,1,1,1,1,1,1,0,0
+64,"Hostales, moteles, cabañas, pensiones",1,1,1,1,1,1,1,1
+65,Hoteles,1,1,1,1,1,1,1,1
+66,Iglesia,0,0,0,0,1,1,0,0
+67,"Importadoras de vehículos, Dealers",1,1,1,1,1,1,1,1
+68,Instituciones gubernamentales,0,0,0,0,1,1,0,0
+69,Instituciones sin fines de lucro,0,0,0,0,1,1,0,0
+70,Institutos comerciales,1,1,1,1,1,1,1,1
+71,Joyerías,1,1,1,1,1,1,1,1
+72,"Junta de vecino, empresa administradora, condominio",0,0,0,0,1,1,0,0
+73,Laboratorios de análisis clínicos,1,1,1,1,1,1,1,1
+74,Librerías,1,1,1,1,1,1,1,0
+75,Líneas aéreas,1,1,1,1,1,1,1,1
+76,Mercado de pulga,0,0,0,0,1,1,0,0
+77,Mercados,0,0,0,0,1,1,1,0
+78,Minimarkets,1,1,1,1,1,1,1,1
+79,Modistas y sastrerías,1,0,1,1,1,1,1,1
+80,Mueblerías,1,0,1,1,1,1,1,1
+81,Oficinas de abogados,1,1,1,1,1,1,1,1
+82,Opticas,1,1,1,1,1,1,1,1
+83,Panaderías y reposterías,1,0,1,1,1,1,1,1
+84,Perfumerías,1,1,1,1,1,1,1,1
+85,Pescaderías,1,0,1,1,1,1,1,1
+86,Picapollos,1,0,1,1,1,1,1,1
+87,Pizzerías,1,1,1,1,1,1,1,1
+88,Puesto de rifa de aguante y lotería electrónica,0,0,1,1,1,1,1,1
+89,Puestos de leche,0,0,0,0,1,1,1,0
+90,Puestos de pollo,0,0,0,1,1,1,1,1
+91,"Puestos de venta de empanadas, fritura, hamburguesa, hot dog",0,0,1,1,1,1,1,1
+92,Puestos de venta de neumáticos y/o lubricantes,1,0,1,1,1,1,1,1
+93,Puestos de venta de periódicos y revistas,0,0,1,1,1,1,1,1
+94,Puestos fábrica hielo y/o plantas de agua purificada,1,0,1,1,1,1,1,1
+95,Relojerías,1,1,1,1,1,1,1,1
+96,Reparadoras de zapatos,0,0,1,1,1,1,1,1
+97,Restaurantes,1,1,1,1,1,1,1,1
+98,"Salones de belleza, peluquerías y barberías",1,0,1,1,1,1,1,1
+99,Supermercados,1,1,1,1,1,1,1,1
+100,Taller de herrería,0,0,1,1,1,1,1,1
+101,"Talleres de ebanistería, carpintería",0,0,1,1,1,1,1,1
+102,"Talleres de mecánica en general, desabolladura y pintura",1,0,1,1,1,1,1,1
+103,Tienda de juguetes,1,1,1,1,1,1,1,1
+104,"Tienda de licores, liquor store",1,1,1,1,1,1,1,1
+105,Tienda de mascotas,1,0,1,1,1,1,1,1
+106,Tienda de ropa de paca segunda mano,0,0,0,0,1,1,1,1
+107,Tienda de venta de computadoras,1,1,1,1,1,1,1,1
+108,Tienda deportiva,1,1,1,1,1,1,1,1
+109,Tienda especializada en aparatos y accesorios de salud,1,1,1,1,1,1,1,1
+110,Tiendas de electrodomésticos,1,1,1,1,1,1,1,1
+111,Tiendas de repuestos de vehículos,1,1,1,1,1,1,1,1
+112,Tiendas de ropa,1,1,1,1,1,1,1,1
+113,Tiendas de zapatos,1,1,1,1,1,1,1,1
+114,Tiendas por departamentos,1,1,1,1,1,1,1,1
+115,Tour operadores internacionales,1,1,1,1,1,1,1,1
+116,Tour operadores nacionales,1,1,1,1,1,1,1,1
+117,Universidades,1,1,1,1,1,1,1,1
+118,Vendedor ambulante,0,0,1,1,1,1,1,0
+119,Ventorrillos,0,0,1,1,1,1,1,0
+120,Veterinaria,1,1,1,1,1,1,1,1
+121,Empresa o persona administradora de condominio,1,0,1,0,1,1,1,0
+122,Discoteca,1,1,1,1,1,1,1,1
+123,Centro de internet,1,1,1,1,1,1,1,1
+124,Taller de refrigeracion,1,0,1,1,1,1,1,1
+125,Colegio semi-privado,1,1,1,1,1,1,1,1
+126,"Parque de atracciones (esparcimiento, juegos, recreación)",1,1,1,1,1,1,1,1
+127,Tienda de celulares,1,1,1,1,1,1,1,1
+128,Guardería privada,1,0,1,1,1,1,1,1
+129,Estancia Infantil pública,0,0,0,0,1,1,0,0
+130,Teatro,1,1,1,1,1,1,0,0
+131,Museo,1,1,1,1,1,1,0,0
+132,Puesto de venta de carbón,0,0,0,0,1,1,1,0
+133,Empresa de alquiler de electrodomésticos y enseres domésticos,1,1,1,1,1,1,1,1
+134,Fabrica de muebles,1,1,1,1,1,1,1,1
+136,Fabrica de detergentes y desintectantes,1,1,1,1,1,1,1,1
+137,Laboratorio de medicamentos,1,1,1,1,1,1,1,1
+138,Fabrica de muebles e inmuebles,1,0,1,1,1,1,1,1
+139,Fabrica de ropas,1,0,1,1,1,1,1,1
+142,Colmado popular (INESPRE),0,0,0,0,1,1,0,0
+143,Taller de fabricación y reparación de inversores,1,0,1,1,1,1,1,1
+144,Puesto de venta de productos de belleza,1,0,1,1,1,1,1,1
+145,Financiera,1,1,1,1,1,1,1,1
+146,Centro de uñas (Exclusivamente),0,0,1,1,1,1,1,1
+147,Puesto de venta de leña,0,0,1,0,1,1,1,0
+148,Puesto de frutas,0,0,1,1,1,1,1,1
+149,Estación de radio/televisión,1,1,1,1,1,1,1,1
+150,Club de diversión y esparcimiento,1,1,1,1,1,1,1,1
+151,Club deportivo,1,1,1,1,1,1,1,0
+152,"Organismos internacionales (consulados, embajadas, otros)",0,0,0,0,1,1,0,0
+153,Fábrica de embutidos,1,0,1,1,1,1,1,1
+154,Tienda de dulces,1,0,1,1,1,1,1,1
+155,Asociación de estudiantes,0,0,0,0,1,1,1,1
+156,"Centro de apuestas (gallera, casino, etc.)",0,0,1,0,1,1,1,1
+157,"Agencia de envios (remesas, paquetes, etc)",1,1,1,1,1,1,1,1
+158,Cafeteria / Comedor del trabajo,1,1,1,1,1,1,1,1
+159,"Puesto de venta de articulos pregrabados o para grabar (CD, DVD, USB, entre otros)",0,0,0,0,1,1,1,1
+160,"Puesto de fabricación, venta y reparación de puertas y ventanas",1,0,1,1,1,1,1,1
+161,Empresa privada de Seguridad,1,0,1,1,1,1,1,1
+162,Compra-venta,1,0,1,0,1,1,1,0
+163,Taller de reparación de electrodomesticos,1,0,1,1,1,1,1,1
+164,Spa,1,1,1,1,1,1,1,1
+165,"Botánica, espiritismo y santería",0,0,0,0,1,1,1,0
+166,"Puesto de venta de comida (no incluye restaurante, comedor o fonda)",0,0,1,1,1,1,1,1
+167,Puesto de reparación de neumáticos (Gomero),0,0,1,1,1,1,1,1
+168,Persona Particular o Independiente,0,0,0,0,1,1,1,1
+169,Plataforma Web,1,0,1,1,1,1,1,1
+170,Puesto de ventas para aerosoles y detergentes,1,0,1,1,1,1,1,1
+171,Centro de rehabilitación,0,0,0,0,1,1,1,1
+172,Tienda de Cigarros Electrónicos,1,0,1,1,1,1,1,1
+173,Asilo,0,0,0,0,1,1,1,1
+174,Puesto de venta de gasolina,1,1,1,1,1,1,1,1
+175,Cafetería dentro de un establecimiento,1,1,1,1,1,1,1,1
+176,Centro de educación especial público,0,0,0,0,1,1,0,0
+177,Centro de educación especial privado,1,1,1,1,1,1,1,1
+178,Centro de rehabilitación privado,1,1,1,1,1,1,1,1
+179,Tienda de accesorios y bisutería,0,0,1,1,1,1,1,1
+180,Puesto de venta de carne preparada,1,0,1,1,1,1,1,1
+181,"Tienda de alquiler de prendas de vestir (trajes, vestidos, disfraces)",1,0,1,1,1,1,1,1
+182,Venta de embutidos,1,1,1,1,1,1,1,1
+183,Instituto técnico superior,0,0,0,0,1,1,1,1
+184,Banco de sangre,1,0,1,1,1,1,1,1
+185,Granja,0,0,0,0,1,1,1,0
+186,Tienda de adornos y accesorios de vehículos (auto adornos),1,0,1,1,1,1,1,1
+187,Distribuidora de huevo,1,1,1,1,1,1,1,1
+188,Generadora de energía eléctrica privada ,1,1,1,1,1,1,1,1
+189,Fábrica de calzados,1,1,1,1,1,1,1,1
+190,Colchonería,1,1,1,1,1,1,1,1
+191,Tienda de electrónica,1,1,1,1,1,1,1,1
+192,Tienda de venta de aparatos musicales,1,1,1,1,1,1,1,1
+193,Fábrica de queso,1,1,1,1,1,1,1,0
+194,Fábrica de aparatos y accesorios de salud,1,1,1,1,1,1,1,1
+195,Puesto de venta de pelo postizo,1,1,1,1,1,1,1,1
+196,Escuela de actividades deportivas,1,1,1,1,1,1,1,0
+197,"Escuela de actividades recreativas (baile, musica, artes plásticas, etc.)",1,1,1,1,1,1,1,0
+198,Puesto de venta de pampers,1,1,1,1,1,1,1,1
+199,Empresa de reciclaje de cartón,1,1,1,1,1,1,1,1
+200,Fábrica de cervezas,1,1,1,1,1,1,1,1
+201,"Puesto de venta de café, té y chocolate preparado",1,0,1,1,1,1,1,1
+202,"Fábrica de plaguicidas, insecticidas, pesticidas y fungucidas",1,1,1,1,1,1,1,1
+203,Puesto de venta de libros usados,1,0,1,1,1,1,1,1
+204,Tienda de ventas de cerámicas,1,0,1,1,1,1,1,1
+205,Empresas de zonas francas,0,0,0,0,1,1,0,0
