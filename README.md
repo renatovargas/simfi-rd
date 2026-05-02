@@ -1,6 +1,6 @@
 # Simulador de escenarios fiscales (simfi-rd)
 
-Panel Shiny para construcción y comparación de escenarios de reforma fiscal — República Dominicana. Corre localmente; no requiere servidor Shiny.
+Panel Shiny para construcción y comparación de escenarios de reforma fiscal para República Dominicana. Corre localmente; no requiere servidor Shiny.
 
 ---
 
