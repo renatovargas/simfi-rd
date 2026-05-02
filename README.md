@@ -54,12 +54,6 @@ Se pueden definir y comparar **hasta tres escenarios** en una misma sesión.
 
 ---
 
-## Estructura de archivos
-
-Ver [`files_inventory.md`](files_inventory.md) para el inventario completo y la estrategia de reorganización propuesta.
-
----
-
 ## Nota: Preparación del catálogo ITBIS (una vez)
 
 Si `data/itbis_base_catalog.csv` no existe en el repo:
