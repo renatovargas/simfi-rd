@@ -56,7 +56,7 @@ Se pueden definir y comparar **hasta tres escenarios** en una misma sesión.
 
 ## Nota: Preparación del catálogo ITBIS (una vez)
 
-Si `data/itbis_base_catalog.csv` no existe en el repo:
+Si `data/itbis_base_catalog.csv` no existe en el repositorio:
 
 ```bash
 cp data/pipeline/r_params/param_csv/itbis_base.csv data/itbis_base_catalog.csv
