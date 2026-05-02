@@ -1,5 +1,5 @@
-# República Dominicana — constructor de escenarios fiscales (Shiny local).
-# Requisito previo: instalar los paquetes listados en README.md.
+# República Dominicana: constructor de escenarios fiscales (Shiny local).
+# Instalar antes los paquetes indicados en README.md.
 
 suppressPackageStartupMessages({
   library(shiny)
@@ -14,9 +14,7 @@ suppressPackageStartupMessages({
   library(RColorBrewer)
 })
 
-# ---------------------------------------------------------------------------
-# Utility helpers
-# ---------------------------------------------------------------------------
+# Funciones auxiliares
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
@@ -53,7 +51,7 @@ fill_sub_ele_inputs_from_row <- function(session, r) {
                   value = as.character(r1$nom_subsidio %||% ""))
 }
 
-# Wizard step indicator (steps 1-6)
+# Indicador visual de pasos del asistente (1 a 6)
 wizard_header <- function(step) {
   lbls <- c("ITBIS", "Renta", "Subsidio", "Compensaci\u00f3n",
             "Revisar", "Simular")
@@ -87,7 +85,7 @@ wizard_header <- function(step) {
   )
 }
 
-# Bottom navigation row for wizard screens
+# Fila de navegación inferior del asistente
 nav_row <- function(prev_id = NULL, prev_label = "\u2190 Anterior",
                     next_id = NULL, next_label = "Siguiente \u2192",
                     next_class = "btn-primary") {
@@ -103,9 +101,7 @@ nav_row <- function(prev_id = NULL, prev_label = "\u2190 Anterior",
   )
 }
 
-# ---------------------------------------------------------------------------
-# Load engine files
-# ---------------------------------------------------------------------------
+# Carga de archivos del motor
 root <- getwd()
 source(file.path(root, "R", "00_autoload.R"))
 autoload_dom_r(root)
@@ -124,9 +120,7 @@ make_grupo_choices <- function(df) {
 
 grupo_choice_vals_full <- make_grupo_choices(itbis_grupo_full)
 
-# ---------------------------------------------------------------------------
-# CSS
-# ---------------------------------------------------------------------------
+# Estilos CSS
 dom_css <- HTML("
   .dom-par-card .card-header  { font-weight:600; }
   .isr-tbl { width:100%; border-collapse:collapse; font-size:13px; max-width:720px; }
@@ -152,13 +146,11 @@ dom_css <- HTML("
                    font-size:0.8rem; margin-bottom:4px; }
 ")
 
-# ---------------------------------------------------------------------------
-# UI
-# ---------------------------------------------------------------------------
+# Interfaz de usuario
 ui <- page_navbar(
   id     = "main_nav",
   title  = tags$span(style = "font-weight:600;",
-                     "Rep\u00fablica Dominicana \u2014 Microsimulaci\u00f3n fiscal"),
+                     "Rep\u00fablica Dominicana: Microsimulaci\u00f3n fiscal"),
   header = tags$head(tags$style(dom_css)),
   theme  = bs_theme(
     version      = 5,
@@ -168,7 +160,7 @@ ui <- page_navbar(
   ),
   fillable = FALSE,
 
-  # ── Pantalla 1: ITBIS ────────────────────────────────────────────────────
+  # Pantalla 1: ITBIS
   nav_panel(
     title = "1 \u00b7 ITBIS",
     icon  = icon("percent"),
@@ -231,7 +223,7 @@ ui <- page_navbar(
     )
   ),
 
-  # ── Pantalla 2: Renta ────────────────────────────────────────────────────
+  # Pantalla 2: Renta
   nav_panel(
     title = "2 \u00b7 Renta",
     icon  = icon("landmark"),
@@ -280,7 +272,7 @@ ui <- page_navbar(
     )
   ),
 
-  # ── Pantalla 3: Subsidio eléctrico ───────────────────────────────────────
+  # Pantalla 3: Subsidio eléctrico
   nav_panel(
     title = "3 \u00b7 Subsidio",
     icon  = icon("bolt"),
@@ -304,12 +296,12 @@ ui <- page_navbar(
             tags$thead(tags$tr(
               tags$th(style = "width:40px;", "#"),
               tags$th("Tope kWh"),
-              tags$th("Edesur \u2014 cargo fijo"),
-              tags$th("Edesur \u2014 RD$/kWh"),
-              tags$th("Edenorte \u2014 cargo fijo"),
-              tags$th("Edenorte \u2014 RD$/kWh"),
-              tags$th("Edeeste \u2014 cargo fijo"),
-              tags$th("Edeeste \u2014 RD$/kWh")
+              tags$th("Edesur: cargo fijo"),
+              tags$th("Edesur: RD$/kWh"),
+              tags$th("Edenorte: cargo fijo"),
+              tags$th("Edenorte: RD$/kWh"),
+              tags$th("Edeeste: cargo fijo"),
+              tags$th("Edeeste: RD$/kWh")
             )),
             tags$tbody(lapply(1:7, function(j) {
               tags$tr(
@@ -350,7 +342,7 @@ ui <- page_navbar(
     )
   ),
 
-  # ── Pantalla 4: Compensación ─────────────────────────────────────────────
+  # Pantalla 4: Compensación
   nav_panel(
     title = "4 \u00b7 Compensaci\u00f3n",
     icon  = icon("hand-holding-heart"),
@@ -386,14 +378,14 @@ ui <- page_navbar(
             column(4, selectInput("comp_decil_est",
                                   "Hasta qu\u00e9 decil entra el promedio (m\u00e9todo 1)",
                                   choices = c(
-                                    "\u2014" = "",
+                                    "Sin seleccionar" = "",
                                     stats::setNames(as.character(1:10),
                                                     paste("Decil", 1:10))
                                   ), selected = "4")),
             column(4, selectInput("comp_decil_com",
                                   "Tope decil de ingreso (grupo 2)",
                                   choices = c(
-                                    "\u2014" = "",
+                                    "Sin seleccionar" = "",
                                     stats::setNames(as.character(1:10),
                                                     paste("Decil", 1:10))
                                   ), selected = "2")),
@@ -407,7 +399,7 @@ ui <- page_navbar(
     )
   ),
 
-  # ── Pantalla 5: Revisar y guardar ────────────────────────────────────────
+  # Pantalla 5: Revisar y guardar
   nav_panel(
     title = "5 \u00b7 Revisar",
     icon  = icon("floppy-disk"),
@@ -418,18 +410,18 @@ ui <- page_navbar(
         card(
           card_header("Guardar escenario"),
           p(class = "text-muted small",
-            "Asigne un nombre y gu\u00e1rdelo en una de las tres ranuras. ",
+            "Asigne un nombre y gu\u00e1rdelo en uno de los tres espacios. ",
             "Se pueden comparar hasta tres escenarios en la pantalla de simulaci\u00f3n."),
           textInput("scen_nombre_rev",
                     "Nombre del escenario (confirmar)",
                     value = "", width = "100%"),
-          selectInput("slot_selector", "Guardar en ranura",
+          selectInput("slot_selector", "Guardar en espacio",
                       choices = stats::setNames(
-                        1:3, paste("Ranura", 1:3)
+                        1:3, paste("Espacio", 1:3)
                       ), selected = 1, width = "100%"),
           actionButton("btn_save_slot",
                        icon("floppy-disk"),
-                       label = " Guardar en ranura seleccionada",
+                       label = " Guardar en espacio seleccionado",
                        class = "btn-primary w-100"),
           hr(),
           downloadButton("dl_json", "Exportar configuraci\u00f3n (.json)",
@@ -438,7 +430,7 @@ ui <- page_navbar(
                     accept = c(".json","application/json"), width = "100%")
         ),
         card(
-          card_header("Ranuras activas"),
+          card_header("Espacios activos"),
           uiOutput("slots_display")
         )
       ),
@@ -447,7 +439,7 @@ ui <- page_navbar(
     )
   ),
 
-  # ── Pantalla 6: Simular y resultados ─────────────────────────────────────
+  # Pantalla 6: Simular y resultados
   nav_panel(
     title = "6 \u00b7 Simular",
     icon  = icon("chart-line"),
@@ -463,7 +455,7 @@ ui <- page_navbar(
                        label = " Ejecutar microsimulaci\u00f3n",
                        class = "btn-primary w-100"),
           p(class = "small text-muted mt-1 mb-2",
-            "Corre todos los escenarios guardados en las ranuras."),
+            "Corre todos los escenarios guardados en los espacios."),
           actionButton("run_test",
                        icon("flask"),
                        label = " Ejecutar prueba",
@@ -474,7 +466,7 @@ ui <- page_navbar(
           uiOutput("run_msg"),
           hr(),
           tags$div(class = "small text-muted mt-2",
-            tags$strong("Ranuras en cola:"),
+            tags$strong("Espacios en cola:"),
             uiOutput("run_slots_summary")
           )
         ),
@@ -643,24 +635,22 @@ ui <- page_navbar(
   )
 )
 
-# ---------------------------------------------------------------------------
-# Server
-# ---------------------------------------------------------------------------
+# Servidor
 server <- function(input, output, session) {
 
-  # --- Reactive values -------------------------------------------------------
+  # Valores reactivos
   tax_rv <- reactiveValues(
     rate_grupo    = list(),
     rate_subclase = list(),
     rate_variedad = list()
   )
 
-  # Up to 3 saved scenario slots: NULL or a list from collect_scenario_inputs()
+  # Hasta tres espacios: NULL o lista devuelta por collect_scenario_inputs()
   scenarios_rv <- reactiveValues(slot1 = NULL, slot2 = NULL, slot3 = NULL)
 
   paths <- reactive(get_dom_paths(root))
 
-  # Sync scenario name from screen 1 to screen 5 (two-way)
+  # Sincronización bidireccional del nombre entre pantalla 1 y 5
   observe({
     req(input$scen_nombre)
     updateTextInput(session, "scen_nombre_rev", value = input$scen_nombre)
@@ -669,7 +659,7 @@ server <- function(input, output, session) {
     updateTextInput(session, "scen_nombre", value = input$scen_nombre_rev)
   }, ignoreInit = TRUE)
 
-  # --- Wizard navigation -----------------------------------------------------
+  # Navegación del asistente
   go_to <- function(panel_title)
     updateNavbarPage(session, "main_nav", selected = panel_title)
 
@@ -684,12 +674,11 @@ server <- function(input, output, session) {
   observeEvent(input$nav_5_next,    go_to("6 \u00b7 Simular"))
   observeEvent(input$nav_6_prev,    go_to("5 \u00b7 Revisar"))
 
-  # (pick_sim_sub and pick_sim_com dropdowns removed; policies are now
-  #  always derived from the reference row (sim_sub = 1, sim_com = 1)
-  #  or fully defined by the user via the customise checkboxes.)
+  # Sin desplegables pick_sim_sub y pick_sim_com: políticas desde fila referencia
+  # (sim_sub = 1, sim_com = 1) o definidas por el usuario con las casillas de personalización.
 
-  # --- ITBIS exentos filter --------------------------------------------------
-  # Reactive catalog filtered by the "exentos" checkbox
+  # Filtro ITBIS por productos exentos
+  # Catálogo reactivo según la casilla de solo exentos
   itbis_catalog_display <- reactive({
     if (isTRUE(input$itbis_solo_exentos)) {
       itbis_catalog %>% filter(tolower(.data$grupo) == "exentos")
@@ -698,7 +687,7 @@ server <- function(input, output, session) {
     }
   })
 
-  # When exentos filter changes, rebuild grupo choices
+  # Al cambiar el filtro de exentos, reconstruir las opciones de grupo
   observe({
     cat <- itbis_catalog_display()
     gdf <- cat %>%
@@ -709,7 +698,7 @@ server <- function(input, output, session) {
     updateSelectInput(session, "itbis_grupo", choices = ch, selected = sel)
   })
 
-  # --- ITBIS cascading dropdowns ---------------------------------------------
+  # Selects ITBIS en cascada
   observe({
     req(input$itbis_grupo)
     cat <- itbis_catalog_display()
@@ -753,7 +742,7 @@ server <- function(input, output, session) {
                          server   = TRUE)
   })
 
-  # --- ITBIS rate actions ----------------------------------------------------
+  # Aplicar o limpiar tasas ITBIS
   observeEvent(input$btn_aplicar_tasa, {
     req(input$itbis_nivel_aplicar, input$itbis_grupo)
     lvl  <- input$itbis_nivel_aplicar
@@ -805,7 +794,7 @@ server <- function(input, output, session) {
     showNotification("Rama restablecida.", type = "message")
   })
 
-  # --- ITBIS preview table ---------------------------------------------------
+  # Tabla previa de cambios ITBIS
   tbl_itbis_preview <- reactive({
     d0 <- itbis_catalog
     n  <- nrow(d0)
@@ -813,7 +802,7 @@ server <- function(input, output, session) {
       tasa_efectiva_desde_listas(
         d0[i, , drop = FALSE],
         tax_rv$rate_variedad, tax_rv$rate_subclase, tax_rv$rate_grupo,
-        "actual"   # always "actual" — no blank mode
+        "actual"   # marco siempre actual, sin modo vacío
       )
     }, numeric(1))
     tasa_ley <- suppressWarnings(as.numeric(d0$tasa))
@@ -844,7 +833,7 @@ server <- function(input, output, session) {
               class = "compact stripe hover")
   })
 
-  # --- Electricity subsidy: fill table from reference row (sim_sub = 1) -----
+  # Subsidio eléctrico: rellenar desde fila plantilla (sim_sub = 1)
   observeEvent(input$custom_sub_ele, {
     if (!isTRUE(input$custom_sub_ele)) return(invisible(NULL))
     p <- paths()
@@ -852,7 +841,7 @@ server <- function(input, output, session) {
     fill_sub_ele_inputs_from_row(session, r)
   })
 
-  # --- Collect scenario inputs from current UI state -------------------------
+  # Armar lista de insumos del escenario desde el estado actual de la UI
   collect_scenario_inputs <- reactive({
     isr <- NULL
     if (isTRUE(input$custom_isr)) {
@@ -881,7 +870,7 @@ server <- function(input, output, session) {
       )
     }
 
-    # Compensation: enabled only when user explicitly checks "Con compensación"
+    # Compensación solo si el usuario marca Con compensación
     comp_sin <- !isTRUE(input$comp_con_comp)
     sim_com_val <- if (comp_sin) 0L else 1L
     comp_list <- if (comp_sin) {
@@ -962,7 +951,7 @@ server <- function(input, output, session) {
     )
   })
 
-  # --- Save to slot -----------------------------------------------------------
+  # Guardar en un espacio
   observeEvent(input$btn_save_slot, {
     slot_key <- paste0("slot", as.integer(input$slot_selector))
     sc       <- collect_scenario_inputs()
@@ -974,12 +963,12 @@ server <- function(input, output, session) {
     }
     scenarios_rv[[slot_key]] <- sc
 
-    # Determine a suggested name for the next scenario
+    # Nombre sugerido para el siguiente escenario
     filled_count <- sum(!vapply(1:3, function(i)
       is.null(scenarios_rv[[paste0("slot", i)]]), logical(1)))
     next_nm <- paste0("Escenario ", filled_count + 1L)
 
-    # --- Reset the form so the user can build the next scenario from scratch ---
+    # Reiniciar el formulario para armar otro escenario desde cero
     tax_rv$rate_grupo    <- list()
     tax_rv$rate_subclase <- list()
     tax_rv$rate_variedad <- list()
@@ -990,15 +979,15 @@ server <- function(input, output, session) {
     updateCheckboxInput(session, "comp_con_comp",   value = FALSE)
 
     showNotification(
-      paste0("Guardado en ranura ", input$slot_selector,
+      paste0("Guardado en espacio ", input$slot_selector,
              ". Formulario listo para un nuevo escenario."),
       type = "message"
     )
-    # Return to screen 1 so the user can build the next scenario
+    # Volver a la pantalla 1 para el siguiente escenario
     go_to("1 \u00b7 ITBIS")
   })
 
-  # --- Slots display (screen 5) ----------------------------------------------
+  # Tarjetas de espacios en pantalla Revisar
   output$slots_display <- renderUI({
     slots <- list(
       `1` = scenarios_rv$slot1,
@@ -1019,7 +1008,7 @@ server <- function(input, output, session) {
                 tags$span(
                   class = paste("badge slot-badge",
                                 if (filled) "bg-primary" else "bg-secondary"),
-                  paste("Ranura", i)
+                  paste("Espacio", i)
                 ),
                 tags$div(
                   class = "mt-1",
@@ -1061,7 +1050,7 @@ server <- function(input, output, session) {
                   paste0("btn_clear_slot_", i),
                   icon("trash"),
                   class = "btn-sm btn-outline-danger",
-                  title = "Limpiar ranura"
+                  title = "Limpiar espacio"
                 )
             )
           )
@@ -1070,33 +1059,33 @@ server <- function(input, output, session) {
     )
   })
 
-  # Clear slot buttons
+  # Botones Limpiar por espacio
   lapply(1:3, function(i) {
     observeEvent(input[[paste0("btn_clear_slot_", i)]], {
       scenarios_rv[[paste0("slot", i)]] <- NULL
-      showNotification(paste0("Ranura ", i, " limpiada."), type = "warning")
+      showNotification(paste0("Espacio ", i, " limpiado."), type = "warning")
     })
   })
 
-  # --- Slots summary for run screen -------------------------------------------
+  # Resumen de espacios en pantalla Simular
   output$run_slots_summary <- renderUI({
     cnt <- sum(!vapply(1:3, function(i) {
       is.null(scenarios_rv[[paste0("slot", i)]])
     }, logical(1)))
     if (cnt == 0) {
       return(tags$span(class = "text-warning",
-                       "Ninguna ranura guardada. Se ejecutar\u00e1 el escenario actual."))
+                       "Ningún espacio guardado. Se ejecutar\u00e1 el escenario actual."))
     }
     tagList(lapply(1:3, function(i) {
       sc <- scenarios_rv[[paste0("slot", i)]]
       if (is.null(sc)) return(NULL)
       tags$div(class = "scenario-chip",
-               tags$strong(paste0("Ranura ", i, ": ")),
+               tags$strong(paste0("Espacio ", i, ": ")),
                sc$label %||% paste0("Escenario ", i))
     }))
   })
 
-  # --- JSON helpers -----------------------------------------------------------
+  # Normalización de listas de tasas al importar JSON
   normalize_rate_list <- function(x) {
     if (is.null(x) || !is.list(x)) return(list())
     nm  <- names(x)
@@ -1122,7 +1111,7 @@ server <- function(input, output, session) {
     suppressWarnings(as.numeric(x))
   }
 
-  # --- Download JSON ----------------------------------------------------------
+  # Descarga de configuración JSON
   output$dl_json <- downloadHandler(
     filename = function()
       paste0("escenario_", format(Sys.Date(), "%Y%m%d"), ".json"),
@@ -1131,7 +1120,7 @@ server <- function(input, output, session) {
                  pretty = TRUE, auto_unbox = TRUE)
   )
 
-  # --- Upload JSON ------------------------------------------------------------
+  # Carga de configuración JSON
   observeEvent(input$up_json, {
     req(input$up_json)
     j <- jsonlite::read_json(input$up_json$datapath, simplifyVector = FALSE)
@@ -1172,7 +1161,7 @@ server <- function(input, output, session) {
         }
       }
     }
-    # sim_sub is now always 1 — no dropdown to update
+    # sim_sub fijo en 1, sin desplegable que actualizar
     if (!is.null(j$sub_ele)) {
       se <- j$sub_ele
       cu <- if (is.null(se$custom)) FALSE
@@ -1205,9 +1194,9 @@ server <- function(input, output, session) {
         }
       }
     }
-    # sim_com is now always 1 — no dropdown to update
+    # sim_com fijo en 1, sin desplegable que actualizar
     if (!is.null(j$comp)) {
-      # Handle both old JSON (enabled/sin_compensacion) and new (con_comp)
+      # Compatibilidad con JSON antiguo (enabled, sin_compensacion) y con con_comp
       enabled <- if (!is.null(j$comp$enabled)) {
         en <- j$comp$enabled
         if (is.list(en)) isTRUE(as.logical(en[[1]])) else isTRUE(as.logical(en))
@@ -1247,11 +1236,8 @@ server <- function(input, output, session) {
     showNotification("Configuraci\u00f3n cargada.", type = "message")
   }, ignoreInit = TRUE)
 
-  # ---------------------------------------------------------------------------
-  # Multi-scenario run
-  # ---------------------------------------------------------------------------
+  # Ejecutar uno o más escenarios en secuencia
   run_multi_dom <- function(slot_list, paths) {
-    # slot_list: list of scenario inputs (each from collect_scenario_inputs)
     filled <- Filter(Negate(is.null), slot_list)
     n <- length(filled)
     if (n == 0) {
@@ -1275,7 +1261,7 @@ server <- function(input, output, session) {
         if (!is.null(res$.error)) return(res)
         if (i == 1L) insumos1 <- res$insumos_live
         esc_key <- paste0("escenario_", i)
-        # Grab the scenario-i entry (key may be escenario_1 if pipeline forced idx 1)
+        # Elegir clave del resultado para este índice (la tubería puede forzar escenario_1)
         res_keys <- names(res$resultados_escenarios)
         non_zero <- res_keys[res_keys != "escenario_0"]
         taken    <- if (length(non_zero) == 1L) non_zero[1] else esc_key
@@ -1296,7 +1282,7 @@ server <- function(input, output, session) {
 
   observeEvent(input$run, {
     slots <- list(scenarios_rv$slot1, scenarios_rv$slot2, scenarios_rv$slot3)
-    # If no slots saved, fall back to running the current UI state
+    # Si no hay espacios guardados, usar el estado actual de la interfaz
     if (all(vapply(slots, is.null, logical(1)))) {
       slots <- list(collect_scenario_inputs())
     }
@@ -1322,7 +1308,7 @@ server <- function(input, output, session) {
              paste0(" Simulaci\u00f3n lista: ", n, " escenario(s)."))
   })
 
-  # --- Downstream reactives --------------------------------------------------
+  # Reactivos derivados de la simulación
   dom_list_ready <- reactive({
     r <- sim_res()
     !is.null(r) && is.null(r$.error) && is.list(r$resultados_escenarios) &&
@@ -1416,7 +1402,7 @@ server <- function(input, output, session) {
                       choices = ch, selected = names(dl)[1])
   }, ignoreNULL = TRUE)
 
-  # --- DT helpers ------------------------------------------------------------
+  # Utilidades para tablas DT del tablero
   dash_fmt_mat_dt <- function(m, round_digits = 2) {
     tg <- as.data.frame(m, optional = TRUE) %>%
       tibble::rownames_to_column("Indicador")
@@ -1472,7 +1458,7 @@ server <- function(input, output, session) {
     dash_fmt_mat_dt(fm, 3)
   })
 
-  # --- Plotly summaries -------------------------------------------------------
+  # Gráficos Plotly de resumen
   output$dash_plot_npov_bar <- renderPlotly({
     shiny::validate(shiny::need(dom_list_ready(), need_run))
     plotly_npov_horizontal(summ()$npov, column_tooltips = summ_col_tooltips())
@@ -1539,7 +1525,7 @@ server <- function(input, output, session) {
                              scenario_tooltips = inc_col_tooltips())
   })
 
-  # --- Incidencia plots -------------------------------------------------------
+  # Gráficos Plotly de incidencia
   mk_dash_inc <- function(key, title) {
     renderPlotly({
       shiny::validate(shiny::need(dom_list_ready(), need_run))
@@ -1594,13 +1580,13 @@ server <- function(input, output, session) {
       )
     })
   }
-  output$dash_inst_net_dec  <- mk_inst_plot("efecto_neto", "Efecto neto \u2014 deciles")
-  output$dash_inst_isr_dec  <- mk_inst_plot("isr",         "ISR \u2014 deciles")
-  output$dash_inst_itb_dec  <- mk_inst_plot("itbis",       "ITBIS \u2014 deciles")
-  output$dash_inst_sub_dec  <- mk_inst_plot("subsidios",   "Subsidio el\u00e9ctrico \u2014 deciles")
-  output$dash_inst_comp_dec <- mk_inst_plot("compensacion","Compensaci\u00f3n \u2014 deciles")
+  output$dash_inst_net_dec  <- mk_inst_plot("efecto_neto", "Efecto neto: deciles")
+  output$dash_inst_isr_dec  <- mk_inst_plot("isr",         "ISR: deciles")
+  output$dash_inst_itb_dec  <- mk_inst_plot("itbis",       "ITBIS: deciles")
+  output$dash_inst_sub_dec  <- mk_inst_plot("subsidios",   "Subsidio el\u00e9ctrico: deciles")
+  output$dash_inst_comp_dec <- mk_inst_plot("compensacion","Compensaci\u00f3n: deciles")
 
-  # --- Glossary tables --------------------------------------------------------
+  # Tablas del glosario
   read_glosario_csv <- function(nm) {
     p <- file.path(root, "data", nm)
     if (!file.exists(p)) return(data.frame())
@@ -1616,7 +1602,7 @@ server <- function(input, output, session) {
     dl  <- sim_res()$resultados_escenarios
     lbs <- sim_res()$scenario_labels %||% list()
     tab <- tibble::tibble(
-      Ranura    = seq_along(dl),
+      Espacio    = seq_along(dl),
       Etiqueta  = vapply(names(dl),
                          function(k) lbs[[k]] %||% k, character(1)),
       Detalle   = "Escenario definido en el constructor."

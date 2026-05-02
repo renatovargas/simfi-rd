@@ -1,6 +1,6 @@
-# dom_tax
+# Simulador de escenarios fiscales (simfi-rd)
 
-Panel Shiny para construcción y comparación de escenarios de reforma fiscal — República Dominicana (Ministerio de Hacienda). Corre localmente; no requiere servidor Shiny.
+Panel Shiny para construcción y comparación de escenarios de reforma fiscal — República Dominicana. Corre localmente; no requiere servidor Shiny.
 
 ---
 
@@ -60,7 +60,7 @@ Ver [`files_inventory.md`](files_inventory.md) para el inventario completo y la 
 
 ---
 
-## Preparación del catálogo ITBIS (una vez)
+## Nota: Preparación del catálogo ITBIS (una vez)
 
 Si `data/itbis_base_catalog.csv` no existe en el repo:
 
@@ -69,4 +69,3 @@ cp data/pipeline/r_params/param_csv/itbis_base.csv data/itbis_base_catalog.csv
 Rscript scripts/build_itbis_base_catalog.R
 ```
 
-Después commitear el archivo generado.
