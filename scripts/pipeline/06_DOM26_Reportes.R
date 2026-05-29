@@ -2,7 +2,7 @@
 ## Banco Mundial — Herramienta de Microsimulación
 ## Country: República Dominicana 2026
 ## Authors: Maynor Cabrera, Renato Vargas
-## 06_DOM26_Reportes.R  |  v4.0 (optimizado para velocidad)
+## 06_DOM26_Reportes.R  |  v5.0 (incluye archivo de dashboard)
 ## =============================================================================
 ##
 ## CAMBIOS DE RENDIMIENTO respecto a v3.0:
@@ -38,21 +38,12 @@ ANCHO_GRAFICO  <- 6     # pulgadas
 ALTO_GRAFICO   <- 4     # pulgadas
 USAR_PARALELO  <- TRUE  # FALSE para desactivar paralelismo
 
-## Shapefile: por defecto data/geodata/ (ver get_dom_paths()$fgeodata).
-if (!exists("fgeodata", inherits = FALSE)) {
-  fgeodata <- finput
-}
-.shp_macro <- paste0(fgeodata, "macro_regiones_rd.shp")
-if (!file.exists(.shp_macro)) {
-  .shp_macro <- paste0(finput, "macro_regiones_rd.shp")
-}
-
 CFG <- list(
 
   ## 0.1 Rutas -----------------------------------------------------------------
   rds_sims      = paste0(fdbmod, "DOM_resultados.rds"),
   rds_resumen   = paste0(fdbmod, "DOM_resumen.rds"),
-  shp_deptos    = .shp_macro,
+  shp_deptos    = paste0(finput, "macro_regiones_rd.shp"),
   sheet_simcomp = "sim_comp",
 
   ## 0.2 Disclaimer ------------------------------------------------------------
@@ -64,23 +55,23 @@ CFG <- list(
 
   ## 0.3 Columnas de resultados ------------------------------------------------
   columnas = list(
-    inc    = list(col = "^nitx",     mult = -1, sufijo = "inc",
+    inc    = list(col = "^nitx",    mult = -1, sufijo = "inc", add_i = FALSE,
                   label = "Incidencia neta"),
-    isr    = list(col = "^ddtx_isr", mult =  1, sufijo = "inc",
+    isr    = list(col = "^dtx_isr", mult =  1, sufijo = "inc", add_i = TRUE,
                   label = "Cambio en incidencia del ISR"),
-    itbis  = list(col = "^ditx_itb", mult =  1, sufijo = "inc",
+    itbis  = list(col = "^itx_itb", mult =  1, sufijo = "inc", add_i = TRUE,
                   label = "Cambio en incidencia del ITBIS"),
-    sub    = list(col = "^dsub_ele", mult =  1, sufijo = "inc",
+    sub    = list(col = "^sub_ele", mult =  1, sufijo = "inc", add_i = TRUE,
                   label = "Cambio en incidencia del subsidio"),
-    com    = list(col = "^comp_",    mult =  1, sufijo = "inc",
+    com    = list(col = "^comp_",   mult =  1, sufijo = "inc", add_i = TRUE,
                   label = "Compensación"),
-    cisr   = list(col = "^ddtx_isr", mult =  1, sufijo = "con",
+    cisr   = list(col = "^dtx_isr", mult =  1, sufijo = "con", add_i = TRUE,
                   label = "Concentración ISR"),
-    citbis = list(col = "^ditx_itb", mult =  1, sufijo = "con",
+    citbis = list(col = "^itx_itb", mult =  1, sufijo = "con", add_i = TRUE,
                   label = "Concentración ITBIS"),
-    csub   = list(col = "^dsub_ele", mult =  1, sufijo = "con",
+    csub   = list(col = "^sub_ele", mult =  1, sufijo = "con", add_i = TRUE,
                   label = "Concentración subsidio"),
-    ccom   = list(col = "^comp_",    mult =  1, sufijo = "con",
+    ccom   = list(col = "^comp_",   mult =  1, sufijo = "con", add_i = TRUE,
                   label = "Concentración compensación")
   ),
 
@@ -161,13 +152,13 @@ CFG <- list(
     list(n = "Decil",
          d = "Agrupación de la población en diez grupos ordenados según el ingreso per cápita del hogar"),
     list(n = "Estrato de ingreso",
-         d = "Estratos del Banco Mundial: pobres (<6.85 USD PPA/día), vulnerables (6.85-14), clase media (14-81), alta (residuo)"),
+         d = "Estratos del Banco Mundial: \npobres (<8.30 USD PPA/día), \nvulnerables (8.3-17), \nclase media (17-98), \nalta (residuo)"),
     list(n = "Área de residencia",
          d = "Rural o urbana según la definición de la ENCFT"),
     list(n = "Tipo hogar",
-         d = "Sin niños ni adultos mayores / con niños / con adultos mayores / con niños y adultos mayores"),
+         d = "Sin niños ni adultos mayores \ncon niños \ncon adultos mayores \ncon niños y adultos mayores"),
     list(n = "Macro región",
-         d = "Cuatro macro regiones geográficas: Ozama, Norte, Sur y Este")
+         d = "Cuatro macro regiones geográficas: \nOzama, \nNorte, \nSur y \nEste")
   )
 )
 
@@ -241,7 +232,9 @@ dom_sims              <- readRDS(CFG$rds_sims)
 resultados_escenarios <- readRDS(CFG$rds_resumen)
 
 sim_com_esc <- unique(escenarios$sim_com)
-sim_com     <- read_param_csv("sim_comp", fparam_csv) %>%
+sim_com     <- read_excel(fparams, col_names = TRUE,
+  sheet = CFG$sheet_simcomp) %>%
+    janitor::clean_names() %>%
     select(sim_comp, activo, ends_with("com"), decil_est) %>%
     filter(activo == 1, sim_comp %in% sim_com_esc)
 
@@ -249,8 +242,13 @@ variable_values <- escenarios$escenario
 
 ## Nombres de escenarios (pre-computados, se usan en múltiples lugares)
 nombres_esc_cortos <- str_replace_all(escenarios$des_corto, "Reforma ", "")
-nombres_esc_cols   <- c("Pre-reforma", nombres_esc_cortos[
-  escenarios$escenario %in% variable_values])
+#  Creamos el vector con los nombres de los escenarios
+nombres_esc_cols <- c("Pre-reforma", nombres_esc_cortos[escenarios$escenario %in% variable_values])
+
+# Validamos si existen duplicados y abortamos si es necesario
+if (anyDuplicated(nombres_esc_cols) > 0) {
+  stop("Los nombres cortos de escenarios están duplicados, revisar hoja parámetros")
+}
 
 ## =============================================================================
 # 2. FUNCIONES------------------------------------------------------------------
@@ -375,6 +373,7 @@ insertar_graficos <- function(wb, hoja, graficos, posiciones) {
 ## ── 2.3 Gráficos de resumen -------------------------------------------------
 
 grafico_barras_fila <- function(data, dec, tit1, tit2, fila) {
+  print(tit1)
   cols <- nombres_esc_cols
   df <- as.data.frame(data)[fila, , drop = FALSE] %>%
     setNames(cols) %>%
@@ -436,30 +435,30 @@ grafico_barras_base <- function(data, dec, tit1, tit2) {
 
 ## ── 2.4 Gráficos comparativos por grupo -------------------------------------
 
+
 grafico_grupo <- function(matriz, titulo_vec, quitar_primero, rotulo_x,
-                          titulo_g) {
+                          titulo_g, incluir_base = FALSE) {
   idx_excluir <- if (quitar_primero) c(1L, length(titulo_vec)) else
     length(titulo_vec)
   etiquetas   <- titulo_vec[-idx_excluir]
+  
   nombres_esc <- str_replace_all(escenarios$des_corto, "Reforma ", "")
-
+  if (incluir_base) nombres_esc <- c("Base", nombres_esc)
+  
   df <- do.call(rbind, lapply(seq_along(etiquetas), function(k) {
     data.frame(cat = etiquetas[k], Escenario = nombres_esc,
                Valor = as.numeric(as.data.frame(matriz)[k, ]),
                stringsAsFactors = FALSE)
   }))
+  
   df$cat       <- factor(df$cat,       levels = unique(df$cat))
   df$Escenario <- factor(df$Escenario, levels = nombres_esc)
-
-  rango <- range(df$Valor, na.rm = TRUE)
-  pad   <- diff(rango) * 0.2
-  ylim  <- rango + c(-pad, pad)
-
+  
   ggplot(df, aes(x = cat, y = Valor, fill = Escenario)) +
     geom_bar(stat = "identity", position = "dodge") +
     geom_hline(yintercept = 0, color = "black", linewidth = 0.4) +
     scale_x_discrete(labels = wrap_format(16)) +
-    scale_y_continuous(limits = ylim) +
+    scale_y_continuous(expand = expansion(mult = c(0.1, 0.1))) +
     labs(title = titulo_g, x = rotulo_x, fill = "") +
     theme_minimal() +
     theme(
@@ -475,37 +474,69 @@ grafico_grupo <- function(matriz, titulo_vec, quitar_primero, rotulo_x,
     guides(fill = guide_legend(ncol = 2, byrow = TRUE, label.hjust = 0))
 }
 
-generar_graficos_todos <- function(resultado_lista, sufijo_mat, titulo_g) {
+generar_graficos_todos <- function(resultado_lista, sufijo_mat, titulo_g,
+                                   incluir_base = FALSE) {
   lapply(CFG$grupos, function(g) {
     grafico_grupo(
       resultado_lista[[paste0(g$prefijo, sufijo_mat)]],
       TITULOS_GRUPOS[[g$titulo_key]],
-      as.logical(g$rotar), g$rotulo, titulo_g
+      as.logical(g$rotar), g$rotulo, titulo_g,
+      incluir_base = incluir_base
     )
   })
 }
 
 ## ── 2.5 Extracción de columnas para comparativos ----------------------------
 
-comp_matriz <- function(nombre_matriz, patron_col, mult) {
-  matrices <- lapply(variable_values, function(i) {
-    df      <- resultados_escenarios[[paste0("escenario_", i)]][[nombre_matriz]]
-    col_idx <- grep(patron_col, names(df), value = FALSE)
+# comp_matriz <- function(nombre_matriz, patron_col, mult) {
+#   matrices <- lapply(variable_values, function(i) {
+#     df      <- resultados_escenarios[[paste0("escenario_", i)]][[nombre_matriz]]
+#     col_idx <- grep(patron_col, names(df), value = FALSE)
+#     if (length(col_idx) == 0) {
+#       stop(sprintf("Patrón '%s' no encontrado en %s. Columnas: %s",
+#                    patron_col, nombre_matriz, paste(names(df),
+#                    collapse = ", ")))
+#     }
+#     mat <- as.matrix(df[, col_idx, drop = FALSE])
+#     as.matrix(mat[-nrow(mat), , drop = FALSE]) * mult
+#   })
+#   do.call(cbind, matrices)
+# }
+
+comp_matriz <- function(nombre_matriz, patron_col, mult, add_i = TRUE) {
+  
+  extraer <- function(i, incluir_base = FALSE) {
+    df <- resultados_escenarios[[paste0("escenario_", i)]][[nombre_matriz]]
+    
+    if (!add_i) {
+      patron_i <- patron_col
+    } else if (incluir_base) {
+      patron_i <- paste0(patron_col, "[0", i, "]")
+    } else {
+      patron_i <- paste0(patron_col, i)
+    }
+    
+    col_idx <- grep(patron_i, names(df), value = FALSE)
     if (length(col_idx) == 0) {
       stop(sprintf("Patrón '%s' no encontrado en %s. Columnas: %s",
-                   patron_col, nombre_matriz, paste(names(df),
-                   collapse = ", ")))
+                   patron_i, nombre_matriz, paste(names(df), collapse = ", ")))
     }
     mat <- as.matrix(df[, col_idx, drop = FALSE])
     as.matrix(mat[-nrow(mat), , drop = FALSE]) * mult
-  })
-  do.call(cbind, matrices)
+  }
+  
+  # Primera iteración incluye la columna base (0), el resto solo su columna
+  do.call(cbind, c(
+    list(extraer(variable_values[1], incluir_base = TRUE)),
+    lapply(variable_values[-1], extraer)
+  ))
 }
 
 procesar_resultado <- function(cfg_col) {
   sufijos <- paste0(sapply(CFG$grupos, `[[`, "prefijo"), cfg_col$sufijo)
   setNames(
-    lapply(sufijos, comp_matriz, patron_col = cfg_col$col, mult = cfg_col$mult),
+    lapply(sufijos, comp_matriz, patron_col = cfg_col$col,
+           mult = cfg_col$mult, add_i = cfg_col$add_i),
     sufijos
   )
 }
@@ -520,12 +551,22 @@ generate_params <- function(resultado_lista, col_1, col_2, row_start,
     tvec <- TITULOS_GRUPOS[[g$titulo_key]]
     etiquetas <- if (prefijo == "dec") tvec[-c(1, length(tvec))] else
       tvec[-length(tvec)]
+    
+    # Verificar si la matriz tiene columna base
+    mat     <- resultado_lista[[paste0(prefijo, sufijo_mat)]]
+    # DESPUÉS
+    descri_i <- if (ncol(mat) == ncol(descri) + 1) {
+      cbind("Base", descri)
+    } else {
+      descri
+    }
+    
     list(
       list(data = as.matrix(etiquetas),
            row  = row_start + off + 1, col = col_1),
-      list(data = resultado_lista[[paste0(prefijo, sufijo_mat)]],
+      list(data = mat,
            row  = row_start + off + 1, col = col_2),
-      list(data = descri,
+      list(data = descri_i,
            row  = row_start + off,     col = col_2)
     )
   })
@@ -965,15 +1006,20 @@ t_graf <- Sys.time()
 
 graficos_comp <- list(
   inc   = generar_graficos_todos(resultados_comp$inc,   "inc",
-                                 "Incidencia neta en hogares"),
+                                 "Incidencia neta en hogares",
+                                 incluir_base = FALSE),
   isr   = generar_graficos_todos(resultados_comp$isr,   "inc",
-                                 "Cambio en incidencia ISR"),
+                                 "Cambio en incidencia ISR",
+                                 incluir_base = TRUE),
   itbis = generar_graficos_todos(resultados_comp$itbis, "inc",
-                                 "Cambio en incidencia ITBIS"),
+                                 "Cambio en incidencia ITBIS",
+                                 incluir_base = TRUE),
   sub   = generar_graficos_todos(resultados_comp$sub,   "inc",
-                                 "Cambio en incidencia subsidio"),
+                                 "Cambio en incidencia subsidio",
+                                 incluir_base = TRUE),
   com   = generar_graficos_todos(resultados_comp$com,   "inc",
-                                 "Incidencia compensación")
+                                 "Incidencia compensación",
+                                 incluir_base = FALSE)
 )
 
 graficos_mapas <- lapply(seq_along(cols_nitx), function(idx) {
@@ -1038,7 +1084,7 @@ escribir_hoja_comp <- function(nombre_hoja) {
   escribir_en_hoja(wb, nombre_hoja, params_h, tipo = "data")
   
   cols_all <- unlist(lapply(CFG$col_excel, function(ce) {
-    ce$c1:(ce$c1 + length(variable_values))
+    ce$c1:(ce$c1 + length(variable_values)+1)
   }))
   addStyle(wb, nombre_hoja, estilos$encabezado,
            rows = categorias_comp$startRow + 2,
@@ -1074,6 +1120,31 @@ escribir_hoja_comp <- function(nombre_hoja) {
 
 escribir_hoja_comp("comparativos")
 
+insumos <- list(
+  resumen = list(
+    "pobreza"         = povr,
+    "nuevos_pobres"   = npov,
+    "brecha_pobreza"  = povb,
+    "desigualdad"     = desr,
+    "progresividad"   = kakr
+  ),
+  incidencia = list(
+    "efecto_neto"    = resultados_comp$inc,
+    "isr"            = resultados_comp$isr,
+    "itbis"          = resultados_comp$itbis,
+    "subsidios"      = resultados_comp$sub,
+    "compensacion"   = resultados_comp$com
+  ),
+  concentracion = list(
+    "efecto_neto"    = resultados_comp$cinc,
+    "isr"            = resultados_comp$cisr,
+    "itbis"          = resultados_comp$citbis,
+    "subsidios"      = resultados_comp$csub,
+    "compensacion"   = resultados_comp$ccom
+  )
+)
+
+
 ## =============================================================================
 # 7. HOJA ANEXO ----------------------------------------------------------------
 ## =============================================================================
@@ -1094,13 +1165,25 @@ ind_df <- as.matrix(cbind(
   sapply(CFG$indicadores, `[[`, "n"),
   sapply(CFG$indicadores, `[[`, "d")
 ))
+
+ind_df <- as_tibble(ind_df, .name_repair = "unique")
+
+#ind_df <- as_tibble(ind_df)
+colnames(ind_df) <- c("Indicador","Descripción")
+estilo_desc2 <- createStyle(fontSize = 9, fontColour = "black",
+                            halign = "justify", fontName = "Aptos Narrow",
+                            wrapText =  TRUE)
+
+j_ind <- 4 + length(variable_values)
+addStyle(wb, hoja, estilo_desc2,
+         rows = 5:j_ind, cols = 4, gridExpand = TRUE)
+
 j_ind <- 6 + length(variable_values)
 writeData(wb, hoja, "Descripción de indicadores", startCol = 2,
   startRow = j_ind)
 writeData(wb, hoja, ind_df, startCol = 3, startRow = j_ind + 2)
 
-estilo_desc2 <- createStyle(fontSize = 9, fontColour = "black",
-                            halign = "justify", fontName = "Aptos Narrow")
+setColWidths(wb, hoja, cols = 3:4, widths = c(50, 80))
 addStyle(wb, hoja, estilos$titulo,     rows = 2,      cols = 2)
 addStyle(wb, hoja, estilos$titulo,     rows = j_ind,  cols = 2)
 addStyle(wb, hoja, estilos$titulo2,    rows = 4,      cols = 2:4,
@@ -1109,6 +1192,8 @@ addStyle(wb, hoja, estilos$titulo2,    rows = j_ind + 2, cols = 3:4,
          gridExpand = TRUE)
 addStyle(wb, hoja, estilos$descriptor,
          rows = 5:(4 + length(variable_values)), cols = 2:3, gridExpand = TRUE)
+
+
 k_ind <- j_ind + 2 + nrow(ind_df)
 addStyle(wb, hoja, estilos$descriptor,
          rows = (j_ind + 3):k_ind, cols = 2:3, gridExpand = TRUE)
@@ -1120,6 +1205,7 @@ addStyle(wb, hoja, estilo_desc2,
 ## =============================================================================
 
 message("Guardando archivo Excel...")
+saveRDS(insumos, paste0(fdbmod, "DOM_insumos.rds"))
 
 fecha  <- format(Sys.time(), "%Y%m%d_%H%M")
 nombre <- paste0("Resultados_", fecha, ".xlsx")

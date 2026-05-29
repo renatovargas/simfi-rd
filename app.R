@@ -42,7 +42,7 @@ fill_sub_ele_inputs_from_row <- function(session, r) {
       updateNumericInput(session, paste0("sub_", pref, "_", j), value = val)
     }
   }
-  for (cx in c("costsur","costnorte","costeste")) {
+  for (cx in c("costsur","costnorte","costeste","otsur","otnorte","oteste")) {
     v <- suppressWarnings(as.numeric(r1[[cx]]))
     if (length(v) != 1L || is.na(v)) v <- NA_real_
     updateNumericInput(session, paste0("sub_", cx), value = v)
@@ -101,6 +101,106 @@ nav_row <- function(prev_id = NULL, prev_label = "\u2190 Anterior",
   )
 }
 
+# Subsidio eléctrico: tabla de límites de consumo por bloque (compartida entre
+# distribuidoras). Los IDs sub_block_1..7 alimentan el motor sin cambios.
+sub_limits_table <- function() {
+  tags$table(
+    class = "sub-ele-tbl", style = "max-width:360px;",
+    tags$thead(tags$tr(
+      tags$th(style = "width:70px;", "Bloque"),
+      tags$th("L\u00edmite de consumo (kWh/mes)")
+    )),
+    tags$tbody(lapply(1:7, function(j) {
+      tags$tr(
+        tags$td(j, style = "text-align:center;font-weight:600;"),
+        tags$td(numericInput(paste0("sub_block_", j), NULL,
+                             value = NA_real_, min = 0, step = 1))
+      )
+    }))
+  )
+}
+
+# Subsidio eléctrico: panel de una distribuidora (cargo fijo y RD$/kWh por bloque,
+# tarifa de los bloques iniciales y costo de referencia). `pref` ∈ sur/norte/este.
+sub_distribuidora_panel <- function(title, pref) {
+  nav_panel(
+    title = title,
+    tags$table(
+      class = "sub-ele-tbl", style = "max-width:420px;",
+      tags$thead(tags$tr(
+        tags$th(style = "width:70px;", "Bloque"),
+        tags$th("Cargo fijo (RD$)"),
+        tags$th("Tarifa (RD$/kWh)")
+      )),
+      tags$tbody(lapply(1:7, function(j) {
+        tags$tr(
+          tags$td(j, style = "text-align:center;font-weight:600;"),
+          tags$td(numericInput(paste0("sub_b", pref, "_", j), NULL,
+                               value = NA_real_, min = 0, step = 0.01)),
+          tags$td(numericInput(paste0("sub_t", pref, "_", j), NULL,
+                               value = NA_real_, min = 0, step = 0.01))
+        )
+      }))
+    ),
+    fluidRow(
+      class = "mt-2",
+      column(6, numericInput(paste0("sub_ot", pref),
+                             "Tarifa bloques iniciales (RD$/kWh)",
+                             value = NA_real_, min = 0, step = 0.01)),
+      column(6, numericInput(paste0("sub_cost", pref),
+                             "Costo de referencia (RD$/kWh)",
+                             value = NA_real_, min = 0, step = 0.0001))
+    )
+  )
+}
+
+# Tabla de solo lectura con las tarifas vigentes (escenario base) para comparar.
+build_sub_reference_ui <- function(ref) {
+  if (is.null(ref) || nrow(ref) < 1L) {
+    return(tags$p(class = "text-muted small", "Tarifas actuales no disponibles."))
+  }
+  r   <- as.list(ref[1, ])
+  fmt <- function(x) {
+    v <- suppressWarnings(as.numeric(x))
+    if (length(v) != 1L || is.na(v)) "\u2014"
+    else formatC(v, format = "f", digits = 2, big.mark = ",")
+  }
+  tagList(
+    tags$div(
+      style = "overflow-x:auto;",
+      tags$table(
+        class = "sub-ele-tbl",
+        tags$thead(tags$tr(
+          tags$th("Bloque"), tags$th("L\u00edmite kWh"),
+          tags$th("Edesur: cargo fijo"), tags$th("Edesur: RD$/kWh"),
+          tags$th("Edenorte: cargo fijo"), tags$th("Edenorte: RD$/kWh"),
+          tags$th("Edeeste: cargo fijo"), tags$th("Edeeste: RD$/kWh")
+        )),
+        tags$tbody(lapply(1:7, function(j) {
+          tags$tr(
+            tags$td(j, style = "text-align:center;font-weight:600;"),
+            tags$td(fmt(r[[paste0("block",  j)]])),
+            tags$td(fmt(r[[paste0("bsur",   j)]])),
+            tags$td(fmt(r[[paste0("tsur",   j)]])),
+            tags$td(fmt(r[[paste0("bnorte", j)]])),
+            tags$td(fmt(r[[paste0("tnorte", j)]])),
+            tags$td(fmt(r[[paste0("beste",  j)]])),
+            tags$td(fmt(r[[paste0("teste",  j)]]))
+          )
+        }))
+      )
+    ),
+    tags$p(class = "text-muted small mt-1 mb-0",
+      sprintf(paste0("Tarifa de bloques iniciales (RD$/kWh) \u2014 ",
+                     "Edesur: %s, Edenorte: %s, Edeeste: %s."),
+              fmt(r$otsur), fmt(r$otnorte), fmt(r$oteste))),
+    tags$p(class = "text-muted small mb-0",
+      sprintf(paste0("Costo de referencia (RD$/kWh) \u2014 ",
+                     "Edesur: %s, Edenorte: %s, Edeeste: %s."),
+              fmt(r$costsur), fmt(r$costnorte), fmt(r$costeste)))
+  )
+}
+
 # Carga de archivos del motor
 root <- getwd()
 source(file.path(root, "R", "00_autoload.R"))
@@ -119,6 +219,205 @@ make_grupo_choices <- function(df) {
 }
 
 grupo_choice_vals_full <- make_grupo_choices(itbis_grupo_full)
+
+# Tasas distintas presentes en el catálogo base (para el desplegable "Por tasa").
+itbis_rate_choices <- {
+  rr <- sort(unique(round(suppressWarnings(as.numeric(itbis_catalog$tasa)), 2)))
+  rr <- rr[is.finite(rr)]
+  stats::setNames(as.character(rr), paste0(rr, "%"))
+}
+
+# Clave por fila precalculada (para resolver rápido la selección de la UI).
+itbis_row_keys <- vapply(
+  seq_len(nrow(itbis_catalog)),
+  function(i) itbis_row_key(itbis_catalog[i, , drop = FALSE]),
+  character(1)
+)
+
+# Barra reutilizable "Guardar como / Cargar" para la biblioteca de un componente.
+# `prefix` ∈ {itbis, isr, sub, comp}. Genera ids lib_<prefix>_{name,save,pick,load}.
+component_lib_bar <- function(prefix, titulo = "Guardar esta configuraci\u00f3n") {
+  div(
+    class = "component-lib-bar border rounded p-2 mt-3 bg-light",
+    tags$div(class = "small fw-semibold text-muted mb-1",
+             icon("box-archive"), " ", titulo,
+             " \u2014 puede reutilizarla al componer escenarios"),
+    uiOutput(paste0("lib_", prefix, "_status")),
+    fluidRow(
+      column(4, textInput(paste0("lib_", prefix, "_name"),
+                          "Nombre", placeholder = "p. ej. Canasta b\u00e1sica exenta",
+                          width = "100%")),
+      column(2, div(class = "mt-4 pt-1",
+                    actionButton(paste0("lib_", prefix, "_save"), "Guardar",
+                                 class = "btn-outline-success w-100"))),
+      column(2, div(class = "mt-4 pt-1",
+                    actionButton(paste0("lib_", prefix, "_saveas"),
+                                 "Guardar como",
+                                 class = "btn-outline-success w-100"))),
+      column(2, selectInput(paste0("lib_", prefix, "_pick"), "Cargar guardado",
+                            choices = c("\u2014 elegir \u2014" = ""), width = "100%")),
+      column(2, div(class = "mt-4 pt-1",
+                    actionButton(paste0("lib_", prefix, "_load"), "Cargar",
+                                 class = "btn-outline-primary w-100")))
+    )
+  )
+}
+
+# Escala de renta base (sim_inc = 0) leída del CSV de parámetros. Es el escenario
+# "pre-reforma" que debe mostrarse por defecto en la pantalla de Renta (no la propuesta).
+isr_base_defaults <- local({
+  fallback <- list(
+    lim_inf  = c(0, 416220, 624329, 867123, 2400000, NA),
+    lim_sup  = c(416220, 624329, 867123, 2400000, NA, NA),
+    tasa_pct = c(0, 15, 20, 25, 27, NA)
+  )
+  out <- tryCatch({
+    sr  <- read_param_csv("sim_renta", file.path(root, "data", "params"))
+    row <- sr[sr$sim_inc == 0L, , drop = FALSE]
+    if (nrow(row) < 1L) stop("sim_renta: no hay fila base (sim_inc = 0).")
+    isr_brackets_from_sim_renta_row(row[1, , drop = FALSE], max_slots = 6L)
+  }, error = function(e) fallback)
+  out
+})
+
+# Tarifas de subsidio vigentes (fila base sim_sub = 0) para mostrar como referencia.
+sub_base_ref <- tryCatch({
+  read_sim_sub_template_row(file.path(root, "data", "params", ""), 0L)
+}, error = function(e) NULL)
+sub_reference_ui <- build_sub_reference_ui(sub_base_ref)
+
+# --- Helpers de previsualización para la pantalla Revisar ---
+
+# Productos cuya tasa efectiva difiere de la legal, dadas las listas de un escenario.
+itbis_changes_table <- function(rate_v = list(), rate_s = list(),
+                                rate_g = list()) {
+  if (length(rate_v) + length(rate_s) + length(rate_g) == 0L) return(NULL)
+  d0 <- itbis_catalog
+  n  <- nrow(d0)
+  eff <- vapply(seq_len(n), function(i) {
+    tasa_efectiva_desde_listas(d0[i, , drop = FALSE],
+                               rate_v, rate_s, rate_g, "actual")
+  }, numeric(1))
+  ley     <- suppressWarnings(as.numeric(d0$tasa))
+  changed <- !is.na(ley) & abs(eff - ley) > 1e-6
+  if (!any(changed)) return(NULL)
+  tibble::tibble(
+    Grupo    = d0$DES_GRUPO[changed],
+    Producto = paste0(d0$ID_VARIEDAD[changed], ": ", d0$DES_VARIEDAD[changed]),
+    `Tasa vieja (%)` = round(ley[changed], 2),
+    `Tasa nueva (%)` = round(eff[changed], 2)
+  )
+}
+
+# Tabla HTML compacta de solo lectura desde un data.frame.
+df_to_compact_table <- function(df) {
+  tags$table(
+    class = "sub-ele-tbl", style = "width:100%;",
+    tags$thead(tags$tr(lapply(names(df), tags$th))),
+    tags$tbody(lapply(seq_len(nrow(df)), function(r) {
+      tags$tr(lapply(seq_along(df), function(cc)
+        tags$td(as.character(df[[cc]][r]))))
+    }))
+  )
+}
+
+# Descripción legible de la política de compensación de un escenario guardado.
+comp_describe <- function(comp) {
+  if (is.null(comp) || isTRUE(comp$sin_compensacion) ||
+      !isTRUE(comp$enabled)) {
+    return("Ninguna")
+  }
+  gmap <- c("1" = "Beneficiarios Sup\u00e9rate",
+            "2" = "Decil de ingreso", "3" = "ICV")
+  mmap <- c("1" = "p\u00e9rdida neta promedio", "2" = "valor fijo mensual")
+  g <- gmap[[as.character(comp$grupo_com)]] %||% "?"
+  m <- mmap[[as.character(comp$metodo_com)]] %||% "?"
+  who <- g
+  if (identical(as.character(comp$grupo_com), "2") &&
+      length(comp$decil_com) && !is.na(comp$decil_com)) {
+    who <- paste0(g, " (hasta decil ", comp$decil_com, ")")
+  }
+  if (identical(as.character(comp$grupo_com), "3") &&
+      length(comp$icv_com) && !is.na(comp$icv_com)) {
+    who <- paste0(g, " (ICV \u2264 ", comp$icv_com, ")")
+  }
+  how <- m
+  if (identical(as.character(comp$metodo_com), "1") &&
+      length(comp$decil_est) && !is.na(comp$decil_est)) {
+    how <- paste0(m, " (promedio hasta decil ", comp$decil_est, ")")
+  }
+  if (identical(as.character(comp$metodo_com), "2")) {
+    how <- paste0(m, " (RD$ ", comp$valor_com %||% 0, "/mes)")
+  }
+  paste0(who, " \u2014 ", how)
+}
+
+# Bloque de detalle (previsualización) para un escenario guardado.
+slot_detail_ui <- function(sc) {
+  ch <- itbis_changes_table(
+    sc$itbis$rate_variedad %||% list(),
+    sc$itbis$rate_subclase %||% list(),
+    sc$itbis$rate_grupo    %||% list()
+  )
+  itbis_block <- if (is.null(ch)) {
+    tags$p(class = "small text-muted mb-2",
+           tags$strong("ITBIS:"), " sin cambios respecto a la referencia.")
+  } else {
+    tagList(
+      tags$p(class = "small fw-semibold mb-1",
+             sprintf("ITBIS: %d producto(s) modificado(s)", nrow(ch))),
+      tags$div(style = "max-height:180px;overflow:auto;",
+               df_to_compact_table(ch))
+    )
+  }
+
+  isr_block <- if (isTRUE(sc$custom_isr) && !is.null(sc$isr)) {
+    li <- sc$isr$lim_inf; ls <- sc$isr$lim_sup; tp <- sc$isr$tasa_pct
+    keep <- which(vapply(seq_along(li), function(i)
+      isTRUE(is.finite(suppressWarnings(as.numeric(li[[i]])))), logical(1)))
+    fmt <- function(x) {
+      v <- suppressWarnings(as.numeric(x))
+      if (length(v) != 1L || is.na(v)) "sin tope"
+      else formatC(v, format = "f", digits = 0, big.mark = ",")
+    }
+    tbl <- tibble::tibble(
+      `Lim. inferior` = vapply(keep, function(i) fmt(li[[i]]), character(1)),
+      `Lim. superior` = vapply(keep, function(i) fmt(ls[[i]]), character(1)),
+      `Tasa (%)`      = vapply(keep, function(i) {
+        v <- suppressWarnings(as.numeric(tp[[i]]))
+        if (length(v) != 1L || is.na(v)) "\u2014" else as.character(round(v, 2))
+      }, character(1))
+    )
+    tagList(
+      tags$p(class = "small fw-semibold mb-1",
+             "Renta: escala personalizada ",
+             tags$span(class = "text-muted",
+                       paste0("(", sc$isr$nom_renta %||% "", ")"))),
+      df_to_compact_table(tbl)
+    )
+  } else {
+    tags$p(class = "small text-muted mb-2",
+           tags$strong("Renta:"), " escala vigente (sin cambios).")
+  }
+
+  sub_block <- if (isTRUE(sc$sub_ele$custom)) {
+    tags$p(class = "small mb-2",
+           tags$strong("Subsidio el\u00e9ctrico:"), " personalizado",
+           if (nzchar(sc$sub_ele$nom_subsidio %||% ""))
+             tags$span(class = "text-muted",
+                       paste0(" (", sc$sub_ele$nom_subsidio, ")")))
+  } else {
+    tags$p(class = "small text-muted mb-2",
+           tags$strong("Subsidio el\u00e9ctrico:"), " vigente (sin cambios).")
+  }
+
+  comp_block <- tags$p(class = "small mb-0",
+                       tags$strong("Compensaci\u00f3n:"), " ",
+                       comp_describe(sc$comp))
+
+  tagList(itbis_block, tags$hr(class = "my-2"),
+          isr_block, sub_block, comp_block)
+}
 
 # Estilos CSS
 dom_css <- HTML("
@@ -166,58 +465,107 @@ ui <- page_navbar(
     icon  = icon("percent"),
     div(class = "container-fluid py-2",
       wizard_header(1L),
-      layout_columns(
-        col_widths = c(6, 6),
-        card(
-          card_header("Tasas por producto"),
-          textInput("scen_nombre", "Nombre del escenario",
-                    value = "Reforma ilustrativa", width = "100%"),
-          hr(),
-          checkboxInput(
-            "itbis_solo_exentos",
-            tags$span(
-              "Mostrar solo productos ",
-              tags$strong("exentos"),
-              " (campo \u2018grupo = exentos\u2019)"
-            ),
-            value = FALSE
-          ),
-          h6("Clasificaci\u00f3n"),
-          selectInput("itbis_grupo", "Grupo",
-                      choices  = grupo_choice_vals_full,
-                      selected = itbis_grupo_full$COD_GRUPO[1],
-                      width    = "100%"),
-          selectInput("itbis_subclase", "Subclase",
-                      choices = NULL, width = "100%"),
-          selectizeInput("itbis_variedad", "Variedad",
-                         choices = NULL, width = "100%"),
-          radioButtons(
-            "itbis_nivel_aplicar", "Aplicar tasa a",
-            choiceNames  = list("Todo el grupo",
-                                "La subclase",
-                                "Solo esta variedad"),
-            choiceValues = c("grupo", "subclase", "variedad"),
-            selected     = "subclase"
-          ),
-          numericInput("tasa_aplicar", "Tasa (%)",
-                       value = 18, min = 0, max = 100, step = 0.25,
-                       width = "100%"),
-          layout_columns(
-            col_widths = c(6, 6),
-            actionButton("btn_aplicar_tasa", "Aplicar tasa",
-                         class = "btn-outline-primary w-100"),
-            actionButton("btn_reset_rama", "Restablecer rama",
-                         class = "btn-outline-warning w-100")
-          ),
-          actionButton("btn_limpiar_itbis", "Limpiar todo el ITBIS",
-                       class = "btn-outline-danger w-100 mt-2")
+      card(
+        card_header(
+          tags$div(class = "d-flex justify-content-between align-items-center",
+            "Tasas por producto",
+            actionButton("btn_nuevo_escenario",
+                         tagList(icon("file"), " Empezar de cero"),
+                         class = "btn-sm btn-outline-secondary",
+                         title = "Restablece todas las pantallas a la situaci\u00f3n vigente")
+          )
         ),
-        card(
-          card_header("Vista previa de cambios"),
-          p(class = "small text-muted",
-            "Productos con tasa diferente a la de referencia."),
-          DTOutput("tbl_itbis_resumen", height = "420px")
-        )
+        component_lib_bar("itbis", "Guardar esta pol\u00edtica de ITBIS"),
+        navset_pill(
+          # Modo 1: navegar por la clasificación del producto
+          nav_panel(
+            "Por clasificaci\u00f3n",
+            p(class = "text-muted small mt-2",
+              "Elija un grupo, una subclase o una variedad y aplique la tasa."),
+            layout_columns(
+              col_widths = c(4, 4, 4),
+              selectInput("itbis_grupo", "Grupo",
+                          choices  = grupo_choice_vals_full,
+                          selected = itbis_grupo_full$COD_GRUPO[1],
+                          width    = "100%"),
+              selectInput("itbis_subclase", "Subclase",
+                          choices = NULL, width = "100%"),
+              selectizeInput("itbis_variedad", "Variedad",
+                             choices = NULL, width = "100%")
+            ),
+            uiOutput("itbis_sel_info"),
+            layout_columns(
+              col_widths = c(6, 3, 3),
+              radioButtons(
+                "itbis_nivel_aplicar", "Aplicar tasa a",
+                choiceNames  = list("Todo el grupo",
+                                    "La subclase",
+                                    "Solo esta variedad"),
+                choiceValues = c("grupo", "subclase", "variedad"),
+                selected     = "subclase", inline = TRUE
+              ),
+              numericInput("tasa_aplicar", "Nueva tasa (%)",
+                           value = NA, min = 0, max = 100, step = 0.25,
+                           width = "100%"),
+              div(class = "mt-4 pt-1",
+                  actionButton("btn_aplicar_tasa", "Aplicar tasa",
+                               class = "btn-outline-primary w-100"))
+            ),
+            div(class = "d-flex gap-2",
+              actionButton("btn_reset_sel", "Restablecer la selecci\u00f3n",
+                           class = "btn-outline-warning"),
+              actionButton("btn_reset_rama", "Restablecer grupo",
+                           class = "btn-outline-warning")
+            )
+          ),
+          # Modo 2: seleccionar productos por su tasa actual (cruza grupos)
+          nav_panel(
+            "Por tasa",
+            p(class = "text-muted small mt-2",
+              "Elija una de las tasas existentes (o escriba otra) para listar todos ",
+              "los productos que la tienen actualmente, selecci\u00f3nelos y aplique ",
+              "una nueva tasa."),
+            layout_columns(
+              col_widths = c(4, 4, 4),
+              selectizeInput("itbis_query_tasa",
+                           "Mostrar productos con tasa (%)",
+                           choices = itbis_rate_choices,
+                           selected = itbis_rate_choices[1],
+                           width = "100%",
+                           options = list(
+                             create = TRUE,
+                             createOnBlur = TRUE,
+                             persist = FALSE
+                           )),
+              numericInput("itbis_byrate_nueva", "Nueva tasa (%)",
+                           value = NA, min = 0, max = 100, step = 0.25,
+                           width = "100%"),
+              div(class = "mt-4 pt-1",
+                  actionButton("btn_byrate_aplicar",
+                               "Aplicar a seleccionados",
+                               class = "btn-outline-primary w-100"))
+            ),
+            div(class = "d-flex gap-2 mb-2",
+              actionButton("btn_byrate_all", "Seleccionar todos",
+                           class = "btn-outline-secondary btn-sm"),
+              actionButton("btn_byrate_none", "Quitar selecci\u00f3n",
+                           class = "btn-outline-secondary btn-sm")
+            ),
+            DTOutput("tbl_itbis_byrate", height = "260px")
+          )
+        ),
+        hr(),
+        actionButton("btn_limpiar_itbis",
+                     "Restablecer valores del escenario base",
+                     class = "btn-outline-danger"),
+        tags$p(class = "small text-muted mt-1 mb-0",
+               "Descarta todos los cambios y vuelve a las tasas vigentes.")
+      ),
+      card(
+        card_header("Vista previa de cambios"),
+        p(class = "small text-muted",
+          "Productos con tasa diferente a la de referencia."),
+        DTOutput("tbl_itbis_resumen", height = "360px")
       ),
       nav_row(next_id = "nav_1_next")
     )
@@ -234,35 +582,38 @@ ui <- page_navbar(
         checkboxInput("custom_isr",
                       "Personalizar escala y tramos (l\u00edmites y tasas)",
                       value = FALSE),
+        component_lib_bar("isr", "Guardar esta escala de renta"),
         conditionalPanel(
           condition = "input.custom_isr == true",
           p(class = "text-muted small",
+            "Los valores iniciales corresponden a la escala vigente (escenario base). ",
             "Por tramo indique l\u00edmite inferior, l\u00edmite superior y tasa (%). ",
             "El primer l\u00edmite inferior debe ser 0. ",
             "Deje el \u00faltimo superior vac\u00edo si el tramo no tiene tope."),
-          textInput("nom_renta", "Nombre de la escala",
-                    value = "Escala personalizada", width = "100%"),
+          p(class = "text-muted small fst-italic",
+            "Las tasas indicadas son ",
+            tags$strong("tasas marginales"),
+            ": se aplican solo a la porci\u00f3n del ingreso dentro de cada tramo."),
           tags$table(
             class = "isr-tbl",
             tags$thead(tags$tr(
               tags$th(style = "width:50px;", "#"),
               tags$th("L\u00edmite inferior (RD$)"),
               tags$th("L\u00edmite superior (RD$)"),
-              tags$th(style = "width:110px;", "Tasa (%)")
+              tags$th(style = "width:110px;", "Tasa marginal (%)")
             )),
             tags$tbody(lapply(1:6, function(i) {
-              def <- list(list(0, 301444, 0), list(301444, 416220, 4),
-                          list(416220, 624329, 15), list(624329, 867123, 20),
-                          list(867123, NA, 25), list(NA, NA, NA))[[i]]
               tags$tr(
                 tags$td(i, style = "text-align:center;font-weight:bold;"),
                 tags$td(numericInput(paste0("isr_li_", i), NULL,
-                                    value = def[[1]], min = 0, step = 1000)),
+                                    value = isr_base_defaults$lim_inf[i],
+                                    min = 0, step = 1000)),
                 tags$td(numericInput(paste0("isr_ls_", i), NULL,
-                                    value = def[[2]], min = 0, step = 1000)),
+                                    value = isr_base_defaults$lim_sup[i],
+                                    min = 0, step = 1000)),
                 tags$td(numericInput(paste0("isr_tp_", i), NULL,
-                                    value = def[[3]], min = 0, max = 100,
-                                    step = 0.5))
+                                    value = isr_base_defaults$tasa_pct[i],
+                                    min = 0, max = 100, step = 0.5))
               )
             }))
           )
@@ -281,61 +632,42 @@ ui <- page_navbar(
         card(
           card_header("Subsidio el\u00e9ctrico"),
           p(class = "text-muted small mb-2",
-            "La referencia es la pol\u00edtica vigente (sim\u00fatil 1). ",
-            "Active la personalizaci\u00f3n para ajustar bloques y tarifas."),
+            "Por defecto se usa el subsidio el\u00e9ctrico vigente. ",
+            "Active la personalizaci\u00f3n para ajustar los bloques de consumo ",
+            "y las tarifas de cada distribuidora."),
           checkboxInput("custom_sub_ele",
                       "Personalizar bloques y tarifas por distribuidora",
                       value = FALSE),
+          component_lib_bar("sub", "Guardar esta pol\u00edtica de subsidio"),
         conditionalPanel(
           condition = "input.custom_sub_ele == true",
           p(class = "text-muted small",
-            "Los valores iniciales corresponden a la pol\u00edtica seleccionada. ",
-            "Cambiar la pol\u00edtica actualiza la plantilla mientras esta opci\u00f3n est\u00e1 activa."),
-          tags$table(
-            class = "sub-ele-tbl",
-            tags$thead(tags$tr(
-              tags$th(style = "width:40px;", "#"),
-              tags$th("Tope kWh"),
-              tags$th("Edesur: cargo fijo"),
-              tags$th("Edesur: RD$/kWh"),
-              tags$th("Edenorte: cargo fijo"),
-              tags$th("Edenorte: RD$/kWh"),
-              tags$th("Edeeste: cargo fijo"),
-              tags$th("Edeeste: RD$/kWh")
-            )),
-            tags$tbody(lapply(1:7, function(j) {
-              tags$tr(
-                tags$td(j, style = "text-align:center;font-weight:600;"),
-                tags$td(numericInput(paste0("sub_block_",  j), NULL,
-                                    value = NA_real_, min = 0, step = 1)),
-                tags$td(numericInput(paste0("sub_bsur_",   j), NULL,
-                                    value = NA_real_, min = 0, step = 0.01)),
-                tags$td(numericInput(paste0("sub_tsur_",   j), NULL,
-                                    value = NA_real_, min = 0, step = 0.01)),
-                tags$td(numericInput(paste0("sub_bnorte_", j), NULL,
-                                    value = NA_real_, min = 0, step = 0.01)),
-                tags$td(numericInput(paste0("sub_tnorte_", j), NULL,
-                                    value = NA_real_, min = 0, step = 0.01)),
-                tags$td(numericInput(paste0("sub_beste_",  j), NULL,
-                                    value = NA_real_, min = 0, step = 0.01)),
-                tags$td(numericInput(paste0("sub_teste_",  j), NULL,
-                                    value = NA_real_, min = 0, step = 0.01))
-              )
-            }))
-          ),
-          textInput("sub_nom", "Nombre descriptivo de la pol\u00edtica",
-                    value = "", width = "100%"),
-          fluidRow(
-            column(4, numericInput("sub_costsur",
-                                   "Costo ref. Sur (RD$/kWh)",
-                                   value = NA_real_, min = 0, step = 0.0001)),
-            column(4, numericInput("sub_costnorte",
-                                   "Costo ref. Norte (RD$/kWh)",
-                                   value = NA_real_, min = 0, step = 0.0001)),
-            column(4, numericInput("sub_costeste",
-                                   "Costo ref. Este (RD$/kWh)",
-                                   value = NA_real_, min = 0, step = 0.0001))
+            "Cada bloque de consumo cobra un ",
+            tags$strong("cargo fijo (RD$)"),
+            " m\u00e1s una ", tags$strong("tarifa por consumo (RD$/kWh)"),
+            ". Defina los l\u00edmites de cada bloque y, para cada distribuidora, ",
+            "el cargo fijo y la tarifa. Deje vac\u00edos los bloques que no use."),
+          h6("L\u00edmites de consumo por bloque"),
+          p(class = "text-muted small mb-1",
+            "Estos l\u00edmites son comunes a las tres distribuidoras."),
+          sub_limits_table(),
+          h6(class = "mt-3", "Tarifas por distribuidora"),
+          p(class = "text-muted small mb-2",
+            "Los bloques corresponden a los l\u00edmites definidos arriba. ",
+            "La tarifa de los bloques iniciales (consumo bajo) puede fijarse ",
+            "aparte como tarifa subsidiada."),
+          navset_pill(
+            sub_distribuidora_panel("Edesur",   "sur"),
+            sub_distribuidora_panel("Edenorte", "norte"),
+            sub_distribuidora_panel("Edeeste",  "este")
           )
+        ),
+        tags$details(
+          class = "mt-3",
+          tags$summary(
+            class = "text-primary", style = "cursor:pointer;",
+            "Ver tarifas actuales (referencia)"),
+          tags$div(class = "mt-2", sub_reference_ui)
         )
       ),
       nav_row(prev_id = "nav_3_prev", next_id = "nav_3_next")
@@ -355,43 +687,79 @@ ui <- page_navbar(
             "marque la casilla y defina los par\u00e1metros."),
           checkboxInput("comp_con_comp", "Con compensaci\u00f3n",
                         value = FALSE),
+          component_lib_bar("comp", "Guardar esta pol\u00edtica de compensaci\u00f3n"),
           conditionalPanel(
             condition = "input.comp_con_comp == true",
           hr(),
+          h6("\u00bfQui\u00e9n recibe la compensaci\u00f3n?"),
           fluidRow(
-            column(4, selectInput("comp_grupo", "Grupo beneficiario",
+            column(6, selectInput("comp_grupo", "Grupo beneficiario",
                                   choices = c(
                                     "Beneficiarios Sup\u00e9rate" = "1",
                                     "Decil de ingreso"            = "2",
-                                    "ICV"                          = "3"
-                                  ), selected = "1")),
-            column(4, selectInput("comp_metodo", "M\u00e9todo",
-                                  choices = c(
-                                    "P\u00e9rdida neta (promedio en ventana de deciles)" = "1",
-                                    "Valor fijo mensual \u00d7 12"                        = "2"
-                                  ), selected = "1")),
-            column(4, numericInput("comp_valor",
-                                   "Valor fijo (RD$/mes, m\u00e9todo 2)",
-                                   value = 0, min = 0, step = 10))
+                                    "\u00cdndice de Calidad de Vida (ICV)" = "3"
+                                  ), selected = "1"))
           ),
+          # Parámetro propio del grupo beneficiario (solo el relevante).
+          conditionalPanel(
+            condition = "input.comp_grupo == '2'",
+            fluidRow(column(6, selectInput("comp_decil_com",
+                                  "Tope de decil de ingreso",
+                                  choices = c(
+                                    "Sin seleccionar" = "",
+                                    stats::setNames(as.character(1:10),
+                                                    paste("Decil", 1:10))
+                                  ), selected = "2"))),
+            p(class = "text-muted small",
+              "Reciben la compensaci\u00f3n los hogares hasta el decil indicado.")
+          ),
+          conditionalPanel(
+            condition = "input.comp_grupo == '3'",
+            fluidRow(column(6, selectInput("comp_icv",
+                                  "Umbral ICV",
+                                  choices = c(
+                                    "Sin seleccionar" = "",
+                                    stats::setNames(as.character(1:4),
+                                                    paste("ICV", 1:4))
+                                  ), selected = ""))),
+            p(class = "text-muted small",
+              "Reciben la compensaci\u00f3n los hogares con ICV hasta el umbral.")
+          ),
+          conditionalPanel(
+            condition = "input.comp_grupo == '1'",
+            p(class = "text-muted small",
+              "Reciben la compensaci\u00f3n los beneficiarios actuales de Sup\u00e9rate.")
+          ),
+          hr(),
+          h6("\u00bfC\u00f3mo se calcula el monto?"),
           fluidRow(
-            column(4, selectInput("comp_decil_est",
-                                  "Hasta qu\u00e9 decil entra el promedio (m\u00e9todo 1)",
+            column(6, selectInput("comp_metodo", "M\u00e9todo",
+                                  choices = c(
+                                    "P\u00e9rdida neta promedio" = "1",
+                                    "Valor fijo mensual"        = "2"
+                                  ), selected = "1"))
+          ),
+          # Parámetro propio del método (solo el relevante).
+          conditionalPanel(
+            condition = "input.comp_metodo == '1'",
+            fluidRow(column(6, selectInput("comp_decil_est",
+                                  "Hasta qu\u00e9 decil entra en el promedio",
                                   choices = c(
                                     "Sin seleccionar" = "",
                                     stats::setNames(as.character(1:10),
                                                     paste("Decil", 1:10))
-                                  ), selected = "4")),
-            column(4, selectInput("comp_decil_com",
-                                  "Tope decil de ingreso (grupo 2)",
-                                  choices = c(
-                                    "Sin seleccionar" = "",
-                                    stats::setNames(as.character(1:10),
-                                                    paste("Decil", 1:10))
-                                  ), selected = "2")),
-            column(4, numericInput("comp_icv",
-                                   "Umbral ICV (grupo 3)",
-                                   value = NA, min = 0, step = 0.1))
+                                  ), selected = "4"))),
+            p(class = "text-muted small",
+              "El monto es la p\u00e9rdida neta promedio (por la reforma) de los hogares ",
+              "hasta el decil indicado.")
+          ),
+          conditionalPanel(
+            condition = "input.comp_metodo == '2'",
+            fluidRow(column(6, numericInput("comp_valor",
+                                   "Valor fijo mensual (RD$)",
+                                   value = 0, min = 0, step = 10))),
+            p(class = "text-muted small",
+              "Cada hogar beneficiario recibe este monto mensual (se anualiza \u00d7 12).")
           )
         )
       ),
@@ -405,34 +773,66 @@ ui <- page_navbar(
     icon  = icon("floppy-disk"),
     div(class = "container-fluid py-2",
       wizard_header(5L),
-      layout_columns(
-        col_widths = c(5, 7),
-        card(
-          card_header("Guardar escenario"),
-          p(class = "text-muted small",
-            "Asigne un nombre y gu\u00e1rdelo en uno de los tres espacios. ",
-            "Se pueden comparar hasta tres escenarios en la pantalla de simulaci\u00f3n."),
-          textInput("scen_nombre_rev",
-                    "Nombre del escenario (confirmar)",
-                    value = "", width = "100%"),
-          selectInput("slot_selector", "Guardar en espacio",
-                      choices = stats::setNames(
-                        1:3, paste("Espacio", 1:3)
-                      ), selected = 1, width = "100%"),
-          actionButton("btn_save_slot",
-                       icon("floppy-disk"),
-                       label = " Guardar en espacio seleccionado",
-                       class = "btn-primary w-100"),
-          hr(),
-          downloadButton("dl_json", "Exportar configuraci\u00f3n (.json)",
-                         class = "w-100 btn-outline-secondary mt-1"),
-          fileInput("up_json", "Importar configuraci\u00f3n (.json)",
-                    accept = c(".json","application/json"), width = "100%")
+      card(
+        card_header("Componer un escenario"),
+        p(class = "text-muted small mb-2",
+          "Un escenario combina una pol\u00edtica de cada pantalla. Elija las ",
+          "configuraciones que guard\u00f3 (o \u201cReferencia\u201d para dejar esa ",
+          "pantalla sin cambios) y agregue el escenario a la lista."),
+        fluidRow(
+          column(12, textInput("compose_name", "Nombre del escenario",
+                               placeholder = "p. ej. Reforma integral 2026",
+                               width = "100%"))
         ),
-        card(
-          card_header("Espacios activos"),
-          uiOutput("slots_display")
-        )
+        fluidRow(
+          column(3, selectInput("compose_itbis", "ITBIS",
+                                choices = c("Referencia (sin cambios)" = ""),
+                                width = "100%")),
+          column(3, selectInput("compose_isr", "Renta",
+                                choices = c("Referencia (sin cambios)" = ""),
+                                width = "100%")),
+          column(3, selectInput("compose_sub", "Subsidio",
+                                choices = c("Referencia (sin cambios)" = ""),
+                                width = "100%")),
+          column(3, selectInput("compose_comp", "Compensaci\u00f3n",
+                                choices = c("Referencia (sin cambios)" = ""),
+                                width = "100%"))
+        ),
+        actionButton("btn_compose_add",
+                     tagList(icon("plus"), " Agregar escenario a la lista"),
+                     class = "btn-primary")
+      ),
+      card(
+        card_header(
+          tags$div(class = "d-flex justify-content-between align-items-center",
+            "Escenarios guardados",
+            tags$span(class = "small text-muted", uiOutput("compare_count",
+                                                            inline = TRUE)))
+        ),
+        p(class = "text-muted small",
+          "Marque hasta tres para comparar en la simulaci\u00f3n. ",
+          "Despliegue \u201cVer detalle\u201d para revisar tasas y par\u00e1metros."),
+        uiOutput("scenarios_display")
+      ),
+      card(
+        card_header("Guardar / compartir"),
+        p(class = "text-muted small mb-2",
+          "El archivo Excel lleva una pesta\u00f1a por componente y una con la lista ",
+          "de escenarios; puede editarlo y volver a cargarlo. El trabajo tambi\u00e9n ",
+          "se guarda autom\u00e1ticamente en esta sesi\u00f3n."),
+        layout_columns(
+          col_widths = c(6, 6),
+          downloadButton("dl_xlsx", "Exportar escenario en formato Excel",
+                         class = "w-100 btn-outline-secondary"),
+          fileInput("up_xlsx", "Importar (.xlsx)",
+                    accept = c(".xlsx"), width = "100%")
+        ),
+        hr(class = "my-2"),
+        actionButton("btn_reset_all",
+                     tagList(icon("trash"), " Restablecer todo"),
+                     class = "btn-outline-danger"),
+        tags$span(class = "small text-muted ms-2",
+                  "Borra componentes, escenarios y los valores en pantalla.")
       ),
       nav_row(prev_id = "nav_5_prev", next_id = "nav_5_next",
               next_label = "Ir a Simular \u2192")
@@ -446,28 +846,35 @@ ui <- page_navbar(
     div(class = "container-fluid py-2",
       wizard_header(6L),
       layout_columns(
-        col_widths = c(3, 9),
+        col_widths = c(12, 12),
         gap = "1rem",
         card(
           card_header("Ejecuci\u00f3n"),
-          actionButton("run",
-                       icon("play"),
-                       label = " Ejecutar microsimulaci\u00f3n",
-                       class = "btn-primary w-100"),
-          p(class = "small text-muted mt-1 mb-2",
-            "Corre todos los escenarios guardados en los espacios."),
-          actionButton("run_test",
-                       icon("flask"),
-                       label = " Ejecutar prueba",
-                       class = "btn-outline-primary w-100 mt-1"),
-          p(class = "small text-muted mt-1 mb-0",
-            "Escenario de referencia del repositorio."),
-          hr(),
-          uiOutput("run_msg"),
-          hr(),
-          tags$div(class = "small text-muted mt-2",
-            tags$strong("Espacios en cola:"),
-            uiOutput("run_slots_summary")
+          layout_columns(
+            col_widths = c(3, 3, 6),
+            div(
+              actionButton("run",
+                           icon("play"),
+                           label = " Ejecutar microsimulaci\u00f3n",
+                           class = "btn-primary w-100"),
+              p(class = "small text-muted mt-1 mb-0",
+                "Corre los escenarios marcados para comparar.")
+            ),
+            div(
+              actionButton("run_test",
+                           icon("flask"),
+                           label = " Ejecutar prueba",
+                           class = "btn-outline-primary w-100"),
+              p(class = "small text-muted mt-1 mb-0",
+                "Escenario de referencia del repositorio.")
+            ),
+            div(
+              uiOutput("run_msg"),
+              tags$div(class = "small text-muted mt-1",
+                tags$strong("En cola: "),
+                uiOutput("run_slots_summary", inline = TRUE)
+              )
+            )
           )
         ),
         navset_card_pill(
@@ -645,19 +1052,386 @@ server <- function(input, output, session) {
     rate_variedad = list()
   )
 
-  # Hasta tres espacios: NULL o lista devuelta por collect_scenario_inputs()
-  scenarios_rv <- reactiveValues(slot1 = NULL, slot2 = NULL, slot3 = NULL)
+  # Bibliotecas de componentes (nombre -> payload) y lista de escenarios compuestos.
+  comp_lib <- reactiveValues(itbis = list(), isr = list(),
+                             sub = list(), comp = list())
+  # Componente "activo" por pantalla: nombre del último guardado/cargado.
+  active_lib <- reactiveValues(itbis = "", isr = "", sub = "", comp = "")
+  scen_rv  <- reactiveValues(scenarios = list())
+  scen_counter <- reactiveVal(0L)
+  # Selección "Comparar" desacoplada de la lista de tarjetas: alternar la casilla
+  # NO debe re-renderizar scenarios_display (evita el parpadeo). Guarda uids.
+  cmp_rv <- reactiveValues(sel = integer(0))
+  # Permite forzar un re-render puntual de las tarjetas (p. ej. al rechazar
+  # una cuarta selección) sin depender de cmp_rv$sel.
+  render_nonce <- reactiveVal(0L)
+
+  # Forma canónica para comparar payloads (ignora orden de nombres y redondea).
+  .payload_canon <- function(x) {
+    if (is.list(x)) {
+      if (!is.null(names(x)) && length(x)) x <- x[order(names(x))]
+      lapply(x, .payload_canon)
+    } else if (is.numeric(x)) {
+      round(as.numeric(x), 6)
+    } else {
+      x
+    }
+  }
+  payload_equal <- function(a, b) {
+    if (is.null(a) || is.null(b)) return(FALSE)
+    identical(.payload_canon(a), .payload_canon(b))
+  }
 
   paths <- reactive(get_dom_paths(root))
 
-  # Sincronización bidireccional del nombre entre pantalla 1 y 5
+  # --- Captura del estado actual de cada pantalla como payload de componente ---
+  capture_itbis <- function() {
+    list(marco = "actual",
+         rate_grupo    = as.list(tax_rv$rate_grupo),
+         rate_subclase = as.list(tax_rv$rate_subclase),
+         rate_variedad = as.list(tax_rv$rate_variedad))
+  }
+  capture_isr <- function() {
+    rd <- function(stem) vapply(1:6, function(i) {
+      x <- input[[paste0(stem, i)]]
+      if (is.null(x)) NA_real_ else suppressWarnings(as.numeric(x))
+    }, numeric(1))
+    list(custom = isTRUE(input$custom_isr),
+         nom_renta = input$nom_renta %||% "Personalizada",
+         lim_inf = rd("isr_li_"), lim_sup = rd("isr_ls_"),
+         tasa_pct = rd("isr_tp_"))
+  }
+  capture_sub <- function() {
+    sv <- function(pref) vapply(1:7, function(j) {
+      x <- input[[paste0("sub_", pref, "_", j)]]
+      if (is.null(x)) NA_real_ else suppressWarnings(as.numeric(x))
+    }, numeric(1))
+    list(custom = isTRUE(input$custom_sub_ele),
+         nom_subsidio = input$sub_nom %||% "",
+         block = sv("block"), bsur = sv("bsur"), bnorte = sv("bnorte"),
+         beste = sv("beste"), tsur = sv("tsur"), tnorte = sv("tnorte"),
+         teste = sv("teste"),
+         costsur = suppressWarnings(as.numeric(input$sub_costsur)),
+         costnorte = suppressWarnings(as.numeric(input$sub_costnorte)),
+         costeste = suppressWarnings(as.numeric(input$sub_costeste)),
+         otsur = suppressWarnings(as.numeric(input$sub_otsur)),
+         otnorte = suppressWarnings(as.numeric(input$sub_otnorte)),
+         oteste = suppressWarnings(as.numeric(input$sub_oteste)))
+  }
+  capture_comp <- function() {
+    if (!isTRUE(input$comp_con_comp)) {
+      return(list(enabled = FALSE, sin_compensacion = TRUE))
+    }
+    int_or_na <- function(x) {
+      if (is.null(x) || !nzchar(as.character(x)[1])) NA_integer_
+      else suppressWarnings(as.integer(x))
+    }
+    list(enabled = TRUE, sin_compensacion = FALSE, sim_comp_id = 1L,
+         grupo_com = as.integer(input$comp_grupo),
+         metodo_com = as.integer(input$comp_metodo),
+         valor_com = as.numeric(input$comp_valor %||% 0),
+         decil_com = int_or_na(input$comp_decil_com),
+         decil_est = int_or_na(input$comp_decil_est),
+         icv_com = suppressWarnings(as.numeric(input$comp_icv)))
+  }
+
+  # --- Aplicar un payload guardado a los inputs en pantalla ---
+  apply_itbis <- function(p) {
+    tax_rv$rate_grupo    <- normalize_rate_list(p$rate_grupo %||% list())
+    tax_rv$rate_subclase <- normalize_rate_list(p$rate_subclase %||% list())
+    tax_rv$rate_variedad <- normalize_rate_list(p$rate_variedad %||% list())
+  }
+  apply_isr <- function(p) {
+    cust <- isTRUE(p$custom)
+    updateCheckboxInput(session, "custom_isr", value = cust)
+    if (cust) {
+      updateTextInput(session, "nom_renta",
+                      value = p$nom_renta %||% "Personalizada")
+      for (i in 1:6) {
+        vi <- suppressWarnings(as.numeric(p$lim_inf[i]))
+        vs <- suppressWarnings(as.numeric(p$lim_sup[i]))
+        vp <- suppressWarnings(as.numeric(p$tasa_pct[i]))
+        updateNumericInput(session, paste0("isr_li_", i),
+                           value = if (is.finite(vi)) vi else NA)
+        updateNumericInput(session, paste0("isr_ls_", i),
+                           value = if (is.finite(vs)) vs else NA)
+        updateNumericInput(session, paste0("isr_tp_", i),
+                           value = if (is.finite(vp)) vp else NA)
+      }
+    }
+  }
+  apply_sub <- function(p) {
+    cust <- isTRUE(p$custom)
+    updateCheckboxInput(session, "custom_sub_ele", value = cust)
+    if (cust) {
+      upd7 <- function(nm, key) {
+        v <- p[[key]]
+        for (j in 1:7) {
+          vj <- suppressWarnings(as.numeric(v[j]))
+          updateNumericInput(session, paste0(nm, j),
+                             value = if (is.finite(vj)) vj else NA)
+        }
+      }
+      upd7("sub_block_", "block")
+      upd7("sub_bsur_", "bsur");   upd7("sub_bnorte_", "bnorte")
+      upd7("sub_beste_", "beste"); upd7("sub_tsur_", "tsur")
+      upd7("sub_tnorte_", "tnorte"); upd7("sub_teste_", "teste")
+      updateTextInput(session, "sub_nom", value = p$nom_subsidio %||% "")
+      for (cx in .sub_sca_fields) {
+        v <- suppressWarnings(as.numeric(p[[cx]]))
+        updateNumericInput(session, paste0("sub_", cx),
+                           value = if (is.finite(v)) v else NA)
+      }
+    }
+  }
+  apply_comp <- function(p) {
+    enabled <- isTRUE(p$enabled) && !isTRUE(p$sin_compensacion)
+    updateCheckboxInput(session, "comp_con_comp", value = enabled)
+    if (enabled) {
+      if (!is.na(p$grupo_com))
+        updateSelectInput(session, "comp_grupo",
+                          selected = as.character(p$grupo_com))
+      if (!is.na(p$metodo_com))
+        updateSelectInput(session, "comp_metodo",
+                          selected = as.character(p$metodo_com))
+      updateNumericInput(session, "comp_valor",
+                         value = suppressWarnings(as.numeric(p$valor_com %||% 0)))
+      if (!is.na(p$decil_est))
+        updateSelectInput(session, "comp_decil_est",
+                          selected = as.character(p$decil_est))
+      if (!is.na(p$decil_com))
+        updateSelectInput(session, "comp_decil_com",
+                          selected = as.character(p$decil_com))
+      iv <- suppressWarnings(as.integer(p$icv_com))
+      if (!is.na(iv) && iv >= 1L && iv <= 4L)
+        updateSelectInput(session, "comp_icv", selected = as.character(iv))
+    }
+  }
+
+  # --- Componer un escenario (registro con nombres) en insumos completos ---
+  compose_scenario_inputs <- function(scn) {
+    itbis_p <- comp_lib$itbis[[scn$itbis %||% ""]] %||%
+      list(marco = "actual", rate_grupo = list(),
+           rate_subclase = list(), rate_variedad = list())
+    isr_c   <- comp_lib$isr[[scn$isr %||% ""]]
+    isr_full <- NULL
+    if (!is.null(isr_c) && isTRUE(isr_c$custom)) {
+      pv <- pipeline_isr_from_brackets(isr_c$lim_inf, isr_c$lim_sup, isr_c$tasa_pct)
+      isr_full <- list(custom = TRUE, tramos = pv$tramos, bases = pv$bases,
+                       tasas = pv$tasas, nom_renta = isr_c$nom_renta %||% "Personalizada",
+                       lim_inf = isr_c$lim_inf, lim_sup = isr_c$lim_sup,
+                       tasa_pct = isr_c$tasa_pct)
+    }
+    sub_p  <- comp_lib$sub[[scn$sub %||% ""]] %||% list(custom = FALSE)
+    comp_p <- comp_lib$comp[[scn$comp %||% ""]] %||%
+      list(enabled = FALSE, sin_compensacion = TRUE)
+    nm <- scn$name %||% "Escenario"
+    list(label = nm, des_corto = nm, des_escenario = nm, escenario = 1L,
+         sim_itbis = 1L, custom_isr = isTRUE(isr_full$custom),
+         sim_renta = if (isTRUE(isr_full$custom)) 1L else 0L,
+         sim_sub = 1L,
+         sim_com = if (isTRUE(comp_p$enabled) && !isTRUE(comp_p$sin_compensacion)) 1L else 0L,
+         itbis = itbis_p, isr = isr_full, comp = comp_p, sub_ele = sub_p)
+  }
+
+  # --- Registro de bibliotecas por pantalla (guardar / cargar) ---
+  register_component_lib <- function(prefix, lib_name, capture_fn, apply_fn) {
+    store_under <- function(nm) {
+      l <- comp_lib[[lib_name]]; l[[nm]] <- capture_fn()
+      comp_lib[[lib_name]] <- l
+      active_lib[[prefix]] <- nm
+      updateTextInput(session, paste0("lib_", prefix, "_name"), value = nm)
+    }
+    # "Guardar" / "Actualizar": si hay un componente activo, lo sobreescribe;
+    # si no, crea uno nuevo con el nombre escrito.
+    observeEvent(input[[paste0("lib_", prefix, "_save")]], {
+      act <- active_lib[[prefix]]
+      if (nzchar(act %||% "")) {
+        store_under(act)
+        showNotification(paste0("Actualizado: \u201c", act, "\u201d."),
+                         type = "message")
+      } else {
+        nm <- trimws(input[[paste0("lib_", prefix, "_name")]] %||% "")
+        if (!nzchar(nm)) {
+          showNotification("Asigne un nombre para guardar.", type = "warning")
+          return(NULL)
+        }
+        store_under(nm)
+        showNotification(paste0("Guardado: \u201c", nm, "\u201d."), type = "message")
+      }
+    })
+    # "Guardar como nuevo": crea (o duplica) bajo el nombre escrito.
+    observeEvent(input[[paste0("lib_", prefix, "_saveas")]], {
+      nm <- trimws(input[[paste0("lib_", prefix, "_name")]] %||% "")
+      if (!nzchar(nm)) {
+        showNotification("Escriba un nombre para el nuevo componente.",
+                         type = "warning")
+        return(NULL)
+      }
+      existed <- nm %in% names(comp_lib[[lib_name]])
+      store_under(nm)
+      showNotification(
+        paste0(if (existed) "Reemplazado: \u201c" else "Guardado: \u201c",
+               nm, "\u201d."),
+        type = "message")
+    })
+    observe({
+      ch <- c("\u2014 elegir \u2014" = "", names(comp_lib[[lib_name]]))
+      updateSelectInput(session, paste0("lib_", prefix, "_pick"), choices = ch)
+    })
+    observeEvent(input[[paste0("lib_", prefix, "_load")]], {
+      nm <- input[[paste0("lib_", prefix, "_pick")]]
+      if (is.null(nm) || !nzchar(nm)) {
+        showNotification("Elija una configuraci\u00f3n guardada.", type = "warning")
+        return(NULL)
+      }
+      p <- comp_lib[[lib_name]][[nm]]
+      if (is.null(p)) return(NULL)
+      apply_fn(p)
+      active_lib[[prefix]] <- nm
+      updateTextInput(session, paste0("lib_", prefix, "_name"), value = nm)
+      showNotification(paste0("Cargado: \u201c", nm, "\u201d."), type = "message")
+    })
+    # Etiqueta dinámica del botón principal: "Guardar" vs "Actualizar".
+    observe({
+      lbl <- if (nzchar(active_lib[[prefix]] %||% "")) "Actualizar" else "Guardar"
+      updateActionButton(session, paste0("lib_", prefix, "_save"), label = lbl)
+    })
+    # Indicador de estado del componente activo.
+    output[[paste0("lib_", prefix, "_status")]] <- renderUI({
+      act <- active_lib[[prefix]]
+      if (!nzchar(act %||% "")) {
+        return(tags$div(class = "small text-muted mb-2",
+                        icon("circle-plus"),
+                        " Componente nuevo \u00b7 sin guardar en la biblioteca."))
+      }
+      stored <- comp_lib[[lib_name]][[act]]
+      if (payload_equal(capture_fn(), stored)) {
+        tags$div(class = "small text-success mb-2",
+                 icon("circle-check"),
+                 paste0(" Editando \u201c", act, "\u201d \u00b7 guardado."))
+      } else {
+        tags$div(class = "small text-warning-emphasis mb-2",
+                 icon("triangle-exclamation"),
+                 paste0(" Editando \u201c", act,
+                        "\u201d \u00b7 cambios sin guardar."))
+      }
+    })
+  }
+  register_component_lib("itbis", "itbis", capture_itbis, apply_itbis)
+  register_component_lib("isr",   "isr",   capture_isr,   apply_isr)
+  register_component_lib("sub",   "sub",   capture_sub,   apply_sub)
+  register_component_lib("comp",  "comp",  capture_comp,  apply_comp)
+
+  # Opciones de los desplegables del compositor (nombres de cada biblioteca)
   observe({
-    req(input$scen_nombre)
-    updateTextInput(session, "scen_nombre_rev", value = input$scen_nombre)
+    ref <- c("Referencia (sin cambios)" = "")
+    updateSelectInput(session, "compose_itbis",
+                      choices = c(ref, names(comp_lib$itbis)))
+    updateSelectInput(session, "compose_isr",
+                      choices = c(ref, names(comp_lib$isr)))
+    updateSelectInput(session, "compose_sub",
+                      choices = c(ref, names(comp_lib$sub)))
+    updateSelectInput(session, "compose_comp",
+                      choices = c(ref, names(comp_lib$comp)))
   })
-  observeEvent(input$scen_nombre_rev, {
-    updateTextInput(session, "scen_nombre", value = input$scen_nombre_rev)
-  }, ignoreInit = TRUE)
+
+  # --- Alta de escenarios + observadores por escenario (uid estable) ---
+  n_comparar <- function() length(cmp_rv$sel)
+  register_scenario_obs <- function(uid) {
+    observeEvent(input[[paste0("scen_del_", uid)]], {
+      scen_rv$scenarios <- Filter(function(s) !identical(s$uid, uid),
+                                  scen_rv$scenarios)
+      cmp_rv$sel <- setdiff(cmp_rv$sel, uid)
+      showNotification("Escenario eliminado.", type = "warning")
+    })
+    observeEvent(input[[paste0("scen_cmp_", uid)]], {
+      on  <- isTRUE(input[[paste0("scen_cmp_", uid)]])
+      cur <- cmp_rv$sel
+      if (on) {
+        if (uid %in% cur) return(NULL)
+        if (length(cur) >= 3L) {
+          showNotification("Solo puede comparar hasta 3 escenarios.",
+                           type = "warning")
+          # Revertir la casilla en el DOM sin re-renderizar por cmp_rv$sel.
+          render_nonce(render_nonce() + 1L)
+          return(NULL)
+        }
+        cmp_rv$sel <- c(cur, uid)
+      } else {
+        cmp_rv$sel <- setdiff(cur, uid)
+      }
+    }, ignoreInit = TRUE)
+  }
+  add_scenario <- function(rec) {
+    uid <- scen_counter() + 1L
+    scen_counter(uid)
+    want_cmp <- if (is.null(rec$comparar)) (n_comparar() < 3L)
+                else isTRUE(rec$comparar)
+    rec$comparar <- NULL
+    rec$uid <- uid
+    scen_rv$scenarios <- c(scen_rv$scenarios, list(rec))
+    if (want_cmp && n_comparar() < 3L) cmp_rv$sel <- c(cmp_rv$sel, uid)
+    register_scenario_obs(uid)
+    uid
+  }
+
+  # --- Restablecer todas las pantallas a la situación vigente (GEN-1) ---
+  reset_form_to_base <- function() {
+    tax_rv$rate_grupo <- list()
+    tax_rv$rate_subclase <- list()
+    tax_rv$rate_variedad <- list()
+    updateCheckboxInput(session, "custom_isr", value = FALSE)
+    updateCheckboxInput(session, "custom_sub_ele", value = FALSE)
+    updateCheckboxInput(session, "comp_con_comp", value = FALSE)
+    for (i in 1:6) {
+      updateNumericInput(session, paste0("isr_li_", i),
+                         value = isr_base_defaults$lim_inf[i])
+      updateNumericInput(session, paste0("isr_ls_", i),
+                         value = isr_base_defaults$lim_sup[i])
+      updateNumericInput(session, paste0("isr_tp_", i),
+                         value = isr_base_defaults$tasa_pct[i])
+    }
+    updateNumericInput(session, "tasa_aplicar", value = NA)
+    for (px in c("itbis", "isr", "sub", "comp")) {
+      active_lib[[px]] <- ""
+      updateTextInput(session, paste0("lib_", px, "_name"), value = "")
+    }
+  }
+
+  # --- Restaurar autoguardado al iniciar la sesión ---
+  isolate({
+    rs <- scenario_autosave_read(root)
+    if (!is.null(rs)) {
+      comp_lib$itbis <- rs$libs$itbis %||% list()
+      comp_lib$isr   <- rs$libs$isr   %||% list()
+      comp_lib$sub   <- rs$libs$sub   %||% list()
+      comp_lib$comp  <- rs$libs$comp  %||% list()
+      for (s in (rs$scenarios %||% list())) {
+        s$uid <- NULL
+        add_scenario(s)
+      }
+      if (length(rs$scenarios %||% list())) {
+        showNotification(
+          paste0("Sesi\u00f3n anterior restaurada (",
+                 length(rs$scenarios), " escenario(s))."),
+          type = "message", duration = 6)
+      }
+    }
+  })
+
+  # --- Autoguardado ante cualquier cambio ---
+  observe({
+    libs <- list(itbis = comp_lib$itbis, isr = comp_lib$isr,
+                 sub = comp_lib$sub, comp = comp_lib$comp)
+    sel  <- cmp_rv$sel
+    scs  <- lapply(scen_rv$scenarios, function(s) {
+      s$comparar <- s$uid %in% sel
+      s$uid <- NULL
+      s
+    })
+    scenario_autosave_write(root, libs, scs)
+  })
 
   # Navegación del asistente
   go_to <- function(panel_title)
@@ -674,34 +1448,35 @@ server <- function(input, output, session) {
   observeEvent(input$nav_5_next,    go_to("6 \u00b7 Simular"))
   observeEvent(input$nav_6_prev,    go_to("5 \u00b7 Revisar"))
 
+  # Renta: sin huecos entre tramos. El límite superior de un tramo es siempre el
+  # límite inferior del siguiente; se sincronizan en ambos sentidos.
+  isr_vals_equal <- function(a, b) {
+    a_na <- is.null(a) || length(a) != 1L || is.na(a)
+    b_na <- is.null(b) || length(b) != 1L || is.na(b)
+    if (a_na && b_na) return(TRUE)
+    if (a_na || b_na) return(FALSE)
+    isTRUE(a == b)
+  }
+  lapply(1:5, function(i) {
+    ls_id <- paste0("isr_ls_", i)
+    li_id <- paste0("isr_li_", i + 1L)
+    observeEvent(input[[ls_id]], {
+      if (!isr_vals_equal(input[[ls_id]], input[[li_id]]))
+        updateNumericInput(session, li_id, value = input[[ls_id]])
+    }, ignoreInit = TRUE)
+    observeEvent(input[[li_id]], {
+      if (!isr_vals_equal(input[[li_id]], input[[ls_id]]))
+        updateNumericInput(session, ls_id, value = input[[li_id]])
+    }, ignoreInit = TRUE)
+  })
+
   # Sin desplegables pick_sim_sub y pick_sim_com: políticas desde fila referencia
   # (sim_sub = 1, sim_com = 1) o definidas por el usuario con las casillas de personalización.
-
-  # Filtro ITBIS por productos exentos
-  # Catálogo reactivo según la casilla de solo exentos
-  itbis_catalog_display <- reactive({
-    if (isTRUE(input$itbis_solo_exentos)) {
-      itbis_catalog %>% filter(tolower(.data$grupo) == "exentos")
-    } else {
-      itbis_catalog
-    }
-  })
-
-  # Al cambiar el filtro de exentos, reconstruir las opciones de grupo
-  observe({
-    cat <- itbis_catalog_display()
-    gdf <- cat %>%
-      distinct(.data$COD_GRUPO, .data$DES_GRUPO) %>%
-      arrange(.data$COD_GRUPO)
-    ch  <- make_grupo_choices(gdf)
-    sel <- if (length(ch)) ch[1] else character(0)
-    updateSelectInput(session, "itbis_grupo", choices = ch, selected = sel)
-  })
 
   # Selects ITBIS en cascada
   observe({
     req(input$itbis_grupo)
-    cat <- itbis_catalog_display()
+    cat <- itbis_catalog
     sub <- cat %>%
       filter(.data$COD_GRUPO == input$itbis_grupo) %>%
       distinct(.data$COD_SUBGRUPO, .data$DES_SUBGRUPO,
@@ -742,11 +1517,42 @@ server <- function(input, output, session) {
                          server   = TRUE)
   })
 
-  # Aplicar o limpiar tasas ITBIS
+  # Tasa actual del producto/subclase seleccionado (para saber sobre qué se modifica)
+  output$itbis_sel_info <- renderUI({
+    rk <- input$itbis_variedad
+    if (is.null(rk) || !nzchar(rk)) return(NULL)
+    idx <- match(rk, itbis_row_keys)
+    if (is.na(idx)) return(NULL)
+    row <- itbis_catalog[idx, , drop = FALSE]
+    ley <- suppressWarnings(as.numeric(row$tasa))
+    eff <- tasa_efectiva_desde_listas(
+      row, tax_rv$rate_variedad, tax_rv$rate_subclase,
+      tax_rv$rate_grupo, "actual"
+    )
+    cambiado <- is.finite(ley) && abs(eff - ley) > 1e-6
+    div(
+      class = "alert alert-light border py-1 px-2 mb-2 small",
+      tags$strong("Tasa actual de la selecci\u00f3n: "),
+      tags$span(class = "badge bg-secondary",
+                paste0(round(ley, 2), "%")),
+      if (cambiado) tagList(
+        tags$span(class = "mx-1", "\u2192"),
+        tags$span(class = "badge bg-primary",
+                  paste0(round(eff, 2), "% en este escenario"))
+      )
+    )
+  })
+
+  # Aplicar tasas ITBIS
   observeEvent(input$btn_aplicar_tasa, {
     req(input$itbis_nivel_aplicar, input$itbis_grupo)
     lvl  <- input$itbis_nivel_aplicar
-    rate <- input$tasa_aplicar
+    rate <- suppressWarnings(as.numeric(input$tasa_aplicar))
+    if (length(rate) != 1L || is.na(rate)) {
+      showNotification("Indique una nueva tasa antes de aplicar.",
+                       type = "warning")
+      return(NULL)
+    }
     if (lvl == "grupo") {
       tax_rv$rate_grupo[[input$itbis_grupo]] <- rate
       showNotification("Tasa aplicada al grupo.", type = "message")
@@ -767,7 +1573,29 @@ server <- function(input, output, session) {
     tax_rv$rate_grupo    <- list()
     tax_rv$rate_subclase <- list()
     tax_rv$rate_variedad <- list()
-    showNotification("Se limpiaron las tasas de ITBIS.", type = "message")
+    showNotification(
+      "Se restablecieron todos los productos a los valores del escenario base.",
+      type = "message"
+    )
+  })
+
+  # Restablecer solo la selección actual (al nivel elegido en "Aplicar tasa a")
+  observeEvent(input$btn_reset_sel, {
+    req(input$itbis_nivel_aplicar, input$itbis_grupo)
+    lvl <- input$itbis_nivel_aplicar
+    if (lvl == "grupo") {
+      rg <- tax_rv$rate_grupo; rg[[input$itbis_grupo]] <- NULL
+      tax_rv$rate_grupo <- rg
+    } else if (lvl == "subclase") {
+      req(input$itbis_subclase)
+      rs <- tax_rv$rate_subclase; rs[[input$itbis_subclase]] <- NULL
+      tax_rv$rate_subclase <- rs
+    } else {
+      req(input$itbis_variedad)
+      rv <- tax_rv$rate_variedad; rv[[input$itbis_variedad]] <- NULL
+      tax_rv$rate_variedad <- rv
+    }
+    showNotification("Selecci\u00f3n restablecida.", type = "message")
   })
 
   observeEvent(input$btn_reset_rama, {
@@ -791,7 +1619,69 @@ server <- function(input, output, session) {
     } else {
       tax_rv$rate_variedad <- list()
     }
-    showNotification("Rama restablecida.", type = "message")
+    showNotification("Grupo restablecido.", type = "message")
+  })
+
+  # --- Selección por tasa (cruza grupos): productos con la tasa de referencia
+  #     buscada. Aplicar una nueva tasa fija overrides a nivel de variedad. ---
+  itbis_byrate_matches <- reactive({
+    q <- suppressWarnings(as.numeric(input$itbis_query_tasa))
+    if (length(q) != 1L || is.na(q)) {
+      return(itbis_catalog[0, , drop = FALSE])
+    }
+    tasa_ley <- suppressWarnings(as.numeric(itbis_catalog$tasa))
+    itbis_catalog[!is.na(tasa_ley) & abs(tasa_ley - q) < 1e-6, , drop = FALSE]
+  })
+
+  itbis_byrate_table <- reactive({
+    m <- itbis_byrate_matches()
+    tibble::tibble(
+      Grupo      = m$DES_GRUPO,
+      Producto   = paste0(m$ID_VARIEDAD, ": ", m$DES_VARIEDAD),
+      `Tasa actual (%)` = round(suppressWarnings(as.numeric(m$tasa)), 2)
+    )
+  })
+
+  output$tbl_itbis_byrate <- renderDT({
+    datatable(
+      itbis_byrate_table(), rownames = FALSE,
+      selection = "multiple",
+      options = list(dom = "ftip", scrollX = TRUE, pageLength = 8),
+      class = "compact stripe hover"
+    )
+  })
+
+  byrate_proxy <- dataTableProxy("tbl_itbis_byrate")
+  observeEvent(input$btn_byrate_all, {
+    n <- nrow(itbis_byrate_matches())
+    if (n > 0L) selectRows(byrate_proxy, seq_len(n))
+  })
+  observeEvent(input$btn_byrate_none, {
+    selectRows(byrate_proxy, NULL)
+  })
+
+  observeEvent(input$btn_byrate_aplicar, {
+    m   <- itbis_byrate_matches()
+    sel <- input$tbl_itbis_byrate_rows_selected
+    if (is.null(sel) || !length(sel)) {
+      showNotification("Seleccione al menos un producto.", type = "warning")
+      return(NULL)
+    }
+    rate <- suppressWarnings(as.numeric(input$itbis_byrate_nueva))
+    if (length(rate) != 1L || is.na(rate)) {
+      showNotification("Indique una nueva tasa v\u00e1lida.", type = "warning")
+      return(NULL)
+    }
+    rv <- tax_rv$rate_variedad
+    for (i in sel) {
+      rk <- itbis_row_key(m[i, , drop = FALSE])
+      rv[[rk]] <- rate
+    }
+    tax_rv$rate_variedad <- rv
+    showNotification(
+      paste0("Tasa aplicada a ", length(sel), " producto(s)."),
+      type = "message"
+    )
   })
 
   # Tabla previa de cambios ITBIS
@@ -822,8 +1712,8 @@ server <- function(input, output, session) {
       Grupo    = d0$DES_GRUPO[muestra],
       Producto = paste(d0$ID_VARIEDAD[muestra],
                        d0$DES_VARIEDAD[muestra], sep = ": "),
-      `Tasa (%)` = round(tasa_eff[muestra], 2),
-      `Diferencia vs referencia` = round(delta[muestra], 2)
+      `Tasa vieja (%)` = round(tasa_ley[muestra], 2),
+      `Tasa nueva (%)` = round(tasa_eff[muestra], 2)
     )
   })
 
@@ -833,11 +1723,11 @@ server <- function(input, output, session) {
               class = "compact stripe hover")
   })
 
-  # Subsidio eléctrico: rellenar desde fila plantilla (sim_sub = 1)
+  # Subsidio eléctrico: al personalizar, partir de las tarifas vigentes (base).
   observeEvent(input$custom_sub_ele, {
     if (!isTRUE(input$custom_sub_ele)) return(invisible(NULL))
     p <- paths()
-    r <- read_sim_sub_template_row(p$param_csv, 1L)
+    r <- read_sim_sub_template_row(p$param_csv, 0L)
     fill_sub_ele_inputs_from_row(session, r)
   })
 
@@ -924,11 +1814,14 @@ server <- function(input, output, session) {
         nom_subsidio = input$sub_nom %||% "",
         costsur     = suppressWarnings(as.numeric(input$sub_costsur)),
         costnorte   = suppressWarnings(as.numeric(input$sub_costnorte)),
-        costeste    = suppressWarnings(as.numeric(input$sub_costeste))
+        costeste    = suppressWarnings(as.numeric(input$sub_costeste)),
+        otsur       = suppressWarnings(as.numeric(input$sub_otsur)),
+        otnorte     = suppressWarnings(as.numeric(input$sub_otnorte)),
+        oteste      = suppressWarnings(as.numeric(input$sub_oteste))
       )
     }
 
-    nm <- input$scen_nombre %||% "Escenario"
+    nm <- "Escenario actual"
     list(
       label         = nm,
       des_corto     = nm,
@@ -951,141 +1844,139 @@ server <- function(input, output, session) {
     )
   })
 
-  # Guardar en un espacio
-  observeEvent(input$btn_save_slot, {
-    slot_key <- paste0("slot", as.integer(input$slot_selector))
-    sc       <- collect_scenario_inputs()
-    nm <- trimws(input$scen_nombre_rev %||% "")
-    if (nzchar(nm)) {
-      sc$label         <- nm
-      sc$des_corto     <- nm
-      sc$des_escenario <- nm
-    }
-    scenarios_rv[[slot_key]] <- sc
-
-    # Nombre sugerido para el siguiente escenario
-    filled_count <- sum(!vapply(1:3, function(i)
-      is.null(scenarios_rv[[paste0("slot", i)]]), logical(1)))
-    next_nm <- paste0("Escenario ", filled_count + 1L)
-
-    # Reiniciar el formulario para armar otro escenario desde cero
-    tax_rv$rate_grupo    <- list()
-    tax_rv$rate_subclase <- list()
-    tax_rv$rate_variedad <- list()
-    updateTextInput(session,    "scen_nombre",     value = next_nm)
-    updateTextInput(session,    "scen_nombre_rev", value = next_nm)
-    updateCheckboxInput(session, "custom_isr",      value = FALSE)
-    updateCheckboxInput(session, "custom_sub_ele",  value = FALSE)
-    updateCheckboxInput(session, "comp_con_comp",   value = FALSE)
-
-    showNotification(
-      paste0("Guardado en espacio ", input$slot_selector,
-             ". Formulario listo para un nuevo escenario."),
-      type = "message"
-    )
-    # Volver a la pantalla 1 para el siguiente escenario
-    go_to("1 \u00b7 ITBIS")
+  # Empezar de cero (GEN-1): un escenario nuevo parte de la situación vigente.
+  observeEvent(input$btn_nuevo_escenario, {
+    reset_form_to_base()
+    showNotification("Formulario restablecido a la situaci\u00f3n vigente.",
+                     type = "message")
   })
 
-  # Tarjetas de espacios en pantalla Revisar
-  output$slots_display <- renderUI({
-    slots <- list(
-      `1` = scenarios_rv$slot1,
-      `2` = scenarios_rv$slot2,
-      `3` = scenarios_rv$slot3
-    )
-    tagList(
-      lapply(1:3, function(i) {
-        sc   <- slots[[as.character(i)]]
-        filled <- !is.null(sc)
-        card(
-          class = paste("mb-2 slot-card", if (filled) "filled" else ""),
-          card_body(
-            class = "py-2",
+  # Agregar un escenario compuesto a la lista
+  observeEvent(input$btn_compose_add, {
+    nm <- trimws(input$compose_name %||% "")
+    if (!nzchar(nm)) {
+      showNotification("Asigne un nombre al escenario.", type = "warning")
+      return(NULL)
+    }
+    add_scenario(list(
+      name  = nm,
+      itbis = input$compose_itbis %||% "",
+      isr   = input$compose_isr   %||% "",
+      sub   = input$compose_sub   %||% "",
+      comp  = input$compose_comp  %||% ""
+    ))
+    updateTextInput(session, "compose_name", value = "")
+    showNotification(paste0("Escenario \u201c", nm, "\u201d agregado."),
+                     type = "message")
+  })
+
+  # Restablecer todo (GEN-2): borra bibliotecas, escenarios y el formulario.
+  observeEvent(input$btn_reset_all, {
+    showModal(modalDialog(
+      title = "Restablecer todo",
+      "Se borrar\u00e1n todas las configuraciones guardadas, los escenarios y los ",
+      "valores en pantalla, y se volver\u00e1 a la situaci\u00f3n vigente. ",
+      "Esta acci\u00f3n no se puede deshacer.",
+      footer = tagList(
+        modalButton("Cancelar"),
+        actionButton("btn_reset_all_ok", "S\u00ed, restablecer todo",
+                     class = "btn-danger")
+      ),
+      easyClose = TRUE
+    ))
+  })
+  observeEvent(input$btn_reset_all_ok, {
+    removeModal()
+    comp_lib$itbis <- list(); comp_lib$isr <- list()
+    comp_lib$sub <- list();   comp_lib$comp <- list()
+    scen_rv$scenarios <- list()
+    cmp_rv$sel <- integer(0)
+    reset_form_to_base()
+    scenario_autosave_clear(root)
+    showNotification("Todo restablecido.", type = "warning")
+  })
+
+  output$compare_count <- renderUI(
+    paste0(n_comparar(), " de 3 marcados para comparar")
+  )
+
+  # Tarjetas de escenarios guardados (compositor)
+  output$scenarios_display <- renderUI({
+    render_nonce()  # dependencia para forzar re-render puntual
+    scs <- scen_rv$scenarios
+    sel <- isolate(cmp_rv$sel)  # estado de comparación sin crear dependencia
+    if (!length(scs)) {
+      return(tags$p(class = "text-muted fst-italic",
+                    "A\u00fan no hay escenarios. Componga uno arriba."))
+    }
+    cmp_label <- function(lib, key) {
+      if (is.null(key) || !nzchar(key)) "Referencia" else key
+    }
+    tagList(lapply(scs, function(sc) {
+      uid <- sc$uid
+      full <- compose_scenario_inputs(sc)
+      card(
+        class = "mb-2 slot-card filled",
+        card_body(
+          class = "py-2",
+          tags$div(
+            class = "d-flex justify-content-between align-items-start",
             tags$div(
-              class = "d-flex justify-content-between align-items-start",
+              tags$strong(sc$name %||% "Escenario"),
               tags$div(
-                tags$span(
-                  class = paste("badge slot-badge",
-                                if (filled) "bg-primary" else "bg-secondary"),
-                  paste("Espacio", i)
-                ),
-                tags$div(
-                  class = "mt-1",
-                  if (filled) {
-                    tagList(
-                      tags$strong(sc$label %||% paste("Escenario", i)),
-                      br(),
-                      tags$span(
-                        class = "text-muted small",
-                        paste0(
-                          "ITBIS: ",
-                          if (length(sc$itbis$rate_variedad) +
-                              length(sc$itbis$rate_subclase) +
-                              length(sc$itbis$rate_grupo) > 0)
-                            paste0(
-                              length(sc$itbis$rate_variedad) +
-                              length(sc$itbis$rate_subclase) +
-                              length(sc$itbis$rate_grupo),
-                              " cambio(s)"
-                            ) else "sin cambios",
-                          " | ISR: ",
-                          if (isTRUE(sc$custom_isr)) "personalizado"
-                          else "referencia",
-                          " | Sub: opci\u00f3n ", sc$sim_sub %||% "?",
-                          " | Comp: ",
-                          if (isTRUE(sc$comp$sin_compensacion)) "ninguna"
-                          else paste0("opci\u00f3n ", sc$sim_com %||% "?")
-                        )
-                      )
-                    )
-                  } else {
-                    tags$span(class = "text-muted small fst-italic",
-                              "Vac\u00eda")
-                  }
-                )
+                class = "text-muted small mt-1",
+                paste0("ITBIS: ", cmp_label("itbis", sc$itbis),
+                       " | Renta: ", cmp_label("isr", sc$isr),
+                       " | Subsidio: ", cmp_label("sub", sc$sub),
+                       " | Compensaci\u00f3n: ", cmp_label("comp", sc$comp))
               ),
-              if (filled)
-                actionButton(
-                  paste0("btn_clear_slot_", i),
-                  icon("trash"),
-                  class = "btn-sm btn-outline-danger",
-                  title = "Limpiar espacio"
-                )
+              tags$details(
+                class = "mt-2",
+                tags$summary(class = "text-primary small",
+                             style = "cursor:pointer;", "Ver detalle"),
+                tags$div(class = "mt-2", slot_detail_ui(full))
+              )
+            ),
+            tags$div(
+              class = "d-flex flex-column align-items-end gap-1",
+              div(class = "form-check",
+                tags$input(type = "checkbox", class = "form-check-input",
+                           id = paste0("scen_cmp_", uid),
+                           checked = if (uid %in% sel) "checked",
+                           onclick = sprintf(
+                             "Shiny.setInputValue('scen_cmp_%s', this.checked, {priority:'event'})",
+                             uid)),
+                tags$label(class = "form-check-label small",
+                           `for` = paste0("scen_cmp_", uid), "Comparar")),
+              actionButton(paste0("scen_del_", uid), icon("trash"),
+                           class = "btn-sm btn-outline-danger",
+                           title = "Eliminar escenario")
             )
           )
         )
-      })
-    )
-  })
-
-  # Botones Limpiar por espacio
-  lapply(1:3, function(i) {
-    observeEvent(input[[paste0("btn_clear_slot_", i)]], {
-      scenarios_rv[[paste0("slot", i)]] <- NULL
-      showNotification(paste0("Espacio ", i, " limpiado."), type = "warning")
-    })
-  })
-
-  # Resumen de espacios en pantalla Simular
-  output$run_slots_summary <- renderUI({
-    cnt <- sum(!vapply(1:3, function(i) {
-      is.null(scenarios_rv[[paste0("slot", i)]])
-    }, logical(1)))
-    if (cnt == 0) {
-      return(tags$span(class = "text-warning",
-                       "Ningún espacio guardado. Se ejecutar\u00e1 el escenario actual."))
-    }
-    tagList(lapply(1:3, function(i) {
-      sc <- scenarios_rv[[paste0("slot", i)]]
-      if (is.null(sc)) return(NULL)
-      tags$div(class = "scenario-chip",
-               tags$strong(paste0("Espacio ", i, ": ")),
-               sc$label %||% paste0("Escenario ", i))
+      )
     }))
   })
 
-  # Normalización de listas de tasas al importar JSON
+  # Resumen de escenarios marcados en pantalla Simular
+  output$run_slots_summary <- renderUI({
+    sel    <- cmp_rv$sel
+    marked <- Filter(function(s) s$uid %in% sel, scen_rv$scenarios)
+    if (!length(marked)) {
+      if (!length(scen_rv$scenarios)) {
+        return(tags$span(class = "text-warning",
+          "No hay escenarios. Se ejecutar\u00e1 el estado actual del formulario."))
+      }
+      return(tags$span(class = "text-warning",
+        "Ning\u00fan escenario marcado para comparar en la pantalla 'Revisar'."))
+    }
+    tagList(lapply(marked, function(s) {
+      tags$div(class = "scenario-chip",
+               tags$strong(paste0(s$name %||% "Escenario", "")))
+    }))
+  })
+
+  # Normalización de listas de tasas (importación / carga de componentes)
   normalize_rate_list <- function(x) {
     if (is.null(x) || !is.list(x)) return(list())
     nm  <- names(x)
@@ -1104,136 +1995,40 @@ server <- function(input, output, session) {
     out
   }
 
-  json_scalar_num <- function(x) {
-    if (is.null(x))          return(NA_real_)
-    if (is.numeric(x))       return(as.numeric(x)[[1L]])
-    if (is.list(x) && length(x)) return(suppressWarnings(as.numeric(x[[1L]])))
-    suppressWarnings(as.numeric(x))
-  }
-
-  # Descarga de configuración JSON
-  output$dl_json <- downloadHandler(
+  # Exportar todo (bibliotecas + escenarios) a un Excel multipestaña.
+  output$dl_xlsx <- downloadHandler(
     filename = function()
-      paste0("escenario_", format(Sys.Date(), "%Y%m%d"), ".json"),
-    content = function(file)
-      write_json(collect_scenario_inputs(), file,
-                 pretty = TRUE, auto_unbox = TRUE)
+      paste0("escenarios_", format(Sys.Date(), "%Y%m%d"), ".xlsx"),
+    content = function(file) {
+      libs <- list(itbis = comp_lib$itbis, isr = comp_lib$isr,
+                   sub = comp_lib$sub, comp = comp_lib$comp)
+      scs  <- lapply(scen_rv$scenarios, function(s) { s$uid <- NULL; s })
+      scenario_store_save_xlsx(file, libs, scs)
+    }
   )
 
-  # Carga de configuración JSON
-  observeEvent(input$up_json, {
-    req(input$up_json)
-    j <- jsonlite::read_json(input$up_json$datapath, simplifyVector = FALSE)
-    if (!is.null(j$itbis)) {
-      if (!is.null(j$itbis$rate_grupo))
-        tax_rv$rate_grupo    <- normalize_rate_list(j$itbis$rate_grupo)
-      if (!is.null(j$itbis$rate_subclase))
-        tax_rv$rate_subclase <- normalize_rate_list(j$itbis$rate_subclase)
-      if (!is.null(j$itbis$rate_variedad))
-        tax_rv$rate_variedad <- normalize_rate_list(j$itbis$rate_variedad)
+  # Importar bibliotecas + escenarios desde Excel (reemplaza lo actual).
+  observeEvent(input$up_xlsx, {
+    req(input$up_xlsx)
+    st <- tryCatch(scenario_store_read_xlsx(input$up_xlsx$datapath),
+                   error = function(e) NULL)
+    if (is.null(st)) {
+      showNotification("No se pudo leer el archivo Excel.", type = "error")
+      return(NULL)
     }
-    if (!is.null(j$label)) {
-      lv <- if (is.list(j$label)) as.character(j$label[[1]]) else as.character(j$label)
-      updateTextInput(session, "scen_nombre", value = lv)
+    comp_lib$itbis <- st$libs$itbis %||% list()
+    comp_lib$isr   <- st$libs$isr   %||% list()
+    comp_lib$sub   <- st$libs$sub   %||% list()
+    comp_lib$comp  <- st$libs$comp  %||% list()
+    scen_rv$scenarios <- list()
+    for (s in (st$scenarios %||% list())) {
+      s$uid <- NULL
+      add_scenario(s)
     }
-    cust <- isTRUE(j$custom_isr) || (!is.null(j$isr) && isTRUE(j$isr$custom))
-    updateCheckboxInput(session, "custom_isr", value = cust)
-    if (!is.null(j$isr) && isTRUE(j$isr$custom)) {
-      if (!is.null(j$isr$nom_renta))
-        updateTextInput(session, "nom_renta",
-                        value = as.character(j$isr$nom_renta[[1]] %||%
-                                             j$isr$nom_renta))
-      lim_inf <- j$isr$lim_inf;  lim_sup <- j$isr$lim_sup;  tpu <- j$isr$tasa_pct
-      if (!is.null(lim_inf) && length(lim_inf) && !is.null(tpu) && length(tpu)) {
-        for (i in seq_len(6L)) {
-          if (length(lim_inf) >= i) {
-            vi <- json_scalar_num(lim_inf[[i]])
-            if (is.finite(vi)) updateNumericInput(session, paste0("isr_li_", i), value = vi)
-          }
-          if (!is.null(lim_sup) && length(lim_sup) >= i) {
-            vs <- json_scalar_num(lim_sup[[i]])
-            if (is.finite(vs)) updateNumericInput(session, paste0("isr_ls_", i), value = vs)
-          }
-          if (length(tpu) >= i) {
-            vp <- json_scalar_num(tpu[[i]])
-            if (is.finite(vp)) updateNumericInput(session, paste0("isr_tp_", i), value = vp)
-          }
-        }
-      }
-    }
-    # sim_sub fijo en 1, sin desplegable que actualizar
-    if (!is.null(j$sub_ele)) {
-      se <- j$sub_ele
-      cu <- if (is.null(se$custom)) FALSE
-            else if (is.list(se$custom)) isTRUE(as.logical(se$custom[[1]]))
-            else isTRUE(as.logical(se$custom))
-      updateCheckboxInput(session, "custom_sub_ele", value = cu)
-      if (isTRUE(cu)) {
-        upd_sub7 <- function(nm, key) {
-          vec <- se[[key]]
-          if (is.null(vec)) return(invisible(NULL))
-          for (jj in seq_len(7L)) {
-            vj <- if (length(vec) >= jj) vec[[jj]] else NULL
-            if (!is.null(vj))
-              updateNumericInput(session, paste0(nm, jj),
-                                 value = json_scalar_num(vj))
-          }
-        }
-        upd_sub7("sub_block_", "block")
-        upd_sub7("sub_bsur_",  "bsur");  upd_sub7("sub_bnorte_", "bnorte")
-        upd_sub7("sub_beste_", "beste"); upd_sub7("sub_tsur_",   "tsur")
-        upd_sub7("sub_tnorte_", "tnorte"); upd_sub7("sub_teste_", "teste")
-        if (!is.null(se$nom_subsidio))
-          updateTextInput(session, "sub_nom",
-                          value = as.character(se$nom_subsidio[[1]] %||%
-                                               se$nom_subsidio))
-        for (cx in c("costsur","costnorte","costeste")) {
-          if (!is.null(se[[cx]]))
-            updateNumericInput(session, paste0("sub_", cx),
-                               value = json_scalar_num(se[[cx]]))
-        }
-      }
-    }
-    # sim_com fijo en 1, sin desplegable que actualizar
-    if (!is.null(j$comp)) {
-      # Compatibilidad con JSON antiguo (enabled, sin_compensacion) y con con_comp
-      enabled <- if (!is.null(j$comp$enabled)) {
-        en <- j$comp$enabled
-        if (is.list(en)) isTRUE(as.logical(en[[1]])) else isTRUE(as.logical(en))
-      } else if (!is.null(j$comp$sin_compensacion)) {
-        sn <- j$comp$sin_compensacion
-        !isTRUE(if (is.list(sn)) as.logical(sn[[1]]) else as.logical(sn))
-      } else FALSE
-      updateCheckboxInput(session, "comp_con_comp", value = enabled)
-      sn <- !enabled
-      if (!sn) {
-        if (!is.null(j$comp$grupo_com)) {
-          gv <- if (is.list(j$comp$grupo_com)) j$comp$grupo_com[[1]] else j$comp$grupo_com
-          updateSelectInput(session, "comp_grupo", selected = as.character(gv))
-        }
-        if (!is.null(j$comp$metodo_com)) {
-          mv <- if (is.list(j$comp$metodo_com)) j$comp$metodo_com[[1]] else j$comp$metodo_com
-          updateSelectInput(session, "comp_metodo", selected = as.character(mv))
-        }
-        if (!is.null(j$comp$valor_com))
-          updateNumericInput(session, "comp_valor",
-                             value = json_scalar_num(j$comp$valor_com))
-        if (!is.null(j$comp$decil_est)) {
-          dv <- if (is.list(j$comp$decil_est)) j$comp$decil_est[[1]] else j$comp$decil_est
-          if (!is.na(suppressWarnings(as.integer(dv))))
-            updateSelectInput(session, "comp_decil_est", selected = as.character(dv))
-        }
-        if (!is.null(j$comp$decil_com)) {
-          dv <- if (is.list(j$comp$decil_com)) j$comp$decil_com[[1]] else j$comp$decil_com
-          if (!is.na(suppressWarnings(as.integer(dv))))
-            updateSelectInput(session, "comp_decil_com", selected = as.character(dv))
-        }
-        if (!is.null(j$comp$icv_com))
-          updateNumericInput(session, "comp_icv",
-                             value = json_scalar_num(j$comp$icv_com))
-      }
-    }
-    showNotification("Configuraci\u00f3n cargada.", type = "message")
+    showNotification(
+      paste0("Importado: ", length(st$scenarios %||% list()),
+             " escenario(s) y sus componentes."),
+      type = "message")
   }, ignoreInit = TRUE)
 
   # Ejecutar uno o más escenarios en secuencia
@@ -1281,9 +2076,16 @@ server <- function(input, output, session) {
   sim_res_rv <- reactiveVal(NULL)
 
   observeEvent(input$run, {
-    slots <- list(scenarios_rv$slot1, scenarios_rv$slot2, scenarios_rv$slot3)
-    # Si no hay espacios guardados, usar el estado actual de la interfaz
-    if (all(vapply(slots, is.null, logical(1)))) {
+    sel    <- cmp_rv$sel
+    marked <- Filter(function(s) s$uid %in% sel, scen_rv$scenarios)
+    if (length(marked)) {
+      if (length(marked) > 3L) marked <- marked[1:3]
+      slots <- lapply(marked, compose_scenario_inputs)
+    } else if (length(scen_rv$scenarios)) {
+      # Hay escenarios pero ninguno marcado: comparar los primeros (hasta 3).
+      slots <- lapply(utils::head(scen_rv$scenarios, 3L), compose_scenario_inputs)
+    } else {
+      # Sin escenarios guardados: usar el estado actual del formulario.
       slots <- list(collect_scenario_inputs())
     }
     sim_res_rv(run_multi_dom(slots, paths()))

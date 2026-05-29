@@ -8,7 +8,7 @@
 ##  Dependencias:  00_DOM26_Master.R
 ##
 ## Input files
-## -- data/pipeline/r_params/param_csv/*.csv
+## -- DOM_parametros_simulaciones.xlsx
 ## -- ENGHI 20180
 ## ---- DOMCEQ_DIncome.rds
 ## ---- elec.rds
@@ -29,38 +29,27 @@
 
 ## 0.1 Importar archivos -------------------------------------------------------
 
-# Todas las variantes de tarifa/subsidio activas en param_csv (no solo la del
-# escenario fiscal actual). Si solo usamos escenarios$sim_sub, una fila con
-# sim_sub=0 nunca construye sub_ele1_* y falla el rename más abajo.
-sim_sub <- read_param_csv("sim_sub", fparam_csv) %>%
-  filter(activo == 1)
-if (nrow(sim_sub) == 0L) {
-  stop("sim_sub: no hay filas activas en param_csv/sim_sub.csv")
-}
-if (
-  exists("sim_sub_row_override", inherits = FALSE) &&
-  is.data.frame(sim_sub_row_override) &&
-  nrow(sim_sub_row_override) == 1L
-) {
-  sid <- as.integer(sim_sub_row_override$sim_sub[[1L]])
-  sim_sub <- sim_sub %>%
-    filter(.data$sim_sub != sid) %>%
-    bind_rows(sim_sub_row_override) %>%
-    arrange(.data$sim_sub)
-}
-sim_sub_esc <- sort(unique(sim_sub$sim_sub))
-esc_sub <- unique(escenarios$sim_sub)
-if (!all(esc_sub %in% sim_sub_esc)) {
-  stop(
-    "escenarios$sim_sub debe existir entre las filas activas de sim_sub.csv. ",
-    "Faltan: ", paste(setdiff(esc_sub, sim_sub_esc), collapse = ", ")
-  )
-}
+# El escenario base (0) siempre se estima junto al escenario simulado, igual que
+# en 01_DOM26_itbis.R (bsim_itbis_esc). Parámetros desde CSV (data/params/).
+sim_sub_esc <- sort(unique(c(0L, as.integer(escenarios$sim_sub))))
 
-.path_domceq_dincome <- paste0(finput, "DOMCEQ_DIncome.RDS")
-if (!file.exists(.path_domceq_dincome)) {
-  .alt_domceq <- paste0(fpresim, "DOMCEQ_DIncome.RDS")
-  if (file.exists(.alt_domceq)) .path_domceq_dincome <- .alt_domceq
+sim_sub <- read_param_csv("sim_sub", fparam_csv) %>%
+  filter(activo == 1) %>%
+  filter(sim_sub %in% sim_sub_esc)
+
+# La app local puede inyectar una fila personalizada (sim_sub_row_override) que
+# reemplaza la fila del escenario simulado, conservando la fila base (0).
+if (exists("sim_sub_row_override", inherits = FALSE) &&
+    is.data.frame(sim_sub_row_override) && nrow(sim_sub_row_override) > 0L) {
+  ov <- sim_sub_row_override %>%
+    filter(activo == 1) %>%
+    filter(sim_sub %in% sim_sub_esc)
+  if (nrow(ov) > 0L) {
+    sim_sub <- sim_sub %>%
+      filter(!(sim_sub %in% ov$sim_sub)) %>%
+      bind_rows(ov) %>%
+      arrange(sim_sub)
+  }
 }
 
 # Prefijos y nombres de cada matriz
@@ -74,6 +63,12 @@ matrices_sim <- list(
   tarifnor = "tnorte"
 )
 
+matric_sim <- list(
+  oteste   = "oteste",
+  otsur    = "otsur",
+  otnorte  = "otnorte"
+)
+
 for (nombre in names(matrices_sim)) {
   assign(nombre, sim_sub %>%
            select(starts_with(matrices_sim[[nombre]])) %>%
@@ -82,6 +77,15 @@ for (nombre in names(matrices_sim)) {
   )
 }
 
+for (nombre in names(matric_sim)) {
+  assign(nombre, sim_sub %>%
+           select(starts_with(matric_sim[[nombre]])) %>%
+           select(where(~ !all(is.na(.)))) %>%
+           as.matrix()
+  )
+}
+
+
 ## Ingreso disponible 2024
 base2024 <- readRDS(paste0(fpresim, "DOM26_SDIncome.RDS")) %>%
   select(hhid, hhin, trimestre, factor_expansion_anual, yd_pc, zona, 
@@ -89,7 +93,7 @@ base2024 <- readRDS(paste0(fpresim, "DOM26_SDIncome.RDS")) %>%
   arrange(hhid, hhin)
 
 ## Ingreso disponible CEQ 2023
-dispinc2018 <- readRDS(.path_domceq_dincome) %>%
+dispinc2018 <- readRDS(paste0(finput, "DOMCEQ_DIncome.RDS")) %>%
   select(hhid, yd_pc, ym_pc, relation, weight, urban, pondera_2023) %>%
   arrange(hhid)
 
@@ -119,24 +123,27 @@ percap <- function(data, varlist) {
 }
 
 # ── Función auxiliar: pago por bloques tarifarios ────────────────────────────
-calcular_pago_bloques <- function(consumo, base, tarif, acum, block, tt, to) {
+calcular_pago_bloques <- function(consumo, base, tarif, ot, acum, blck, tt, to) {
   consumo_r <- round_stata(consumo, 0)
   valido    <- !is.na(consumo)
   pago      <- rep(0, length(consumo))
   
-  # Primer bloque
-  m1 <- valido & consumo_r <= block[1, 2] & consumo > 0
-  pago[m1] <- base[1] + tarif[1] * consumo[m1]
+  # Bloques 1 y 2 (consumo <= 200): tarifa subsidiada ot
+  m1 <- valido & consumo_r <= blck[2] & consumo > 0
+  pago[m1] <- base[1] + ot[1] * consumo[m1]
   
-  # Bloques intermedios
-  for (ij in 2:tt) {
-    m <- valido & consumo_r > block[1, ij] & consumo_r <= block[1, ij + 1]
-    pago[m] <- acum[ij - 1] + (consumo[m] - block[1, ij]) * tarif[ij]
+  m2 <- valido & consumo_r > blck[2] & consumo_r <= blck[3]
+  pago[m2] <- base[2] + ot[1] * blck[2] + ot[1] * (consumo[m2] - blck[2])
+  
+  # Bloques 3..tt: tarifa normal, acum ya incorpora tarif[1] y tarif[2]
+  for (ij in 3:tt) {
+    m <- valido & consumo_r > blck[ij] & consumo_r <= blck[ij + 1]
+    pago[m] <- acum[ij - 1] + (consumo[m] - blck[ij]) * tarif[ij]
   }
   
   # Bloque final
-  mf <- valido & consumo_r > block[1, to]
-  pago[mf] <- acum[tt] + (consumo[mf] - block[1, to]) * tarif[to]
+  mf <- valido & consumo_r > blck[to] & !is.na(consumo_r)
+  pago[mf] <- acum[tt] + (consumo[mf] - blck[to]) * tarif[to]
   
   return(pago)
 }
@@ -247,8 +254,10 @@ tt        <- n_bloques - 1
 to        <- n_bloques
 
 # Tarifas y bases promedio Edesur/Edeeste (escenario base "0") — fijas
-b2 <- (basesur[1, ] + baseest[1, ]) / 2
-t2 <- (tarifsur[1, ] + tarifest[1, ]) / 2
+b2 <- (basesur  + baseest) / 2
+t2 <- (tarifsur + tarifest) / 2
+otse <- (otsur  + oteste) / 2
+
 
 # Condición sin contador: se calcula una sola vez
 elec <- elec %>%
@@ -266,20 +275,19 @@ for (s in sim_sub_esc) {
   
   # Acumulado Edenorte
   acunor    <- numeric(tt)
-  acunor[1] <- basenor[st, 2] + block[1, 2] * tarifnor[st, 1]
-  acunor[2] <- acunor[1] + (block[1, 3] - block[1, 2]) * tarifnor[st, 2]
-  for (ij in 3:tt) {
-    acunor[ij] <- acunor[ij - 1] +
-      (block[1, ij + 1] - block[1, ij]) * tarifnor[st, ij]
+  acunor[1] <- basenor[st, 2] + block[st, 2] * tarifnor[st, 1] 
+  for (ij in 2:(tt)) {
+    acunor[ij] <- acunor[ij - 1] + (block[st, ij + 1] - block[st, ij ]) * 
+                  tarifnor[st, ij]
   }
+  
   
   # Acumulado Edesur/Edeeste
   acuses    <- numeric(tt)
-  acuses[1] <- b2[2] + block[1, 2] * t2[1]
-  acuses[2] <- acuses[1] + (block[1, 3] - block[1, 2]) * tarifnor[st, 2]
-  for (ij in 3:tt) {
-    acuses[ij] <- acuses[ij - 1] +
-      (block[1, ij + 1] - block[1, ij]) * t2[ij]
+  acuses[1] <- b2[st, 2] +  block[st, 2] * t2[st,1]
+  for (ij in 2:(tt)) {
+    acuses[ij] <- acuses[ij - 1] + (block[st, ij + 1 ] - block[st, ij ]) * 
+                  t2[st, ij ]
   }
   
   assign(paste0("acunor_", s), acunor)
@@ -292,14 +300,14 @@ for (s in sim_sub_esc) {
   
   pago_vals <- rep(0, nrow(elec))
   pago_vals[mask_norte] <- calcular_pago_bloques(
-    elec$consumo_e[mask_norte], basenor[st, ], tarifnor[st, ], acunor, 
-      block, tt, to
+    elec$consumo_e[mask_norte], basenor[st, ], tarifnor[st, ], otnorte[st, ],
+      acunor, block[st, ], tt, to
   )
   pago_vals[mask_sures] <- calcular_pago_bloques(
-    elec$consumo_e[mask_sures], b2, t2, acuses, block, tt, to
+    elec$consumo_e[mask_sures], b2[st, ], t2[st, ], otse[st, ], 
+      acuses, block[st,], tt, to
   )
   elec[[pago_col]] <- pago_vals
-  
   
   ##
   # 1.3. Precio medio-----------------------------------------------------------
@@ -310,9 +318,9 @@ for (s in sim_sub_esc) {
   ## 1.4. Costos----------------------------------------------------------------
   
   costo_col  <- paste0("costo_ekwh_", s)
-  cnorte_val <- as.numeric(sim_sub[sim_sub$sim_sub == s, "costnorte"])
-  csur_val   <- as.numeric(sim_sub[sim_sub$sim_sub == s, "costsur"])
-  ceste_val  <- as.numeric(sim_sub[sim_sub$sim_sub == s, "costeste"])
+  cnorte_val <- as.numeric(sim_sub$costnorte[sim_sub$sim_sub == s])
+  csur_val   <- as.numeric(sim_sub$costsur[sim_sub$sim_sub == s]) 
+  ceste_val  <- as.numeric(sim_sub$costeste[sim_sub$sim_sub == s]) 
   costo_sures <- (csur_val + ceste_val) / 2
   
   elec[[costo_col]] <- ifelse(elec$estrato %in% c(21, 22), cnorte_val, costo_sures)
@@ -368,11 +376,14 @@ for (s in sim_sub_esc) {
   
   pa4o_vals <- elec[[pago_col]]
   pa4o_vals[mask_norte] <- calcular_pago_bloques(
-    consumo2[mask_norte], basenor[st, ], tarifnor[st, ], acunor, block, tt, to
+    consumo2[mask_norte], basenor[st, ], tarifnor[st, ], otnorte[st, ],
+    acunor, block[st, ],  tt, to
   )
   pa4o_vals[mask_sures] <- calcular_pago_bloques(
-    consumo2[mask_sures], b2, t2, acuses, block, tt, to
+    consumo2[mask_sures], b2[st, ], t2[st, ], otse[st, ], 
+    acuses, block[st, ], tt, to
   )
+  
   elec[[pa4o_col]] <- pa4o_vals
   
 }
@@ -449,15 +460,14 @@ subelec <- bind_cols(subelec, extra_cols)
 # Verificación
 cat("N subelec:         ", nrow(subelec), "\n")           # debe dar 8,892
 cat("Sum sub_ele0_pc:   ", sum(subelec$sub_ele0_pc, na.rm=TRUE), "\n")
-cat("Mean sub_ele0_pc:  ", mean(subelec$sub_ele0_pc, na.rm=TRUE), "\n") # debe ≈ 314.8
+cat("Mean sub_ele0_pc:  ", mean(subelec$sub_ele0_pc, na.rm=TRUE), "\n") # debe ≈ 123.3
 cat("Sum sub_ele1_pc:   ", sum(subelec$sub_ele1_pc, na.rm=TRUE), "\n")
-cat("Mean sub_ele1_pc:  ", mean(subelec$sub_ele1_pc, na.rm=TRUE), "\n") # debe ≈ 304.7
-
+cat("Mean sub_ele1_pc:  ", mean(subelec$sub_ele1_pc, na.rm=TRUE), "\n") # debe ≈ 109.8
 
 
 # 3. Imputar resultados --------------------------------------------------------
 
-base <- readRDS(.path_domceq_dincome)
+base <- readRDS(paste0(finput, "DOMCEQ_DIncome.RDS"))
 
 gtotal <- readRDS(paste0(fpresim, "DOM26_gtotal.RDS")) %>%
                    select(hhid, gasto_total)
@@ -561,18 +571,9 @@ base <- base %>%
 
 format(summary(base$rsub_ele0_pc), scientific = FALSE, digits = 3)
 
-sub_ele_rename <- c(
-  sub_ele0_h2 = "sub_ele0_hh",
-  sub_ele1_h2 = "sub_ele1_hh",
-  sub_ele0_p2 = "sub_ele0_pc",
-  sub_ele1_p2 = "sub_ele1_pc"
-)
-sub_ele_rename <- sub_ele_rename[sub_ele_rename %in% names(base)]
-base2 <- if (length(sub_ele_rename)) {
-  dplyr::rename(base, dplyr::all_of(sub_ele_rename))
-} else {
-  base
-}
+base2 <- base %>%
+  rename(sub_ele0_h2 = sub_ele0_hh, sub_ele1_h2 = sub_ele1_hh,
+         sub_ele0_p2 = sub_ele0_pc, sub_ele1_p2 = sub_ele1_pc,)
 
 
 # 4. Estimar ratios  ----------------------------------------------------
@@ -642,15 +643,19 @@ sub_percentil %>%
 
 
 
-plot(
-  sub_percentil$centil[sub_percentil$urban == 1],
-  sub_percentil$rsub_ele0_pc[sub_percentil$urban == 1],
-  pch  = 18, col  = "lightblue",
-  xlab = "Centil", ylab = "Ratio", main = "Urbano"
-)
-lines(sub_percentil$centil[sub_percentil$urban == 1],
-      sub_percentil$psub_ele0_pc[sub_percentil$urban == 1],
-      col = "blue", lwd = 2)
+# Diagnóstico opcional (desactivado en la app: evita abrir dispositivos gráficos
+# durante run_pipeline_cached). Active con options(dom.pipeline.diagnostics = TRUE).
+if (isTRUE(getOption("dom.pipeline.diagnostics", FALSE))) {
+  plot(
+    sub_percentil$centil[sub_percentil$urban == 1],
+    sub_percentil$rsub_ele0_pc[sub_percentil$urban == 1],
+    pch  = 18, col  = "lightblue",
+    xlab = "Centil", ylab = "Ratio", main = "Urbano"
+  )
+  lines(sub_percentil$centil[sub_percentil$urban == 1],
+        sub_percentil$psub_ele0_pc[sub_percentil$urban == 1],
+        col = "blue", lwd = 2)
+}
 
 # 5. Imputación de subsidio eléctrico en ENCFT ---------------------------------
 
@@ -671,17 +676,12 @@ sub_cols_2024 <- lapply(sim_sub_esc, function(s) {
   tibble(
     !!paste0("sub_ele", s, "_pc") :=
       base2024$yd_pc *
-      ifelse(base2024$urban == 1,
-             base2024[[paste0("psub_ele", s, "_pc")]]  *
-      (base2024$tipo_alumbrado == 1),
-             base2024[[paste0("psub_ele", s, "_pc")]] *
-      (base2024$tipo_alumbrado == 1))
+      base2024[[paste0("psub_ele", s, "_pc")]] *
+      (base2024$tipo_alumbrado == 1)
   )
 }) %>% bind_cols()
 
 base2024 <- bind_cols(base2024, sub_cols_2024)
-
-
 
 
 # Sintaxis correcta de fsum con pesos en collapse:
@@ -722,8 +722,6 @@ rm(acunor, consumo2, costo_sures, eff_validos, gravar_exentos, idx_decil,
    plot_s, plot_s_ur, suav_series, suav_series_ur, suav_subs_ur)
 
 rm(calcular_pago_bloques)
-
-
 
 # # Ver qué bandwidth usa R para cada grupo
 # for (grp in c(0, 1)) {

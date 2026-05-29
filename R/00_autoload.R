@@ -13,7 +13,8 @@ autoload_dom_r <- function(root = ".") {
     "analyst_fixture_scenario.R",
     "dom_dashboard_charts.R",
     "itbis_catalog_builder.R",
-    "run_dom_scenario.R"
+    "run_dom_scenario.R",
+    "scenario_store.R"
   )
   for (f in files) {
     src <- file.path(root, "R", f)

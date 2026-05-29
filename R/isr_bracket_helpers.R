@@ -1,3 +1,42 @@
+# Convierte una fila de `sim_renta` (tramo/base/tasa del pipeline) al formato de la UI
+# (límite inferior, límite superior, tasa en %). Inverso parcial de
+# [pipeline_isr_from_brackets()]: los `tramo*` son los límites inferiores y el límite
+# superior de un tramo es el inferior del siguiente; el último activo queda sin tope.
+
+#' @param row Una fila (data.frame/tibble) de `sim_renta.csv` con columnas
+#'   `tramo1..N` y `tasa1..N` (tasas en 0–1).
+#' @param max_slots Número de filas en la tabla de la UI (6).
+#' @return Lista con vectores `lim_inf`, `lim_sup`, `tasa_pct` de largo `max_slots`
+#'   (`NA` en los tramos no usados; `tasa_pct` en 0–100).
+isr_brackets_from_sim_renta_row <- function(row, max_slots = 6L) {
+  get_num <- function(stem) {
+    vapply(seq_len(max_slots), function(i) {
+      nm <- paste0(stem, i)
+      if (!nm %in% names(row)) return(NA_real_)
+      suppressWarnings(as.numeric(row[[nm]][1]))
+    }, numeric(1))
+  }
+  tramos <- get_num("tramo")
+  tasas  <- get_num("tasa")
+
+  lim_inf  <- rep(NA_real_, max_slots)
+  lim_sup  <- rep(NA_real_, max_slots)
+  tasa_pct <- rep(NA_real_, max_slots)
+
+  activo <- is.finite(tramos)
+  for (i in seq_len(max_slots)) {
+    if (!activo[i]) next
+    lim_inf[i]  <- tramos[i]
+    tasa_pct[i] <- if (is.finite(tasas[i])) tasas[i] * 100 else NA_real_
+    # El límite superior es el inferior del siguiente tramo activo; el último queda vacío.
+    if (i < max_slots && activo[i + 1L]) {
+      lim_sup[i] <- tramos[i + 1L]
+    }
+  }
+
+  list(lim_inf = lim_inf, lim_sup = lim_sup, tasa_pct = tasa_pct)
+}
+
 # Convierte límites y tasas (% en 0–100) al formato tramo/base/tasa del pipeline 02.
 
 #' @param lim_inf,lim_sup,tasa_pct Vectores de igual longitud; `lim_inf[1]` debe ser 0;

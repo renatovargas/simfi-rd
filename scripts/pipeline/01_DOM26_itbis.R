@@ -1104,7 +1104,9 @@ ratios_s <- suav_series_ur(
 )
 
 # Combinados
-plot_s_ur(ratios_s, "ritb0_pc", "pitb0_pc", tit = "ITBIS simulación base")
+if (isTRUE(getOption("dom.pipeline.diagnostics", FALSE))) {
+  plot_s_ur(ratios_s, "ritb0_pc", "pitb0_pc", tit = "ITBIS simulación base")
+}
 
 ratios_s %>%
   group_by(urban) %>%

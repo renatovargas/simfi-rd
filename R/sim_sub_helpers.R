@@ -58,7 +58,10 @@ patch_sim_sub_row_from_ui <- function(template_row, sub_list) {
   if (length(nm) && nzchar(trimws(paste0(nm[[1L]], collapse = "")))) {
     out$nom_subsidio <- as.character(nm[[1L]])
   }
-  for (cx in c("costsur", "costnorte", "costeste")) {
+  # Escalares: costos de referencia y tarifa del bloque condicional (`ot*`),
+  # esta última agregada por el analista (columnas otsur/otnorte/oteste).
+  for (cx in c("costsur", "costnorte", "costeste",
+               "otsur", "otnorte", "oteste")) {
     if (!is.null(sub_list[[cx]]) && cx %in% names(out)) {
       v <- as.numeric(sub_list[[cx]])
       if (length(v) && is.finite(v[[1L]])) {

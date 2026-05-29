@@ -1,5 +1,5 @@
 {
-  "label": "Prueba analista: contraste amplio (ITBIS itbis_alt2 + ISR + subsidio)",
+  "label": "Escenario de Prueba",
   "des_corto": "Prueba esc.2 — Exentos al 10 + ISR + subsidio eléctrico",
   "des_escenario": "Escenario de prueba: política ITBIS sim_itbis=2 (tasas itbis_alt2 en param_csv), sim_renta=1, sim_sub=1, sim_com=1.",
   "escenario": 2,
