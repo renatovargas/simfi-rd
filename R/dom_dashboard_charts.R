@@ -54,16 +54,17 @@ MACRO_REGION_NAMES <- c(
 #' Etiquetas de eje (misma convención que el panel de referencia).
 labels_inc_dom <- function() {
   list(
-    decinc = as.character(1:10),
+    decinc  = as.character(1:10),
     estrinc = paste("Estrato", 1:4),
-    urbinc = c("Rural", "Urbano"),
-    sexinc = c("Jefe (categoría 1)", "Jefe (categoría 2)"),
-    catinc = paste("Tipo hogar", 1:4),
-    depinc = sprintf(
-      "%s (macroregión %d)",
-      unname(MACRO_REGION_NAMES[as.character(seq_len(4))]),
-      seq_len(4)
-    )
+    urbinc  = c("Rural", "Urbano"),
+    sexinc  = c("Hombre", "Mujer"),
+    catinc  = c(
+      "Sin ni\u00f1os ni adultos mayores",
+      "Con ni\u00f1os",
+      "Con adultos mayores",
+      "Con ni\u00f1os y adultos mayores"
+    ),
+    depinc = unname(MACRO_REGION_NAMES[as.character(seq_len(4))])
   )
 }
 
@@ -369,50 +370,38 @@ dom_list_is_pipeline_layout <- function(dom_list) {
 
 fiscal_post_measures_mat <- function(dom_list, scen_table_hdr_named) {
   scen_nums <- vapply(names(dom_list), scenario_index_from_key, integer(1))
-  vals <- mapply(
-    function(res, k) {
-      df <- as.data.frame(res$decsum)
-      r <- df[nrow(df), , drop = TRUE]
-      nm <- names(r)
-      gv <- function(stem) {
-        cc <- grep(sprintf("^%s%d_pc$", stem, k), nm, value = TRUE)[1]
-        if (is.na(cc)) {
-          return(NA_real_)
-        }
-        suppressWarnings(as.numeric(r[[cc]]))
-      }
-      cc_comp <- pick_comp_pc_col(nm, k)
-      comp_v <- if (is.na(cc_comp)) {
-        NA_real_
-      } else {
-        suppressWarnings(as.numeric(r[[cc_comp]]))
-      }
-      c(
-        gv("dtx_isr"),
-        gv("itx_itb"),
-        gv("sub_ele"),
-        gv("neto"),
-        comp_v,
-        gv("nitx")
-      )
-    },
-    dom_list,
-    scen_nums,
-    SIMPLIFY = TRUE
-  )
-  mat <- as.matrix(vals)
-  if (ncol(mat) == 1) {
-    colnames(mat) <- names(dom_list)
+
+  extract_row <- function(res, k) {
+    df <- as.data.frame(res$decsum)
+    r  <- df[nrow(df), , drop = TRUE]
+    nm <- names(r)
+    gv <- function(stem) {
+      cc <- grep(sprintf("^%s%d_pc$", stem, k), nm, value = TRUE)[1]
+      if (is.na(cc)) return(NA_real_)
+      suppressWarnings(as.numeric(r[[cc]]))
+    }
+    cc_comp <- pick_comp_pc_col(nm, k)
+    comp_v  <- if (is.na(cc_comp)) NA_real_ else suppressWarnings(as.numeric(r[[cc_comp]]))
+    c(gv("dtx_isr"), gv("itx_itb"), gv("sub_ele"), gv("neto"), comp_v, gv("nitx"))
   }
+
+  # Pre-reforma column uses base scenario (k = 0) from the first element of dom_list
+  pre_col <- extract_row(dom_list[[1]], 0L)
+
+  vals <- mapply(extract_row, dom_list, scen_nums, SIMPLIFY = TRUE)
+
+  mat <- cbind(`Pre-reforma` = pre_col, as.matrix(vals))
   rownames(mat) <- c(
-    "ISR posreforma (% PIB)",
-    "ITBIS posreforma (% PIB)",
-    "Subsidio eléctrico posreforma (% PIB)",
+    "ISR (% PIB)",
+    "ITBIS (% PIB)",
+    "Subsidio eléctrico (% PIB)",
     "Neto fiscal previo a compensación (% PIB)",
     "Compensación (% PIB)",
     "Incidencia neta fiscal (% PIB)"
   )
-  colnames(mat) <- unname(scen_table_hdr_named[colnames(mat)])
+  hdr <- c("Pre-reforma", unname(scen_table_hdr_named[names(dom_list)]))
+  hdr[is.na(hdr)] <- names(dom_list)[is.na(hdr)]
+  colnames(mat) <- hdr
   mat
 }
 
@@ -636,7 +625,9 @@ procesar_fila_dom <- function(
     pre_povb <- povb_block(dom_list[[1]], pre_col)
 
     post_list <- lapply(seq_len(n_scen), function(i) {
-      cc <- paste0("yd_", scen_nums[i])
+      # yz_ = full post-reform income (ISR + ITBIS + subsidio + compensación).
+      # yd_ solo captura ISR; yc_ captura ISR+ITBIS+subsidio pero no compensación.
+      cc <- paste0("yz_", scen_nums[i])
       list(
         povr = pov_block(dom_list[[i]], cc),
         npov = npov_block(dom_list[[i]], cc),
@@ -651,7 +642,7 @@ procesar_fila_dom <- function(
     ineq_rows <- c("Gini", "dGini", "Palma", "Theil")
     pre_ineq <- dom_list[[1]]$ineq[ineq_rows, pre_col, drop = FALSE]
     post_ineq <- lapply(seq_len(n_scen), function(i) {
-      cc <- paste0("yd_", scen_nums[i])
+      cc <- paste0("yz_", scen_nums[i])
       dom_list[[i]]$ineq[ineq_rows, cc, drop = FALSE]
     })
     desr <- do.call(cbind, c(list(pre_ineq), post_ineq))

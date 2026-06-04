@@ -24,11 +24,20 @@ prepare_pipeline_extras <- function(inputs, paths) {
   }
   sub_el <- inputs$sub_ele %||% list()
   if (isTRUE(sub_el$custom)) {
+    # Custom subsidio: patch the template row with the user's UI choices.
     tmpl <- read_sim_sub_template_row(
       paths$param_csv,
       as.integer(inputs$sim_sub %||% 0L)
     )
     extras$sim_sub_row_override <- patch_sim_sub_row_from_ui(tmpl, sub_el)
+  } else {
+    # No customization: scenario 1 must still be generated so that sub_ele1_*
+    # columns exist in the pipeline output. Pass the base (sim_sub=0) row as the
+    # override for sim_sub=1 so the net subsidy effect is zero and no spurious
+    # Índice de Concentración appears.
+    base_row <- read_sim_sub_template_row(paths$param_csv, 0L)
+    base_row$sim_sub <- 1L
+    extras$sim_sub_row_override <- base_row
   }
 
   comp <- inputs[["comp"]] %||% list()

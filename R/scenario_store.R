@@ -31,46 +31,110 @@
   v
 }
 
-# ITBIS: filas (componente, nivel, clave, tasa)
-.itbis_to_df <- function(libs_itbis) {
-  rows <- list()
-  for (nm in names(libs_itbis)) {
-    p <- libs_itbis[[nm]]
-    for (lvl in c("grupo", "subclase", "variedad")) {
-      lst <- p[[paste0("rate_", lvl)]] %||% list()
-      for (k in names(lst)) {
-        rows[[length(rows) + 1L]] <- data.frame(
-          componente = nm, nivel = lvl, clave = k,
-          tasa = suppressWarnings(as.numeric(lst[[k]])),
-          stringsAsFactors = FALSE
-        )
-      }
+# ---------------------------------------------------------------------------
+# ITBIS: formato ancho — catálogo completo + una columna por componente
+#
+# Columnas fijas: clave | [todas las columnas del catálogo] | <componentes>
+#
+# La columna "clave" es la clave de importación (pipe-separated: GRUPO|SUBGRUPO|
+# CLASE|SUBCLASE|ARTICULO|VARIEDAD). Las columnas del catálogo se incluyen tal
+# cual, incluyendo `tasa` (tasa de referencia), para facilitar la edición manual.
+# Los nombres de componentes se preservan exactamente (incluyendo espacios).
+# ---------------------------------------------------------------------------
+
+# Nombres de columnas del catálogo que nunca son componentes ITBIS.
+.ITBIS_CAT_COLS <- c(
+  "clave",
+  "COD_GRUPO", "DES_GRUPO", "COD_SUBGRUPO", "DES_SUBGRUPO",
+  "COD_CLASE", "DES_CLASE", "COD_SUBCLASE", "DES_SUBCLASE",
+  "COD_ARTICULO", "DES_ARTICULO", "ID_VARIEDAD", "DES_VARIEDAD",
+  "tasa", "grupo", "gravado", "cod_arancelario", "codigo_mip", "sector2"
+)
+
+.itbis_row_key_from_cat <- function(cat_row) {
+  paste(
+    as.character(cat_row$COD_GRUPO),
+    as.character(cat_row$COD_SUBGRUPO),
+    as.character(cat_row$COD_CLASE),
+    as.character(cat_row$COD_SUBCLASE),
+    as.character(cat_row$COD_ARTICULO),
+    as.character(cat_row$ID_VARIEDAD),
+    sep = "|"
+  )
+}
+
+.tasa_eff_simple <- function(rk, gk, p) {
+  rv <- p$rate_variedad %||% list()
+  rs <- p$rate_subclase %||% list()
+  rg <- p$rate_grupo    %||% list()
+  sk <- paste(strsplit(rk, "|", fixed = TRUE)[[1L]][1:4], collapse = "|")
+  if (!is.null(rv[[rk]])) return(as.numeric(rv[[rk]]))
+  if (!is.null(rs[[sk]])) return(as.numeric(rs[[sk]]))
+  if (!is.null(rg[[gk]])) return(as.numeric(rg[[gk]]))
+  NA_real_
+}
+
+.itbis_to_df <- function(libs_itbis, catalog = NULL) {
+  if (is.null(catalog) || !nrow(catalog)) {
+    # No catalog available: produce an empty placeholder so the sheet exists.
+    return(data.frame(clave = character(), stringsAsFactors = FALSE))
+  }
+
+  n      <- nrow(catalog)
+  claves <- vapply(seq_len(n), function(i)
+    .itbis_row_key_from_cat(catalog[i, , drop = FALSE]), character(1L))
+  grupos_k  <- as.character(catalog$COD_GRUPO)
+  tasa_base <- suppressWarnings(as.numeric(catalog$tasa))
+  tasa_base[is.na(tasa_base)] <- 0
+
+  # Full catalog columns + the key column prepended
+  base_df <- cbind(
+    data.frame(clave = claves, stringsAsFactors = FALSE),
+    as.data.frame(catalog, stringsAsFactors = FALSE)
+  )
+
+  comp_names <- names(libs_itbis)
+  if (length(comp_names)) {
+    comp_mat <- vapply(comp_names, function(nm) {
+      p <- libs_itbis[[nm]]
+      vapply(seq_len(n), function(i) {
+        eff <- .tasa_eff_simple(claves[i], grupos_k[i], p)
+        if (is.na(eff)) tasa_base[i] else eff
+      }, numeric(1L))
+    }, numeric(n))
+    if (is.null(dim(comp_mat))) {
+      comp_mat <- matrix(comp_mat, ncol = 1L,
+                         dimnames = list(NULL, comp_names))
     }
+    base_df <- cbind(base_df,
+                     as.data.frame(comp_mat, stringsAsFactors = FALSE))
   }
-  if (!length(rows)) {
-    return(data.frame(componente = character(), nivel = character(),
-                      clave = character(), tasa = numeric(),
-                      stringsAsFactors = FALSE))
-  }
-  do.call(rbind, rows)
+  base_df
 }
 
 .itbis_from_df <- function(df) {
   out <- list()
-  if (is.null(df) || !nrow(df)) return(out)
-  for (nm in unique(df$componente)) {
-    sub <- df[df$componente == nm, , drop = FALSE]
-    p <- list(marco = "actual", rate_grupo = list(),
-              rate_subclase = list(), rate_variedad = list())
-    for (lvl in c("grupo", "subclase", "variedad")) {
-      ss <- sub[sub$nivel == lvl, , drop = FALSE]
-      if (nrow(ss)) {
-        l <- as.list(suppressWarnings(as.numeric(ss$tasa)))
-        names(l) <- as.character(ss$clave)
-        p[[paste0("rate_", lvl)]] <- l
+  if (is.null(df) || !nrow(df) || !"clave" %in% names(df)) return(out)
+
+  # Component columns = everything that is not a known catalog column
+  comp_cols <- setdiff(names(df), .ITBIS_CAT_COLS)
+  comp_cols <- comp_cols[!is.na(comp_cols) & nzchar(comp_cols)]
+  if (!length(comp_cols)) return(out)
+
+  tasa_base <- suppressWarnings(as.numeric(df[["tasa"]]))
+  tasa_base[is.na(tasa_base)] <- 0
+
+  for (nm in comp_cols) {
+    rates <- suppressWarnings(as.numeric(df[[nm]]))
+    rv <- list()
+    for (i in seq_len(nrow(df))) {
+      r <- rates[i]
+      if (!is.na(r) && abs(r - tasa_base[i]) > 1e-6) {
+        rv[[as.character(df$clave[i])]] <- r
       }
     }
-    out[[nm]] <- p
+    out[[nm]] <- list(marco = "actual", rate_grupo = list(),
+                      rate_subclase = list(), rate_variedad = rv)
   }
   out
 }
@@ -261,9 +325,15 @@
 }
 
 #' Guardar bibliotecas + escenarios en un Excel multipestaña.
-scenario_store_save_xlsx <- function(path, libs, scenarios) {
+#'
+#' @param catalog Opcional. El catálogo ITBIS (`itbis_base_catalog.csv` ya
+#'   cargado). Cuando se proporciona, la pestaña ITBIS se escribe en formato
+#'   ancho (una fila por variedad, una columna por componente), compatible con
+#'   edición manual y con `itbis_sim.csv`. Si es `NULL` se usa el formato largo
+#'   de compatibilidad anterior.
+scenario_store_save_xlsx <- function(path, libs, scenarios, catalog = NULL) {
   sheets <- list(
-    itbis      = .itbis_to_df(libs$itbis %||% list()),
+    itbis      = .itbis_to_df(libs$itbis %||% list(), catalog),
     isr        = .isr_to_df(libs$isr %||% list()),
     sub        = .sub_to_df(libs$sub %||% list()),
     comp       = .comp_to_df(libs$comp %||% list()),
@@ -281,8 +351,27 @@ scenario_store_read_xlsx <- function(path) {
       error = function(e) NULL
     )
   }
+  # For the ITBIS sheet we need to preserve spaces in component column names.
+  # openxlsx converts spaces to dots by default; reading with colNames=FALSE and
+  # promoting row 1 to names ourselves avoids that.
+  rd_itbis <- function() {
+    tryCatch({
+      raw <- openxlsx::read.xlsx(path, sheet = "itbis", colNames = FALSE)
+      if (is.null(raw) || nrow(raw) < 1L) return(NULL)
+      nms <- as.character(unlist(raw[1L, ]))
+      df  <- raw[-1L, , drop = FALSE]
+      names(df) <- nms
+      # Coerce numeric columns back to numeric
+      for (cn in names(df)) {
+        v <- suppressWarnings(as.numeric(df[[cn]]))
+        if (sum(!is.na(v)) > sum(!is.na(df[[cn]]))) next  # was already character
+        if (!all(is.na(v))) df[[cn]] <- v
+      }
+      df
+    }, error = function(e) NULL)
+  }
   libs <- list(
-    itbis = .itbis_from_df(rd("itbis")),
+    itbis = .itbis_from_df(rd_itbis()),
     isr   = .isr_from_df(rd("isr")),
     sub   = .sub_from_df(rd("sub")),
     comp  = .comp_from_df(rd("comp"))

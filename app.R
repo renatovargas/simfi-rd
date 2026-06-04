@@ -244,7 +244,7 @@ component_lib_bar <- function(prefix, titulo = "Guardar esta configuraci\u00f3n"
              " \u2014 puede reutilizarla al componer escenarios"),
     uiOutput(paste0("lib_", prefix, "_status")),
     fluidRow(
-      column(4, textInput(paste0("lib_", prefix, "_name"),
+      column(3, textInput(paste0("lib_", prefix, "_name"),
                           "Nombre", placeholder = "p. ej. Canasta b\u00e1sica exenta",
                           width = "100%")),
       column(2, div(class = "mt-4 pt-1",
@@ -254,11 +254,15 @@ component_lib_bar <- function(prefix, titulo = "Guardar esta configuraci\u00f3n"
                     actionButton(paste0("lib_", prefix, "_saveas"),
                                  "Guardar como",
                                  class = "btn-outline-success w-100"))),
-      column(2, selectInput(paste0("lib_", prefix, "_pick"), "Cargar guardado",
+      column(3, selectInput(paste0("lib_", prefix, "_pick"), "Cargar guardado",
                             choices = c("\u2014 elegir \u2014" = ""), width = "100%")),
-      column(2, div(class = "mt-4 pt-1",
+      column(2, div(class = "mt-4 pt-1 d-flex gap-1",
                     actionButton(paste0("lib_", prefix, "_load"), "Cargar",
-                                 class = "btn-outline-primary w-100")))
+                                 class = "btn-outline-primary flex-grow-1"),
+                    actionButton(paste0("lib_", prefix, "_del"),
+                                 icon("trash"),
+                                 class = "btn-outline-danger px-2",
+                                 title = "Eliminar componente seleccionado")))
     )
   )
 }
@@ -449,7 +453,7 @@ dom_css <- HTML("
 ui <- page_navbar(
   id     = "main_nav",
   title  = tags$span(style = "font-weight:600;",
-                     "Rep\u00fablica Dominicana: Microsimulaci\u00f3n fiscal"),
+                     "RD: Microsimulación Fiscal"),
   header = tags$head(tags$style(dom_css)),
   theme  = bs_theme(
     version      = 5,
@@ -565,6 +569,13 @@ ui <- page_navbar(
         card_header("Vista previa de cambios"),
         p(class = "small text-muted",
           "Productos con tasa diferente a la de referencia."),
+        layout_columns(
+          col_widths = c(6, 6),
+          selectInput("prev_grupo_fil", "Filtrar por grupo",
+                      choices = c("Todos los grupos" = "__todos__"), width = "100%"),
+          selectInput("prev_subclase_fil", "Filtrar por subclase",
+                      choices = c("Todas las subclases" = "__todos__"), width = "100%")
+        ),
         DTOutput("tbl_itbis_resumen", height = "360px")
       ),
       nav_row(next_id = "nav_1_next")
@@ -805,13 +816,13 @@ ui <- page_navbar(
       card(
         card_header(
           tags$div(class = "d-flex justify-content-between align-items-center",
-            "Escenarios guardados",
+            "Escenarios guardados ",
             tags$span(class = "small text-muted", uiOutput("compare_count",
                                                             inline = TRUE)))
         ),
         p(class = "text-muted small",
           "Marque hasta tres para comparar en la simulaci\u00f3n. ",
-          "Despliegue \u201cVer detalle\u201d para revisar tasas y par\u00e1metros."),
+          "Despliegue \u201cVer detalle\u201d para revisar tasas y parámetros."),
         uiOutput("scenarios_display")
       ),
       card(
@@ -851,7 +862,7 @@ ui <- page_navbar(
         card(
           card_header("Ejecuci\u00f3n"),
           layout_columns(
-            col_widths = c(3, 3, 6),
+            col_widths = c(4, 8),
             div(
               actionButton("run",
                            icon("play"),
@@ -859,14 +870,13 @@ ui <- page_navbar(
                            class = "btn-primary w-100"),
               p(class = "small text-muted mt-1 mb-0",
                 "Corre los escenarios marcados para comparar.")
-            ),
-            div(
-              actionButton("run_test",
-                           icon("flask"),
-                           label = " Ejecutar prueba",
-                           class = "btn-outline-primary w-100"),
-              p(class = "small text-muted mt-1 mb-0",
-                "Escenario de referencia del repositorio.")
+              # div(
+              #   actionButton("run_test", icon("flask"),
+              #                label = " Ejecutar prueba",
+              #                class = "btn-outline-primary mt-2 w-100"),
+              #   p(class = "small text-muted mt-1 mb-0",
+              #     "Escenario de referencia del repositorio.")
+              # )
             ),
             div(
               uiOutput("run_msg"),
@@ -1025,6 +1035,33 @@ ui <- page_navbar(
                         DTOutput("dash_tbl_glos_grp", height = "280px")),
               nav_panel("Variables",
                         DTOutput("dash_tbl_glos_var", height = "360px"))
+            )
+          ),
+          nav_panel(
+            title = "Verificación",
+            icon  = icon("flask"),
+            div(class = "p-3",
+              p(class = "text-muted",
+                "Descarga los resultados completos de la simulación en formato ",
+                tags$code(".rds"), " para verificación técnica.",
+                "El archivo incluye los resúmenes de escenarios (pobreza, ",
+                "desigualdad, incidencia) y la base de microdatos completa, ",
+                "en la estructura que produce el flujo de análisis original."
+              ),
+              p(class = "text-muted small",
+                "Ejemplo de uso en R: \n",
+                tags$code('simul <- readRDS("simfi_resultados_2026-06-04.rds")'),
+                br(),
+                tags$code("simul$resultados_escenarios$escenario_1$pov_gral"),
+                br(),
+                tags$code("simul$dom_results |> dplyr::select(hhid, yz_1_pc, comp_1_pc)")
+              ),
+              downloadButton("btn_export_rds",
+                             label = " Exportar resultados (.rds)",
+                             icon  = icon("download"),
+                             class = "btn-outline-secondary"),
+              p(class = "small text-muted mt-2",
+                "Ejecute la microsimulaci\u00f3n antes de descargar.")
             )
           )
         )
@@ -1292,6 +1329,23 @@ server <- function(input, output, session) {
       updateTextInput(session, paste0("lib_", prefix, "_name"), value = nm)
       showNotification(paste0("Cargado: \u201c", nm, "\u201d."), type = "message")
     })
+    # Eliminar el componente seleccionado del desplegable.
+    observeEvent(input[[paste0("lib_", prefix, "_del")]], {
+      nm <- input[[paste0("lib_", prefix, "_pick")]]
+      if (is.null(nm) || !nzchar(nm)) {
+        showNotification("Seleccione un componente para eliminar.", type = "warning")
+        return(NULL)
+      }
+      l <- comp_lib[[lib_name]]
+      l[[nm]] <- NULL
+      comp_lib[[lib_name]] <- l
+      # Clear active state if we just deleted the active component.
+      if (identical(active_lib[[prefix]], nm)) {
+        active_lib[[prefix]] <- ""
+        updateTextInput(session, paste0("lib_", prefix, "_name"), value = "")
+      }
+      showNotification(paste0("Eliminado: \u201c", nm, "\u201d."), type = "message")
+    })
     # Etiqueta dinámica del botón principal: "Guardar" vs "Actualizar".
     observe({
       lbl <- if (nzchar(active_lib[[prefix]] %||% "")) "Actualizar" else "Guardar"
@@ -1325,7 +1379,7 @@ server <- function(input, output, session) {
 
   # Opciones de los desplegables del compositor (nombres de cada biblioteca)
   observe({
-    ref <- c("Referencia (sin cambios)" = "")
+    ref <- c("Pre-reforma (sin cambios)" = "")
     updateSelectInput(session, "compose_itbis",
                       choices = c(ref, names(comp_lib$itbis)))
     updateSelectInput(session, "compose_isr",
@@ -1717,8 +1771,50 @@ server <- function(input, output, session) {
     )
   })
 
+  # Populate grupo filter on first load / catalog change
+  observe({
+    grupos <- sort(unique(itbis_catalog$DES_GRUPO))
+    updateSelectInput(session, "prev_grupo_fil",
+                      choices = c("Todos los grupos" = "__todos__",
+                                  setNames(grupos, grupos)),
+                      selected = "__todos__")
+  })
+
+  # Cascade: update subclase choices based on selected grupo
+  observeEvent(input$prev_grupo_fil, {
+    g <- input$prev_grupo_fil %||% "__todos__"
+    subclases <- if (g == "__todos__") {
+      sort(unique(itbis_catalog$DES_SUBCLASE))
+    } else {
+      sort(unique(itbis_catalog$DES_SUBCLASE[itbis_catalog$DES_GRUPO == g]))
+    }
+    updateSelectInput(session, "prev_subclase_fil",
+                      choices = c("Todas las subclases" = "__todos__",
+                                  setNames(subclases, subclases)),
+                      selected = "__todos__")
+  }, ignoreInit = TRUE)
+
+  tbl_itbis_preview_filtered <- reactive({
+    df <- tbl_itbis_preview()
+    g  <- input$prev_grupo_fil    %||% "__todos__"
+    sc <- input$prev_subclase_fil %||% "__todos__"
+    if (g != "__todos__") {
+      df <- df[df$Grupo == g, , drop = FALSE]
+    }
+    if (sc != "__todos__") {
+      ctlg <- itbis_catalog
+      allowed_prods <- paste(
+        ctlg$ID_VARIEDAD[ctlg$DES_SUBCLASE == sc],
+        ctlg$DES_VARIEDAD[ctlg$DES_SUBCLASE == sc],
+        sep = ": "
+      )
+      df <- df[df$Producto %in% allowed_prods, , drop = FALSE]
+    }
+    df
+  })
+
   output$tbl_itbis_resumen <- renderDT({
-    datatable(tbl_itbis_preview(), rownames = FALSE,
+    datatable(tbl_itbis_preview_filtered(), rownames = FALSE,
               options = list(dom = "ftip", scrollX = TRUE, pageLength = 15),
               class = "compact stripe hover")
   })
@@ -1897,7 +1993,7 @@ server <- function(input, output, session) {
   })
 
   output$compare_count <- renderUI(
-    paste0(n_comparar(), " de 3 marcados para comparar")
+    paste0(": ", n_comparar(), " de 3 marcados para comparar")
   )
 
   # Tarjetas de escenarios guardados (compositor)
@@ -2003,7 +2099,7 @@ server <- function(input, output, session) {
       libs <- list(itbis = comp_lib$itbis, isr = comp_lib$isr,
                    sub = comp_lib$sub, comp = comp_lib$comp)
       scs  <- lapply(scen_rv$scenarios, function(s) { s$uid <- NULL; s })
-      scenario_store_save_xlsx(file, libs, scs)
+      scenario_store_save_xlsx(file, libs, scs, catalog = itbis_catalog)
     }
   )
 
@@ -2097,6 +2193,28 @@ server <- function(input, output, session) {
   })
 
   sim_res <- reactive(sim_res_rv())
+
+  output$btn_export_rds <- downloadHandler(
+    filename = function() {
+      paste0("simfi_resultados_", format(Sys.Date(), "%Y-%m-%d"), ".rds")
+    },
+    content = function(file) {
+      r <- sim_res()
+      if (is.null(r) || !is.null(r$.error)) {
+        saveRDS(list(.error = "No hay resultados disponibles."), file)
+        return()
+      }
+      saveRDS(
+        list(
+          resultados_escenarios = r$resultados_escenarios,
+          dom_results           = r$dom_results,
+          scenario_labels       = r$scenario_labels,
+          exported_at           = Sys.time()
+        ),
+        file
+      )
+    }
+  )
 
   output$run_msg <- renderUI({
     r <- sim_res()
@@ -2401,13 +2519,27 @@ server <- function(input, output, session) {
   output$dash_tbl_glos_esc <- renderDT({
     shiny::validate(shiny::need(dom_list_ready(),
       "Ejecute la simulaci\u00f3n para ver el escenario activo."))
-    dl  <- sim_res()$resultados_escenarios
-    lbs <- sim_res()$scenario_labels %||% list()
+    dl   <- sim_res()$resultados_escenarios
+    lbs  <- sim_res()$scenario_labels %||% list()
+    scns <- scen_rv$scenarios
+
+    build_detail <- function(label) {
+      sc <- Filter(function(s) identical(s$name, label), scns)
+      if (!length(sc)) return("Par\u00e1metros de referencia")
+      sc <- sc[[1]]
+      parts <- c(
+        if (nzchar(sc$itbis %||% "")) paste("ITBIS:", sc$itbis),
+        if (nzchar(sc$isr   %||% "")) paste("Renta:", sc$isr),
+        if (nzchar(sc$sub   %||% "")) paste("Subsidio:", sc$sub),
+        if (nzchar(sc$comp  %||% "")) paste("Compensaci\u00f3n:", sc$comp)
+      )
+      if (!length(parts)) "Par\u00e1metros de referencia" else paste(parts, collapse = " | ")
+    }
+
     tab <- tibble::tibble(
-      Espacio    = seq_along(dl),
-      Etiqueta  = vapply(names(dl),
-                         function(k) lbs[[k]] %||% k, character(1)),
-      Detalle   = "Escenario definido en el constructor."
+      Espacio  = seq_along(dl),
+      Etiqueta = vapply(names(dl), function(k) lbs[[k]] %||% k, character(1)),
+      Detalle  = vapply(names(dl), function(k) build_detail(lbs[[k]] %||% k), character(1))
     )
     datatable(tab, options = list(dom = "t", pageLength = 5),
               rownames = FALSE)
