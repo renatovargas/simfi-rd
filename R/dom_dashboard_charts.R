@@ -761,15 +761,17 @@ incidencia_columna <- function(
   tabla,
   col_idx = 10L,
   mult = -1,
-  scenario_colnames = NULL
+  scenario_colnames = NULL,
+  col_fn = NULL
 ) {
   if (dom_list_is_pipeline_layout(dom_list)) {
     scen_keys <- names(dom_list)
     scen_nums <- vapply(scen_keys, scenario_index_from_key, integer(1))
+    resolve_col <- col_fn %||% nitx_colname_for_scenario
     mats <- mapply(
       function(res, k) {
         mat <- as.data.frame(res[[tabla]])
-        j <- match(nitx_colname_for_scenario(k), names(mat))
+        j <- match(resolve_col(k), names(mat))
         if (is.na(j)) {
           return(NULL)
         }

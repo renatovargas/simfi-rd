@@ -968,7 +968,7 @@ ui <- page_navbar(
                 card(card_header("Kakwani por instrumento"),
                      plotlyOutput("dash_plot_kak_kw", height = "380px"))
               ),
-              nav_panel("Recaudaci\u00f3n",
+              nav_panel("Efecto fiscal",
                 p(class = "small text-muted",
                   "Medidas agregadas (% PIB)."),
                 card(card_header("Efectos fiscales por medida (% PIB)"),
@@ -2300,6 +2300,34 @@ server <- function(input, output, session) {
     )
   })
 
+  # Per-instrument incidence across ALL scenarios (multi-scenario aware).
+  # Each entry is a named list of tables (decinc, estrinc, …) with one column
+  # per scenario labelled with the human-readable scenario header.
+  resultados_inst_inc <- reactive({
+    req(dom_list_ready())
+    dl <- sim_res()$resultados_escenarios
+    if (!dom_list_is_pipeline_layout(dl)) return(NULL)
+    cn <- unname(scenario_headers_named()[names(dl)])
+    tablas <- c("decinc", "estrinc", "urbinc", "sexinc", "catinc", "depinc")
+
+    build_block <- function(col_fn) {
+      stats::setNames(
+        lapply(tablas, function(tbl) {
+          incidencia_columna(dl, tbl, scenario_colnames = cn, col_fn = col_fn)
+        }),
+        tablas
+      )
+    }
+
+    list(
+      efecto_neto  = build_block(function(k) paste0("nitx",     k, "_pc")),
+      isr          = build_block(function(k) paste0("ddtx_isr", k, "_pc")),
+      itbis        = build_block(function(k) paste0("ditx_itb", k, "_pc")),
+      subsidios    = build_block(function(k) paste0("dsub_ele", k, "_pc")),
+      compensacion = build_block(function(k) paste0("dcomp",    k, "_pc"))
+    )
+  })
+
   insumos_template <- reactive({
     load_insumos_catalog(paths())$template
   })
@@ -2471,6 +2499,32 @@ server <- function(input, output, session) {
   output$dash_inc_sex  <- mk_dash_inc("sexinc",  "Incidencia neta: sexo del jefe")
   output$dash_inc_cat  <- mk_dash_inc("catinc",  "Incidencia neta: tipo de hogar")
 
+  # Rename raw pipeline column names in depinc to Spanish labels.
+  rename_depinc_cols <- function(df, scen_headers) {
+    era <- function(k_str) {
+      k <- suppressWarnings(as.integer(k_str))
+      if (!is.na(k) && k == 0L) return("Pre-reforma")
+      lbl <- scen_headers[paste0("escenario_", k)]
+      if (length(lbl) && !is.na(lbl) && nzchar(lbl)) return(unname(lbl))
+      paste0("Escenario ", k)
+    }
+    rename_one <- function(nm) {
+      n <- tolower(nm)
+      if (grepl("^ddtx_isr(\\d+)_pc$",  n)) return(paste0("\u0394 ISR (",                era(sub("^ddtx_isr(\\d+)_pc$",  "\\1", n)), ")"))
+      if (grepl("^dtx_isr(\\d+)_pc$",   n)) return(paste0("ISR (",                       era(sub("^dtx_isr(\\d+)_pc$",   "\\1", n)), ")"))
+      if (grepl("^ditx_itb(\\d+)_pc$",  n)) return(paste0("\u0394 ITBIS (",              era(sub("^ditx_itb(\\d+)_pc$",  "\\1", n)), ")"))
+      if (grepl("^itx_itb(\\d+)_pc$",   n)) return(paste0("ITBIS (",                     era(sub("^itx_itb(\\d+)_pc$",   "\\1", n)), ")"))
+      if (grepl("^dsub_ele(\\d+)_pc$",  n)) return(paste0("\u0394 Subsidio (",           era(sub("^dsub_ele(\\d+)_pc$",  "\\1", n)), ")"))
+      if (grepl("^sub_ele(\\d+)_pc$",   n)) return(paste0("Subsidio el\u00e9ctrico (", era(sub("^sub_ele(\\d+)_pc$",   "\\1", n)), ")"))
+      if (grepl("^dcomp(\\d+)_pc$",     n)) return(paste0("\u0394 Compensaci\u00f3n (", era(sub("^dcomp(\\d+)_pc$",     "\\1", n)), ")"))
+      if (grepl("^comp_(\\d+)_pc$",     n)) return(paste0("Compensaci\u00f3n (",        era(sub("^comp_(\\d+)_pc$",     "\\1", n)), ")"))
+      if (grepl("^(neto|nitx)(\\d+)_pc$", n)) return(paste0("Efecto neto (",            era(sub("^(?:neto|nitx)(\\d+)_pc$", "\\1", n, perl = TRUE)), ")"))
+      nm
+    }
+    colnames(df) <- vapply(colnames(df), rename_one, character(1))
+    df
+  }
+
   output$dash_tbl_reg <- renderDT({
     shiny::validate(shiny::need(dom_list_ready(), need_run))
     req(input$dash_macro_esc)
@@ -2479,6 +2533,7 @@ server <- function(input, output, session) {
     shiny::validate(shiny::need(length(one) == 1, "Escenario no v\u00e1lido."))
     tab <- tabla_macro_region(one,
                               escenario_headers = scenario_headers_named())
+    tab <- rename_depinc_cols(tab, scenario_headers_named())
     datatable(tab, rownames = FALSE,
               options = list(scrollX = TRUE, dom = "ftip", pageLength = 12))
   })
@@ -2486,16 +2541,17 @@ server <- function(input, output, session) {
   mk_inst_plot <- function(inst_key, title) {
     renderPlotly({
       shiny::validate(shiny::need(dom_list_ready(), need_run))
-      ins <- ins_live_display()$incidencia[[inst_key]]$decinc
-      shiny::validate(shiny::need(!is.null(ins),
-                                  "Sin datos para este instrumento."))
+      ri <- resultados_inst_inc()
+      shiny::validate(shiny::need(!is.null(ri), "Sin datos para este instrumento."))
+      M <- ri[[inst_key]]$decinc
+      shiny::validate(shiny::need(!is.null(M), "Sin datos para este instrumento."))
       graficar_incidencia_plotly(
-        ins, labels_inc$decinc, colnames(ins),
+        M, labels_inc$decinc, colnames(M),
         plot_main_title      = title,
         y_axis_label_str     = "Porcentaje del ingreso disponible",
         hover_decimal_places = 2,
         font_size_base       = 11,
-        scenario_tooltips    = NULL,
+        scenario_tooltips    = inc_col_tooltips(),
         y_as_percent         = TRUE
       )
     })
