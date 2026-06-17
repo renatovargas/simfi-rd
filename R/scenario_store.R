@@ -392,8 +392,10 @@ scenario_autosave_path <- function(root = ".") {
 
 scenario_autosave_write <- function(root, libs, scenarios) {
   tryCatch({
-    saveRDS(list(libs = libs, scenarios = scenarios, ts = Sys.time()),
-            scenario_autosave_path(root))
+    target <- scenario_autosave_path(root)
+    tmp    <- paste0(target, ".tmp")
+    saveRDS(list(libs = libs, scenarios = scenarios, ts = Sys.time()), tmp)
+    file.rename(tmp, target)
     TRUE
   }, error = function(e) FALSE)
 }

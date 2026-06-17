@@ -1970,6 +1970,14 @@ server <- function(input, output, session) {
       showNotification("Asigne un nombre al escenario.", type = "warning")
       return(NULL)
     }
+    existing_names <- vapply(scen_rv$scenarios, function(s) s$name %||% "", character(1))
+    if (nm %in% existing_names) {
+      showNotification(
+        paste0("Ya existe un escenario con el nombre \u201c", nm,
+               "\u201d. Use un nombre diferente."),
+        type = "warning")
+      return(NULL)
+    }
     add_scenario(list(
       name  = nm,
       itbis = input$compose_itbis %||% "",
