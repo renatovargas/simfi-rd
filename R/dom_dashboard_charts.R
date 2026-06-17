@@ -299,7 +299,7 @@ graficar_incidencia_plotly <- function(
   wrapped <- sapply(
     x_ticks,
     function(lab) {
-      gsub("(.{14})(?!$)", "\\1<br>", lab, perl = TRUE)
+      gsub("(.{20})(?!$)", "\\1<br>", lab, perl = TRUE)
     },
     USE.NAMES = FALSE
   )
@@ -391,6 +391,10 @@ fiscal_post_measures_mat <- function(dom_list, scen_table_hdr_named) {
   vals <- mapply(extract_row, dom_list, scen_nums, SIMPLIFY = TRUE)
 
   mat <- cbind(`Pre-reforma` = pre_col, as.matrix(vals))
+  # Cuando un instrumento no fue modificado en un escenario, la columna puede
+  # no existir en decsum → NA. Se reemplaza por 0 para evitar celdas en blanco
+  # en la tabla: sin reforma el efecto adicional es cero.
+  mat[is.na(mat)] <- 0
   rownames(mat) <- c(
     "ISR (% PIB)",
     "ITBIS (% PIB)",

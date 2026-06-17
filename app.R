@@ -797,16 +797,16 @@ ui <- page_navbar(
         ),
         fluidRow(
           column(3, selectInput("compose_itbis", "ITBIS",
-                                choices = c("Referencia (sin cambios)" = ""),
+                                choices = c("Par\u00e1metros pre-reforma (referencia)" = "__ref__"),
                                 width = "100%")),
           column(3, selectInput("compose_isr", "Renta",
-                                choices = c("Referencia (sin cambios)" = ""),
+                                choices = c("Par\u00e1metros pre-reforma (referencia)" = "__ref__"),
                                 width = "100%")),
           column(3, selectInput("compose_sub", "Subsidio",
-                                choices = c("Referencia (sin cambios)" = ""),
+                                choices = c("Par\u00e1metros pre-reforma (referencia)" = "__ref__"),
                                 width = "100%")),
           column(3, selectInput("compose_comp", "Compensaci\u00f3n",
-                                choices = c("Referencia (sin cambios)" = ""),
+                                choices = c("Par\u00e1metros pre-reforma (referencia)" = "__ref__"),
                                 width = "100%"))
         ),
         actionButton("btn_compose_add",
@@ -821,7 +821,7 @@ ui <- page_navbar(
                                                             inline = TRUE)))
         ),
         p(class = "text-muted small",
-          "Marque hasta tres para comparar en la simulaci\u00f3n. ",
+          "Marque hasta cuatro para comparar en la simulaci\u00f3n. ",
           "Despliegue \u201cVer detalle\u201d para revisar tasas y parámetros."),
         uiOutput("scenarios_display")
       ),
@@ -840,7 +840,7 @@ ui <- page_navbar(
         ),
         hr(class = "my-2"),
         actionButton("btn_reset_all",
-                     tagList(icon("trash"), " Restablecer todo"),
+                     tagList(icon("trash"), " Nueva sesi\u00f3n (borrar todo)"),
                      class = "btn-outline-danger"),
         tags$span(class = "small text-muted ms-2",
                   "Borra componentes, escenarios y los valores en pantalla.")
@@ -989,7 +989,13 @@ ui <- page_navbar(
               nav_panel("Deciles",
                         plotlyOutput("dash_inc_dec", height = "400px")),
               nav_panel("Estrato",
-                        plotlyOutput("dash_inc_estr", height = "400px")),
+                        p(class = "text-muted small mt-1 mb-0",
+                          "Los cuatro estratos corresponden a grupos socioecon\u00f3micos ",
+                          "construidos a partir de la Encuesta Nacional de Fuerza de Trabajo (ENCFT): ",
+                          "1 = m\u00e1s bajo, 4 = m\u00e1s alto. Permiten observar c\u00f3mo se distribuye ",
+                          "el efecto de cada reforma entre segmentos de la poblaci\u00f3n m\u00e1s ",
+                          "all\u00e1 del decil de ingreso."),
+                        plotlyOutput("dash_inc_estr", height = "380px")),
               nav_panel("\u00c1rea",
                         plotlyOutput("dash_inc_urb", height = "400px")),
               nav_panel("Jefe de hogar",
@@ -1073,7 +1079,7 @@ ui <- page_navbar(
   nav_panel(
     "Acerca de",
     p("Este panel construye escenarios fiscales paso a paso y ejecuta la ",
-      "microsimulaci\u00f3n en este equipo. Pueden definirse hasta tres escenarios ",
+      "microsimulaci\u00f3n en este equipo. Pueden definirse hasta cuatro escenarios ",
       "y compararse en tablas y gr\u00e1ficos. Los resultados son comparables con ",
       "los informes de pol\u00edtica fiscal del equipo.")
   )
@@ -1247,10 +1253,13 @@ server <- function(input, output, session) {
 
   # --- Componer un escenario (registro con nombres) en insumos completos ---
   compose_scenario_inputs <- function(scn) {
-    itbis_p <- comp_lib$itbis[[scn$itbis %||% ""]] %||%
+    # "__ref__" y "" son ambos centinelas para "sin componente / pre-reforma".
+    # Normalizar aquí garantiza compatibilidad con sesiones guardadas antiguas.
+    ckey <- function(v) { v <- v %||% ""; if (identical(v, "__ref__")) "" else v }
+    itbis_p <- comp_lib$itbis[[ckey(scn$itbis)]] %||%
       list(marco = "actual", rate_grupo = list(),
            rate_subclase = list(), rate_variedad = list())
-    isr_c   <- comp_lib$isr[[scn$isr %||% ""]]
+    isr_c   <- comp_lib$isr[[ckey(scn$isr)]]
     isr_full <- NULL
     if (!is.null(isr_c) && isTRUE(isr_c$custom)) {
       pv <- pipeline_isr_from_brackets(isr_c$lim_inf, isr_c$lim_sup, isr_c$tasa_pct)
@@ -1259,8 +1268,8 @@ server <- function(input, output, session) {
                        lim_inf = isr_c$lim_inf, lim_sup = isr_c$lim_sup,
                        tasa_pct = isr_c$tasa_pct)
     }
-    sub_p  <- comp_lib$sub[[scn$sub %||% ""]] %||% list(custom = FALSE)
-    comp_p <- comp_lib$comp[[scn$comp %||% ""]] %||%
+    sub_p  <- comp_lib$sub[[ckey(scn$sub)]] %||% list(custom = FALSE)
+    comp_p <- comp_lib$comp[[ckey(scn$comp)]] %||%
       list(enabled = FALSE, sin_compensacion = TRUE)
     nm <- scn$name %||% "Escenario"
     list(label = nm, des_corto = nm, des_escenario = nm, escenario = 1L,
@@ -1377,9 +1386,11 @@ server <- function(input, output, session) {
   register_component_lib("sub",   "sub",   capture_sub,   apply_sub)
   register_component_lib("comp",  "comp",  capture_comp,  apply_comp)
 
-  # Opciones de los desplegables del compositor (nombres de cada biblioteca)
+  # Opciones de los desplegables del compositor (nombres de cada biblioteca).
+  # "__ref__" es el centinela para "sin componente / pre-reforma" y es un
+  # valor no vacío que selectize.js puede re-seleccionar en cualquier momento.
   observe({
-    ref <- c("Pre-reforma (sin cambios)" = "")
+    ref <- c("Par\u00e1metros pre-reforma (referencia)" = "__ref__")
     updateSelectInput(session, "compose_itbis",
                       choices = c(ref, names(comp_lib$itbis)))
     updateSelectInput(session, "compose_isr",
@@ -1404,8 +1415,8 @@ server <- function(input, output, session) {
       cur <- cmp_rv$sel
       if (on) {
         if (uid %in% cur) return(NULL)
-        if (length(cur) >= 3L) {
-          showNotification("Solo puede comparar hasta 3 escenarios.",
+        if (length(cur) >= 4L) {
+          showNotification("Solo puede comparar hasta 4 escenarios.",
                            type = "warning")
           # Revertir la casilla en el DOM sin re-renderizar por cmp_rv$sel.
           render_nonce(render_nonce() + 1L)
@@ -1420,12 +1431,12 @@ server <- function(input, output, session) {
   add_scenario <- function(rec) {
     uid <- scen_counter() + 1L
     scen_counter(uid)
-    want_cmp <- if (is.null(rec$comparar)) (n_comparar() < 3L)
+    want_cmp <- if (is.null(rec$comparar)) (n_comparar() < 4L)
                 else isTRUE(rec$comparar)
     rec$comparar <- NULL
     rec$uid <- uid
     scen_rv$scenarios <- c(scen_rv$scenarios, list(rec))
-    if (want_cmp && n_comparar() < 3L) cmp_rv$sel <- c(cmp_rv$sel, uid)
+    if (want_cmp && n_comparar() < 4L) cmp_rv$sel <- c(cmp_rv$sel, uid)
     register_scenario_obs(uid)
     uid
   }
@@ -1465,11 +1476,16 @@ server <- function(input, output, session) {
         s$uid <- NULL
         add_scenario(s)
       }
-      if (length(rs$scenarios %||% list())) {
+      n_scen <- length(rs$scenarios %||% list())
+      n_comp <- sum(vapply(list(rs$libs$itbis, rs$libs$isr,
+                               rs$libs$sub,   rs$libs$comp),
+                           function(l) length(l %||% list()), integer(1)))
+      if (n_scen > 0 || n_comp > 0) {
         showNotification(
-          paste0("Sesi\u00f3n anterior restaurada (",
-                 length(rs$scenarios), " escenario(s))."),
-          type = "message", duration = 6)
+          paste0("Sesi\u00f3n anterior restaurada: ", n_scen, " escenario(s) y ",
+                 n_comp, " componente(s) en las bibliotecas. ",
+                 "Para empezar de cero use \u201cNueva sesi\u00f3n\u201d en 5 \u00b7 Revisar."),
+          type = "message", duration = 10)
       }
     }
   })
@@ -1962,6 +1978,10 @@ server <- function(input, output, session) {
       comp  = input$compose_comp  %||% ""
     ))
     updateTextInput(session, "compose_name", value = "")
+    # Limpiar los desplegables para que el próximo escenario parta de referencia.
+    for (drop_id in c("compose_itbis", "compose_isr", "compose_sub", "compose_comp")) {
+      updateSelectInput(session, drop_id, selected = "__ref__")
+    }
     showNotification(paste0("Escenario \u201c", nm, "\u201d agregado."),
                      type = "message")
   })
@@ -1993,7 +2013,7 @@ server <- function(input, output, session) {
   })
 
   output$compare_count <- renderUI(
-    paste0(": ", n_comparar(), " de 3 marcados para comparar")
+    paste0(": ", n_comparar(), " de 4 marcados para comparar")
   )
 
   # Tarjetas de escenarios guardados (compositor)
@@ -2175,11 +2195,11 @@ server <- function(input, output, session) {
     sel    <- cmp_rv$sel
     marked <- Filter(function(s) s$uid %in% sel, scen_rv$scenarios)
     if (length(marked)) {
-      if (length(marked) > 3L) marked <- marked[1:3]
+      if (length(marked) > 4L) marked <- marked[1:4]
       slots <- lapply(marked, compose_scenario_inputs)
     } else if (length(scen_rv$scenarios)) {
-      # Hay escenarios pero ninguno marcado: comparar los primeros (hasta 3).
-      slots <- lapply(utils::head(scen_rv$scenarios, 3L), compose_scenario_inputs)
+      # Hay escenarios pero ninguno marcado: comparar los primeros (hasta 4).
+      slots <- lapply(utils::head(scen_rv$scenarios, 4L), compose_scenario_inputs)
     } else {
       # Sin escenarios guardados: usar el estado actual del formulario.
       slots <- list(collect_scenario_inputs())

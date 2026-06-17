@@ -1,0 +1,73 @@
+---
+description: SimFi-RD project context — R Shiny fiscal microsimulation tool for the Dominican Republic
+alwaysApply: true
+---
+
+# SimFi-RD Project Context
+
+R Shiny (`app.R`) fiscal microsimulation tool for the Dominican Republic. Runs a pipeline of R scripts against household survey microdata to show how tax/transfer policy reforms affect poverty, inequality, and fiscal outcomes.
+
+## Key files
+
+| File | Role |
+|------|------|
+| `app.R` | Single-file Shiny app — all UI + server logic (~2600 lines) |
+| `R/run_dom_scenario.R` | Runs one scenario: builds extras → calls `run_pipeline_cached` |
+| `R/pipeline_runner.R` | Executes scripts 01–05 in a fresh env; no cross-run cache |
+| `R/dom_dashboard_charts.R` | Chart/table helpers for the Simular tab |
+| `R/scenario_store.R` | Autosave (RDS) + Excel import/export for component libraries |
+| `R/insumos_dictionary.R` | `build_insumos_live` — per-instrument incidence blocks |
+| `R/itbis_catalog_builder.R` | `build_detalle_itbis_override` — per-variety ITBIS rate overrides |
+| `scripts/pipeline/01–05_DOM26_*.R` | The actual simulation pipeline (ITBIS → ISR → Subsidio → Compensación → Consolidation) |
+| `data/itbis_base_catalog.csv` | ITBIS product catalog with base rates |
+| `data/params/sim_sub.csv` | Subsidy simulation parameters |
+| `app_state/autosave.rds` | Session autosave (created at runtime) |
+
+## App screen structure (navbar)
+
+`1 · ITBIS` → `2 · Renta` → `3 · Subsidio` → `4 · Compensación` → `5 · Revisar` → `6 · Simular` → `Acerca de`
+
+**5 · Revisar** is the composer: user picks named components from libraries (one per instrument) and assembles named scenarios. **6 · Simular** runs selected scenarios and shows results.
+
+## Architectural patterns
+
+### Component library + composer model
+- `comp_lib` (reactiveValues): four lists (`$itbis`, `$isr`, `$sub`, `$comp`) of named saved components.
+- `scen_rv$scenarios`: list of scenario records; each has `name`, `itbis`, `isr`, `sub`, `comp` (component names or `""` / `"__ref__"` for base).
+- `compose_scenario_inputs(scn)` turns a scenario record into a full input list for `run_dom_scenario`.
+- Autosave/restore: `scenario_autosave_write/read` in `R/scenario_store.R` → `app_state/autosave.rds`.
+
+### Sentinel value
+Composer dropdowns use `"__ref__"` (not `""`) as the "no component / pre-reforma" value. `""` is treated as a placeholder by selectize.js and cannot be re-selected. `compose_scenario_inputs` normalizes both `"__ref__"` and `""` to empty before library lookup.
+
+### Pipeline execution
+`run_multi_dom` loops over filled scenario slots (max 4 for comparison), calls `run_dom_scenario(inp, ...)` with `inp$escenario <- i` for each. Each run is fully independent — no cross-run result cache. `run_pipeline_cached` injects `extras` (overrides) into the pipeline environment.
+
+### Income variable hierarchy (critical)
+```
+yd_pc   = disposable income after ISR only
+yc_pc   = yd_pc − ΔITBIS − ΔSubsidy
+yz_pc   = yc_pc + ΔCompensation   ← USE THIS for poverty/inequality
+```
+Poverty and inequality must use `yz_{k}_pc` / column `yz_k` in result matrices, NOT `yd_` or `yc_`.
+
+### Pipeline column naming
+All scenario-specific columns use suffix `{k}` where k = escenario number:
+`dtx_isr{k}_pc`, `itx_itb{k}_pc`, `sub_ele{k}_pc`, `neto{k}_pc`, `comp_{k}_pc`, `nitx{k}_pc`
+Delta (change) columns: `ddtx_isr{k}_pc`, `ditx_itb{k}_pc`, `dsub_ele{k}_pc`, `dcomp{k}_pc`
+
+## Known gotchas
+
+- **ITBIS override always covers all varieties** — `build_detalle_itbis_override` with empty rate lists still produces a full override with base rates; this is intentional and neutral.
+- **`sim_sub` always = 1L** in `collect/compose_scenario_inputs`. When no subsidy customization, `prepare_pipeline_extras` injects a neutral `sim_sub_row_override` (copy of base row) to ensure `sub_ele1_*` columns always exist.
+- **`janitor::clean_names()`** lowercases all column names from CSVs. Parameter files read via `read_param_csv` have lowercase column names.
+- **`openxlsx` v4.2.8.1** converts spaces in column names to dots on read. The ITBIS sheet is read with `colNames = FALSE` + manual header promotion to preserve spaces.
+- **`decsum`** is the last-row aggregate of the decile table in each scenario result; `fiscal_post_measures_mat` reads from it.
+- **Comparison limit is 4** (not 3). All hardcoded limits in `app.R` use `4L`.
+
+## UI conventions
+
+- No references to internal variable names, pipeline mechanics, or "analista" labels in user-facing text.
+- Spanish UI throughout. Unicode escapes for accented chars (e.g. `\u00e1` = á).
+- Component status badge: `output$lib_{prefix}_status` shows "sin guardar" / "guardado" / "cambios sin guardar".
+- `reset_form_to_base()` resets the live form; `btn_reset_all` ("Nueva sesión") clears everything including libraries and autosave.
