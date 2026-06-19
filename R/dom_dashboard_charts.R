@@ -434,6 +434,21 @@ kakwani_summary_matrices <- function(dom_list, post_headers_chr) {
   }
   rownames(ic_mat) <- rownames(kw_mat) <- rows
   colnames(ic_mat) <- colnames(kw_mat) <- lab_cols
+
+  # Keep only rows where at least one scenario differs from the base.
+  # Compensación base is structurally NA; show it when any scenario has a value.
+  changed <- apply(ic_mat, 1L, function(row) {
+    base_val  <- row[1L]
+    post_vals <- row[-1L]
+    if (is.na(base_val)) {
+      any(!is.na(post_vals))
+    } else {
+      any(abs(post_vals - base_val) > 1e-6, na.rm = TRUE)
+    }
+  })
+  ic_mat <- ic_mat[changed, , drop = FALSE]
+  kw_mat <- kw_mat[changed, , drop = FALSE]
+
   list(kak_ic = ic_mat, kak_kw = kw_mat)
 }
 
@@ -495,6 +510,71 @@ plotly_compensacion_bars <- function(
       yaxis = list(title = "% PIB", rangemode = "tozero"),
       xaxis = list(title = "", tickangle = 25),
       font = list(family = "system-ui, sans-serif", size = 12)
+    )
+}
+
+plotly_fiscal_bars <- function(fiscal_mat, column_tooltips = NULL) {
+  if (is.null(fiscal_mat) || !nrow(fiscal_mat) || !ncol(fiscal_mat)) {
+    return(
+      plot_ly() %>%
+        layout(title = list(text = "Sin datos fiscales disponibles.", x = 0.5))
+    )
+  }
+  # Rows to display (omit "Neto sin comp." redundant row if present; keep the
+  # aggregate "Neto" which includes compensation).
+  keep_rows <- rownames(fiscal_mat)[!grepl("sin comp", rownames(fiscal_mat),
+                                           ignore.case = TRUE)]
+  mat <- fiscal_mat[keep_rows, , drop = FALSE]
+
+  # Long format: one row per (instrumento, escenario)
+  df <- data.frame(
+    Instrumento = rep(rownames(mat), times = ncol(mat)),
+    Escenario   = rep(colnames(mat), each = nrow(mat)),
+    Valor       = as.vector(mat),
+    stringsAsFactors = FALSE
+  )
+  df$Instrumento <- factor(df$Instrumento, levels = rownames(mat))
+  # Colour palette matched to existing app palette (one colour per scenario column)
+  pal <- c("#636EFA", "#EF553B", "#00CC96", "#AB63FA", "#FFA15A")
+  scen_cols  <- colnames(mat)
+  col_map    <- setNames(pal[seq_along(scen_cols)], scen_cols)
+
+  traces <- lapply(scen_cols, function(sc) {
+    d <- df[df$Escenario == sc, , drop = FALSE]
+    tip <- if (!is.null(column_tooltips) && !is.null(column_tooltips[[sc]]))
+      column_tooltips[[sc]] else sc
+    list(
+      x           = as.character(d$Instrumento),
+      y           = d$Valor,
+      name        = sc,
+      type        = "bar",
+      marker      = list(color = col_map[[sc]]),
+      hovertemplate = paste0(
+        "<b>%{x}</b><br>",
+        tip,
+        "<br>%{y:.4f}% PIB<extra></extra>"
+      )
+    )
+  })
+
+  p <- plot_ly()
+  for (tr in traces) {
+    p <- add_trace(p,
+      x             = tr$x,
+      y             = tr$y,
+      name          = tr$name,
+      type          = tr$type,
+      marker        = tr$marker,
+      hovertemplate = tr$hovertemplate
+    )
+  }
+  p %>%
+    layout(
+      barmode = "group",
+      yaxis   = list(title = "% PIB", zeroline = TRUE),
+      xaxis   = list(title = "", tickangle = 15),
+      legend  = list(orientation = "h", y = -0.25),
+      font    = list(family = "system-ui, sans-serif", size = 12)
     )
 }
 
@@ -651,6 +731,9 @@ procesar_fila_dom <- function(
     })
     desr <- do.call(cbind, c(list(pre_ineq), post_ineq))
     desr <- as.matrix(desr)
+    # Flip dGini sign: pipeline uses base−reform; display uses reform−base so that
+    # a decrease in inequality appears as a negative number.
+    desr[2L, ] <- -desr[2L, ]
 
     lab_cols <- if (!is.null(post_display)) {
       c("Pre-reforma", post_display)
@@ -681,9 +764,9 @@ procesar_fila_dom <- function(
     )
     rownames(desr) <- c(
       "Coeficiente de Gini",
-      "Cambio en Gini (respecto a línea base, mismo concepto de ingreso)",
-      "Índice de Palma",
-      "Índice de Theil"
+      "Cambio en Gini (negativo \u2192 reducci\u00f3n de desigualdad)",
+      "\u00cdndice de Palma",
+      "\u00cdndice de Theil"
     )
 
     return(list(povr = povr, npov = npov, povb = povb, desr = desr))

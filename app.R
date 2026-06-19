@@ -893,32 +893,6 @@ ui <- page_navbar(
             title = "Resumen",
             navset_card_pill(
               id = "resumen_sub",
-              nav_panel("Cuadros",
-                p(class = "small text-muted",
-                  "Columnas: ",
-                  tags$strong("Pre-reforma"),
-                  " y escenarios simulados."),
-                layout_columns(col_widths = c(12, 12),
-                  card(card_header("Tasas de pobreza (%)"),
-                       DTOutput("dash_tbl_povr", height = "200px")),
-                  card(card_header("Nuevos pobres (personas)"),
-                       DTOutput("dash_tbl_npov", height = "200px"))
-                ),
-                layout_columns(col_widths = c(12, 12),
-                  card(card_header("Brecha de pobreza promedio (pesos mensuales)"),
-                       DTOutput("dash_tbl_povb", height = "200px")),
-                  card(card_header("Nuevos pobres por escenario"),
-                       plotlyOutput("dash_plot_npov_bar", height = "360px"))
-                ),
-                card(card_header("Desigualdad"),
-                     DTOutput("dash_tbl_desr", height = "220px")),
-                layout_columns(col_widths = c(12, 12),
-                  card(card_header("\u00cdndice de concentraci\u00f3n (IC)"),
-                       DTOutput("dash_tbl_kak_ic", height = "240px")),
-                  card(card_header("\u00cdndice de Kakwani"),
-                       DTOutput("dash_tbl_kak_kw", height = "240px"))
-                )
-              ),
               nav_panel("Pobreza general",
                 layout_columns(col_widths = c(6, 6),
                   card(card_header("Pobreza general e incidencia"),
@@ -973,8 +947,36 @@ ui <- page_navbar(
                   "Medidas agregadas (% PIB)."),
                 card(card_header("Efectos fiscales por medida (% PIB)"),
                      DTOutput("dash_tbl_fiscal", height = "280px")),
+                card(card_header("Efecto fiscal por instrumento y escenario (% PIB)"),
+                     plotlyOutput("dash_plot_fiscal_full", height = "420px")),
                 card(card_header("Compensaci\u00f3n (% PIB)"),
                      plotlyOutput("dash_plot_comp", height = "400px"))
+              ),
+              nav_panel("Cuadros",
+                p(class = "small text-muted",
+                  "Columnas: ",
+                  tags$strong("Pre-reforma"),
+                  " y escenarios simulados."),
+                layout_columns(col_widths = c(12, 12),
+                  card(card_header("Tasas de pobreza (%)"),
+                       DTOutput("dash_tbl_povr", height = "200px")),
+                  card(card_header("Nuevos pobres (personas)"),
+                       DTOutput("dash_tbl_npov", height = "200px"))
+                ),
+                layout_columns(col_widths = c(12, 12),
+                  card(card_header("Brecha de pobreza promedio (pesos mensuales)"),
+                       DTOutput("dash_tbl_povb", height = "200px")),
+                  card(card_header("Nuevos pobres por escenario"),
+                       plotlyOutput("dash_plot_npov_bar", height = "360px"))
+                ),
+                card(card_header("Desigualdad"),
+                     DTOutput("dash_tbl_desr", height = "220px")),
+                layout_columns(col_widths = c(12, 12),
+                  card(card_header("\u00cdndice de concentraci\u00f3n (IC)"),
+                       DTOutput("dash_tbl_kak_ic", height = "240px")),
+                  card(card_header("\u00cdndice de Kakwani"),
+                       DTOutput("dash_tbl_kak_kw", height = "240px"))
+                )
               )
             )
           ),
@@ -2034,7 +2036,7 @@ server <- function(input, output, session) {
                     "A\u00fan no hay escenarios. Componga uno arriba."))
     }
     cmp_label <- function(lib, key) {
-      if (is.null(key) || !nzchar(key)) "Referencia" else key
+      if (is.null(key) || !nzchar(key) || identical(key, "__ref__")) "Sin cambios" else key
     }
     tagList(lapply(scs, function(sc) {
       uid <- sc$uid
@@ -2499,6 +2501,15 @@ server <- function(input, output, session) {
     dl <- sim_res()$resultados_escenarios
     plotly_compensacion_bars(dl, unname(scenario_headers_named()[names(dl)]),
                              scenario_tooltips = inc_col_tooltips())
+  })
+
+  output$dash_plot_fiscal_full <- renderPlotly({
+    shiny::validate(shiny::need(dom_list_ready(), need_run))
+    fm <- fiscal_mat()
+    shiny::validate(shiny::need(!is.null(fm),
+                                "Gr\u00e1fico fiscal no disponible."))
+    tips <- as.list(inc_col_tooltips())
+    plotly_fiscal_bars(fm, column_tooltips = tips)
   })
 
   # Gráficos Plotly de incidencia
