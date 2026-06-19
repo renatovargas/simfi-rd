@@ -2657,12 +2657,4 @@ server <- function(input, output, session) {
   })
 }
 
-# Nota: Preparación del catálogo ITBIS (una vez)
-# Si `data/itbis_base_catalog.csv` no existe en el repositorio:
-
-# ```bash
-# cp data/pipeline/r_params/param_csv/itbis_base.csv data/itbis_base_catalog.csv
-# Rscript scripts/build_itbis_base_catalog.R
-# ```
-
 shinyApp(ui, server)
