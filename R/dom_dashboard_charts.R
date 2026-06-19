@@ -924,7 +924,7 @@ region_label <- function(code) {
 
 #' @param escenario_headers Named vector: `names(dom_list)` → etiqueta corta.
 tabla_macro_region <- function(dom_list, escenario_headers = NULL) {
-  bind_rows(lapply(seq_along(dom_list), function(i) {
+  tab <- bind_rows(lapply(seq_along(dom_list), function(i) {
     df <- zap_labelled_df(as.data.frame(dom_list[[i]]$depinc))
     df <- df %>%
       mutate(
@@ -949,4 +949,37 @@ tabla_macro_region <- function(dom_list, escenario_headers = NULL) {
       `Etiqueta región`,
       dplyr::ends_with("_pc")
     )
+
+  # Drop instrument column groups where the Δ column is near-zero across all
+  # rows — this avoids showing spurious "ITBIS changed" signals when only the
+  # income denominator shifted due to another instrument being reformed.
+  # Each instrument has a delta column (d*_pc); if it is all ≈ 0, we remove
+  # both that delta column and the corresponding level columns.
+  pc_cols  <- grep("_pc$", names(tab), value = TRUE)
+  delta_cols <- grep("^(ddtx_isr|ditx_itb|dsub_ele|dcomp)\\d+_pc$",
+                     pc_cols, value = TRUE)
+  drop_cols <- character(0)
+  for (dc in delta_cols) {
+    vals <- suppressWarnings(as.numeric(tab[[dc]]))
+    if (all(is.na(vals) | abs(vals) < 1e-4)) {
+      # Identify the scenario number from the delta column name
+      k_str <- sub("^d(?:dtx_isr|itx_itb|sub_ele|comp)(\\d+)_pc$", "\\1",
+                   dc, perl = TRUE)
+      # Drop delta + both base and scenario level columns for this instrument
+      stem_patterns <- list(
+        ddtx_isr  = c(paste0("dtx_isr0_pc"),   paste0("dtx_isr",  k_str, "_pc")),
+        ditx_itb  = c(paste0("itx_itb0_pc"),   paste0("itx_itb",  k_str, "_pc")),
+        dsub_ele  = c(paste0("sub_ele0_pc"),    paste0("sub_ele",  k_str, "_pc")),
+        dcomp     = c(paste0("comp_0_pc"),      paste0("comp_",    k_str, "_pc"))
+      )
+      inst <- sub("^d(dtx_isr|itx_itb|sub_ele|comp)\\d+_pc$", "\\1",
+                  dc, perl = TRUE)
+      related <- c(dc, stem_patterns[[inst]])
+      drop_cols <- union(drop_cols, related[related %in% names(tab)])
+    }
+  }
+  if (length(drop_cols)) {
+    tab <- tab[, setdiff(names(tab), drop_cols), drop = FALSE]
+  }
+  tab
 }
