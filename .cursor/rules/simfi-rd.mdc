@@ -59,11 +59,15 @@ Delta (change) columns: `ddtx_isr{k}_pc`, `ditx_itb{k}_pc`, `dsub_ele{k}_pc`, `d
 ## Known gotchas
 
 - **ITBIS override always covers all varieties** — `build_detalle_itbis_override` with empty rate lists still produces a full override with base rates; this is intentional and neutral.
+- **ITBIS lookup is by scenario ID, not row index** — inside the MIP loop, `sim_itbis$uniforma_tasa[sim_itbis$sim_itbis == i]` (not `[i]`). Same for `exentos_gravados` and `tasa_itbis`.
 - **`sim_sub` always = 1L** in `collect/compose_scenario_inputs`. When no subsidy customization, `prepare_pipeline_extras` injects a neutral `sim_sub_row_override` (copy of base row) to ensure `sub_ele1_*` columns always exist.
 - **`janitor::clean_names()`** lowercases all column names from CSVs. Parameter files read via `read_param_csv` have lowercase column names.
 - **`openxlsx` v4.2.8.1** converts spaces in column names to dots on read. The ITBIS sheet is read with `colNames = FALSE` + manual header promotion to preserve spaces.
 - **`decsum`** is the last-row aggregate of the decile table in each scenario result; `fiscal_post_measures_mat` reads from it.
 - **Comparison limit is 4** (not 3). All hardcoded limits in `app.R` use `4L`.
+- **Script 06 is NOT run by the app** — `R/pipeline_runner.R` executes only scripts 01–05. Script 06 (`06_DOM26_Reportes.R`) is a standalone tool for generating Excel reports; it reads `fparams` = `data/mod/DOM_parametros_simulaciones.xlsx`. The app never reads that Excel file.
+- **`sim_renta.csv` has `educ_share` and `educ_limit` columns** (added 2026-06-23). Script 02 reads these per scenario to parameterize the ISR education deduction: `pmin(income × educ_share, tramo2 × educ_limit, gasto_educ_imp)`. `build_sim_renta_override()` carries them through automatically (not user-editable in the UI). Base scenario (sim_inc=0) has 4 brackets only — no 27% bracket — matching the official 2026 DR withholding scale.
+- **Pipeline update integration pattern** — the pipeline scripts in `scripts/pipeline/` contain Shiny-specific additions (override hooks, forced base scenario 0, CSV reading via `fparam_csv`, headless-safe plot guards) absent from any standalone colleague versions. When integrating upstream script changes, port only the economics logic; never replace the file wholesale.
 
 ## UI conventions
 
