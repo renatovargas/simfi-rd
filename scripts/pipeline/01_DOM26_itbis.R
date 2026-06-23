@@ -519,9 +519,9 @@ for (i in sim_itbis_esc) {
   # Solo procesar escenarios de simulación (1, 2, ...), no el base (0)
   if (i > 0) {
     nom_it <- paste0("tasa", i)
-    uniforma <- sim_itbis$uniforma_tasa[i] == 1
-    gravar_exentos <- sim_itbis$exentos_gravados[i] == 1
-    nueva_tasa <- sim_itbis$tasa_itbis[i]
+    uniforma       <- sim_itbis$uniforma_tasa[sim_itbis$sim_itbis == i] == 1
+    gravar_exentos <- sim_itbis$exentos_gravados[sim_itbis$sim_itbis == i] == 1
+    nueva_tasa     <- sim_itbis$tasa_itbis[sim_itbis$sim_itbis == i]
     
     tasas_itx1 <- tasas_itx1 %>%
       mutate(

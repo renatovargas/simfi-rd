@@ -141,14 +141,19 @@ for (esc in siminc) {
   educ_col <- paste0("d_educ_", esc)
   ylab_col <- paste0("ylab_",   esc)
   isr_col  <- paste0("dtx_isr", esc, "_in")
-  
+  edu_pcty <- sim_renta$educ_share[sim_renta$sim_inc == esc]
+  edu_smin <- sim_renta$educ_limit[sim_renta$sim_inc == esc]
+  min_impo <- sim_renta$tramo2[sim_renta$sim_inc == esc]
+
   params <- sim_renta %>% filter(sim_inc == esc) %>% slice(1)
   
   # Crear columnas base (deducción, ingreso neto, ISR inicial)
   if (!ylab_col %in% names(imponible2024)) {
     imponible2024 <- imponible2024 %>%
       mutate(
-        !!educ_col := pmin(Ilab_isr12a * 0.1, gasto_educ_imp),
+        !!educ_col := pmin(Ilab_isr12a * edu_pcty,
+                           min_impo * edu_smin,
+                           gasto_educ_imp),
         !!ylab_col := pmax(0, Ilab_isr12a - .data[[educ_col]]),
         !!isr_col  := 0
       )
@@ -170,12 +175,11 @@ imponible2024 %>%
 imponible2024 <- imponible2024 %>%
   mutate(rangoi = 
            case_when (
-             Ilab_isr12a <= 301444 ~ 1,
-             Ilab_isr12a > 301444 & Ilab_isr12a <= 416220 ~ 2,
-             Ilab_isr12a > 416220 & Ilab_isr12a <= 624329 ~ 3,
-             Ilab_isr12a > 624329 & Ilab_isr12a <= 867123 ~ 4,
-             Ilab_isr12a > 867123 & Ilab_isr12a <= 2400000 ~ 5,
-             Ilab_isr12a > 2400000 ~ 6
+             Ilab_isr12a <= 416220 ~ 1,
+             Ilab_isr12a > 416220  & Ilab_isr12a <= 624329 ~ 2,
+             Ilab_isr12a > 624329  & Ilab_isr12a <= 867123 ~ 3,
+             Ilab_isr12a > 867123  & Ilab_isr12a <= 4800000 ~ 4,
+             Ilab_isr12a > 4800000 ~ 5
            ))
 
 dom_sim_irenta <- imponible2024 %>%
@@ -195,9 +199,9 @@ saveRDS(dom_sim_irenta, paste0(fdbmod, "DOM_simirenta.rds"))
 
 ## eliminar datos de memoria
 rm(
-  dom_sim_irenta, imponible2024,  educ_col, 
-  isr_col, max_tram, ylab_col, calcular_isr_tramos, 
-  esc, tram_cols
+  dom_sim_irenta, imponible2024, educ_col,
+  isr_col, max_tram, ylab_col, calcular_isr_tramos,
+  esc, tram_cols, edu_pcty, edu_smin, min_impo
 )
 
 

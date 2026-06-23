@@ -830,12 +830,14 @@ extraer_resumen <- function(i) {
   if (i == 0) {
     esc <- resultados_escenarios[[1]]
     col_pov <- 1
+    col_kak <- 2
     comr <- rbind(as.numeric(esc$decsum[11, 2]),
                   as.numeric(esc$decsum[11, 3]),
                   as.numeric(esc$decsum[11, 4]), 0)
   } else {
     esc <- resultados_escenarios[[paste0("escenario_", i)]]
     col_pov <- 4
+    col_kak <- 4
     comr <- rbind(as.numeric(esc$decsum[11, 6]),
                   as.numeric(esc$decsum[11, 7]),
                   as.numeric(esc$decsum[11, 8]),
@@ -855,10 +857,10 @@ extraer_resumen <- function(i) {
                  as.numeric(esc$ineq[3, col_pov]),
                  as.numeric(esc$ineq[4, col_pov])
                  ),
-    kakr = rbind(as.numeric(esc$kakwani[1, col_pov]),
-                 as.numeric(esc$kakwani[2, col_pov]),
-                 as.numeric(esc$kakwani[3, col_pov]),
-                 as.numeric(esc$kakwani[4, col_pov])
+    kakr = rbind(as.numeric(esc$kakwani[1, col_kak]),
+                 as.numeric(esc$kakwani[2, col_kak]),
+                 as.numeric(esc$kakwani[3, col_kak]),
+                 as.numeric(esc$kakwani[4, col_kak])
     ),
     comr = comr
   )
