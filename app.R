@@ -14,6 +14,18 @@ suppressPackageStartupMessages({
   library(scales)
   library(RColorBrewer)
 })
+options(DT.options = list(
+  language = list(
+    search      = "Buscar:",
+    lengthMenu  = "Mostrar _MENU_ registros",
+    info        = "Mostrando _START_ a _END_ de _TOTAL_ registros",
+    infoEmpty   = "Mostrando 0 a 0 de 0 registros",
+    infoFiltered = "(filtrado de _MAX_ registros en total)",
+    zeroRecords = "No se encontraron resultados.",
+    emptyTable  = "Sin datos disponibles.",
+    paginate    = list(previous = "Anterior", `next` = "Siguiente")
+  )
+))
 
 # Funciones auxiliares
 
@@ -454,7 +466,7 @@ dom_css <- HTML("
 ui <- page_navbar(
   id     = "main_nav",
   title  = tags$span(style = "font-weight:600;",
-                     "RD: Microsimulación Fiscal"),
+                     "Microsimulación Fiscal RD ||"),
   header = tags$head(tags$style(dom_css)),
   theme  = bs_theme(
     version      = 5,
@@ -2203,16 +2215,15 @@ server <- function(input, output, session) {
     sim_res_rv(NULL)
     sel    <- cmp_rv$sel
     marked <- Filter(function(s) s$uid %in% sel, scen_rv$scenarios)
-    if (length(marked)) {
-      if (length(marked) > 4L) marked <- marked[1:4]
-      slots <- lapply(marked, compose_scenario_inputs)
-    } else if (length(scen_rv$scenarios)) {
-      # Hay escenarios pero ninguno marcado: comparar los primeros (hasta 4).
-      slots <- lapply(utils::head(scen_rv$scenarios, 4L), compose_scenario_inputs)
-    } else {
-      # Sin escenarios guardados: usar el estado actual del formulario.
-      slots <- list(collect_scenario_inputs())
+    if (!length(marked)) {
+      showNotification(
+        "Seleccione al menos un escenario para comparar en la pantalla 'Revisar'.",
+        type = "error", duration = 6
+      )
+      return(NULL)
     }
+    if (length(marked) > 4L) marked <- marked[1:4]
+    slots <- lapply(marked, compose_scenario_inputs)
     sim_res_rv(run_multi_dom(slots, paths()))
   })
 
@@ -2465,7 +2476,8 @@ server <- function(input, output, session) {
       if (nrow(summ()$desr) < 4L)
         return(plotly::plot_ly() %>%
                  plotly::layout(title = list(text = paste(title_txt, "no disponible."),
-                                             x = 0.5)))
+                                             x = 0.5)) %>%
+                 plotly::config(locale = "es"))
       comb01_plotly_native(summ()$desr, 4, "", y_label, idx,
                            column_tooltips = summ_col_tooltips())
     })

@@ -76,6 +76,7 @@ Delta (change) columns: `ddtx_isr{k}_pc`, `ditx_itb{k}_pc`, `dsub_ele{k}_pc`, `d
 ## UI conventions
 
 - No references to internal variable names, pipeline mechanics, or "analista" labels in user-facing text.
-- Spanish UI throughout. Use literal UTF-8 characters for accented text directly in source (á, é, í, ó, ú, ñ, etc.) — do not use `\uXXXX` escape sequences.
+- Spanish UI throughout. Use literal UTF-8 characters for **Spanish accented letters and punctuation** directly in source (á, é, í, ó, ú, ñ, ü, Á, É, Í, Ó, Ú, Ñ, ¿, ¡, etc.) — never `\uXXXX` for these. `\uXXXX` escape sequences are acceptable for non-letter glyphs such as navigation arrows (`\u2190` ←, `\u2192` →), middle dot (`\u00b7` ·), em-dash (`\u2014` —), angle quotes (`\u00ab` «, `\u00bb` »), ellipsis (`\u2026` …), delta (`\u0394` Δ), and similar symbols.
+- **Encoding — NEVER use StrReplace or Write tools on any file in this project.** Both tools default to Latin-1 and will silently corrupt every multi-byte UTF-8 character in the file (accented letters, arrows, dashes, etc.), even when the edited lines themselves are ASCII. For ALL file edits, use a Python shell write: read with `encoding='utf-8'`, apply changes, then write with `open(path, 'wb'); f.write(src.encode('utf-8'))`. For separator glyphs in R string literals, prefer `\uXXXX` R-escape notation — this keeps those characters ASCII in the file and immune to encoding round-trips.
 - Component status badge: `output$lib_{prefix}_status` shows "sin guardar" / "guardado" / "cambios sin guardar".
 - `reset_form_to_base()` resets the live form; `btn_reset_all` ("Nueva sesión") clears everything including libraries, autosave, and `sim_res_rv`.

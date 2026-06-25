@@ -84,25 +84,29 @@ comb01_plotly_native <- function(
   if (!is.matrix(data) && !is.data.frame(data)) {
     return(
       plot_ly() %>%
-        layout(title = list(text = "Datos no válidos.", x = 0.5))
+        layout(title = list(text = "Datos no válidos.", x = 0.5)) %>%
+        config(locale = "es")
     )
   }
   if (is.null(dim(data)) || nrow(data) == 0 || ncol(data) == 0) {
     return(
       plot_ly() %>%
-        layout(title = list(text = "Sin datos.", x = 0.5))
+        layout(title = list(text = "Sin datos.", x = 0.5)) %>%
+        config(locale = "es")
     )
   }
   if (indice < 1 || indice > nrow(data)) {
     return(
       plot_ly() %>%
-        layout(title = list(text = "Índice de fila fuera de rango.", x = 0.5))
+        layout(title = list(text = "Índice de fila fuera de rango.", x = 0.5)) %>%
+        config(locale = "es")
     )
   }
   if (is.null(colnames(data))) {
     return(
       plot_ly() %>%
-        layout(title = list(text = "Faltan nombres de columnas.", x = 0.5))
+        layout(title = list(text = "Faltan nombres de columnas.", x = 0.5)) %>%
+        config(locale = "es")
     )
   }
 
@@ -211,7 +215,8 @@ comb01_plotly_native <- function(
       showlegend = FALSE,
       margin = list(l = 50, r = 20, b = 90, t = 50),
       font = list(family = "system-ui, sans-serif", size = base_font_size)
-    )
+    ) %>%
+    config(locale = "es")
 }
 
 graficar_incidencia_plotly <- function(
@@ -231,7 +236,8 @@ graficar_incidencia_plotly <- function(
   ) {
     return(
       plot_ly() %>%
-        layout(title = list(text = "Sin datos de incidencia.", x = 0.5))
+        layout(title = list(text = "Sin datos de incidencia.", x = 0.5)) %>%
+        config(locale = "es")
     )
   }
 
@@ -344,7 +350,8 @@ graficar_incidencia_plotly <- function(
       ),
       margin = list(b = 140, t = 60),
       font = list(family = "system-ui, sans-serif", size = font_size_base)
-    )
+    ) %>%
+    config(locale = "es")
 }
 
 pick_comp_pc_col <- function(nm, scen_idx) {
@@ -382,7 +389,14 @@ fiscal_post_measures_mat <- function(dom_list, scen_table_hdr_named) {
     }
     cc_comp <- pick_comp_pc_col(nm, k)
     comp_v  <- if (is.na(cc_comp)) NA_real_ else suppressWarnings(as.numeric(r[[cc_comp]]))
-    c(gv("dtx_isr"), gv("itx_itb"), gv("sub_ele"), gv("neto"), comp_v, gv("nitx"))
+    if (k == 0L) {
+      neto_v <- 0
+      nitx_v <- 0
+    } else {
+      nitx_v <- gv("nitx")
+      neto_v <- nitx_v - if (is.na(comp_v)) 0 else comp_v
+    }
+    c(gv("dtx_isr"), gv("itx_itb"), gv("sub_ele"), neto_v, comp_v, nitx_v)
   }
 
   # Pre-reforma column uses base scenario (k = 0) from the first element of dom_list
@@ -510,14 +524,16 @@ plotly_compensacion_bars <- function(
       yaxis = list(title = "% PIB", rangemode = "tozero"),
       xaxis = list(title = "", tickangle = 25),
       font = list(family = "system-ui, sans-serif", size = 12)
-    )
+    ) %>%
+    config(locale = "es")
 }
 
 plotly_fiscal_bars <- function(fiscal_mat, column_tooltips = NULL) {
   if (is.null(fiscal_mat) || !nrow(fiscal_mat) || !ncol(fiscal_mat)) {
     return(
       plot_ly() %>%
-        layout(title = list(text = "Sin datos fiscales disponibles.", x = 0.5))
+        layout(title = list(text = "Sin datos fiscales disponibles.", x = 0.5)) %>%
+        config(locale = "es")
     )
   }
   # Rows to display (omit "Neto sin comp." redundant row if present; keep the
@@ -575,14 +591,16 @@ plotly_fiscal_bars <- function(fiscal_mat, column_tooltips = NULL) {
       xaxis   = list(title = "", tickangle = 15),
       legend  = list(orientation = "h", y = -0.25),
       font    = list(family = "system-ui, sans-serif", size = 12)
-    )
+    ) %>%
+    config(locale = "es")
 }
 
 plotly_npov_horizontal <- function(npov_mat, column_tooltips = NULL) {
   if (is.null(npov_mat) || !nrow(npov_mat) || !ncol(npov_mat)) {
     return(
       plot_ly() %>%
-        layout(title = list(text = "Sin datos de nuevos pobres.", x = 0.5))
+        layout(title = list(text = "Sin datos de nuevos pobres.", x = 0.5)) %>%
+        config(locale = "es")
     )
   }
 
@@ -663,7 +681,8 @@ plotly_npov_horizontal <- function(npov_mat, column_tooltips = NULL) {
       font = list(family = "system-ui, sans-serif", size = 12),
       bargap = 0.18,
       bargroupgap = 0.08
-    )
+    ) %>%
+    config(locale = "es")
 }
 
 # --- DOM → matrices resumen (lógica alineada al .qmd de Guatemala) ------------
