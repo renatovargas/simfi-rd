@@ -41,7 +41,7 @@ if (exists("sim_comp_override", inherits = FALSE) &&
 dom_ingdis <- readRDS(paste0(fpresim, "DOM26_SDIncome.RDS")) %>%
   select(hhid, hhin, yd_pc, ym_pc, trimestre, factor_expansion_anual,
     zona, yn_pc, edad, relation, sexo, dtr_supe_pc, pline_mod, 
-    pline_ext, macro_region) %>%
+    pline_ext, macro_region, icv) %>%
   filter(!(yd_pc==0 & ym_pc==0)) %>%
   mutate(no_hogar = hhid, urban = if_else(zona == 1, 1, 0)) %>%
   arrange(hhid)
@@ -149,9 +149,8 @@ for (i in variable_values) {
 
 DOM_results <- DOM_results %>%
   mutate(
-    decyd = xtile(yd_pc, 10, wt = factor_expansion_anual),
-    icv   = 1
- )
+    decyd = xtile(yd_pc, 10, wt = factor_expansion_anual)
+  )
 
 comp_precomputed <- list()
 

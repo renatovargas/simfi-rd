@@ -19,7 +19,7 @@ R Shiny (`app.R`) fiscal microsimulation tool for the Dominican Republic. Runs a
 | `R/insumos_dictionary.R` | `build_insumos_live` — per-instrument incidence blocks |
 | `R/itbis_catalog_builder.R` | `build_detalle_itbis_override` — per-variety ITBIS rate overrides |
 | `scripts/pipeline/01–05_DOM26_*.R` | The actual simulation pipeline (ITBIS → ISR → Subsidio → Compensación → Consolidation) |
-| `data/itbis_base_catalog.csv` | ITBIS product catalog with base rates |
+| `data/itbis_base_catalog.csv` | ITBIS product catalog with base rates (6,590 varieties) |
 | `data/params/sim_sub.csv` | Subsidy simulation parameters |
 | `app_state/autosave.rds` | Session autosave (created at runtime) |
 
@@ -41,7 +41,7 @@ R Shiny (`app.R`) fiscal microsimulation tool for the Dominican Republic. Runs a
 Composer dropdowns use `"__ref__"` (not `""`) as the "no component / pre-reforma" value. `""` is treated as a placeholder by selectize.js and cannot be re-selected. `compose_scenario_inputs` normalizes both `"__ref__"` and `""` to empty before library lookup.
 
 ### Pipeline execution
-`run_multi_dom` loops over filled scenario slots (max 4 for comparison), calls `run_dom_scenario(inp, ...)` with `inp$escenario <- i` for each. Each run is fully independent — no cross-run result cache. `run_pipeline_cached` injects `extras` (overrides) into the pipeline environment.
+`run_multi_dom` loops over filled scenario slots (max 4 for comparison), calls `run_dom_scenario(inp, ...)` with `inp$escenario <- i` for each. Each run is fully independent — no cross-run result cache. `run_pipeline_cached` injects `extras` (overrides) into the pipeline environment. `sim_res_rv` is set to `NULL` at the start of each new run so stale results are cleared immediately.
 
 ### Income variable hierarchy (critical)
 ```
@@ -58,7 +58,7 @@ Delta (change) columns: `ddtx_isr{k}_pc`, `ditx_itb{k}_pc`, `dsub_ele{k}_pc`, `d
 
 ## Known gotchas
 
-- **ITBIS override always covers all varieties** — `build_detalle_itbis_override` with empty rate lists still produces a full override with base rates; this is intentional and neutral.
+- **ITBIS override covers catalog varieties only (6,590 of 6,625)** — `data/itbis_base_catalog.csv` is missing 35 varieties that appear in `data/params/itbis_base.csv`. For those 35, the override produces `tasa1 = NA` after the left-join. Script 01 fills NA reform rates with `tasa0` (base rate) when `detalle_itbis_override` is present, ensuring uncatalogued varieties are truly neutral. Without this guard, `sim_itbis` row 1 (`uniforma_tasa=1, exentos_gravados=1`) would tax those exempt varieties at 18%, causing ghost ITBIS results.
 - **ITBIS lookup is by scenario ID, not row index** — inside the MIP loop, `sim_itbis$uniforma_tasa[sim_itbis$sim_itbis == i]` (not `[i]`). Same for `exentos_gravados` and `tasa_itbis`.
 - **`sim_sub` always = 1L** in `collect/compose_scenario_inputs`. When no subsidy customization, `prepare_pipeline_extras` injects a neutral `sim_sub_row_override` (copy of base row) to ensure `sub_ele1_*` columns always exist.
 - **`janitor::clean_names()`** lowercases all column names from CSVs. Parameter files read via `read_param_csv` have lowercase column names.
@@ -67,11 +67,15 @@ Delta (change) columns: `ddtx_isr{k}_pc`, `ditx_itb{k}_pc`, `dsub_ele{k}_pc`, `d
 - **Comparison limit is 4** (not 3). All hardcoded limits in `app.R` use `4L`.
 - **Script 06 is NOT run by the app** — `R/pipeline_runner.R` executes only scripts 01–05. Script 06 (`06_DOM26_Reportes.R`) is a standalone tool for generating Excel reports; it reads `fparams` = `data/mod/DOM_parametros_simulaciones.xlsx`. The app never reads that Excel file.
 - **`sim_renta.csv` has `educ_share` and `educ_limit` columns** (added 2026-06-23). Script 02 reads these per scenario to parameterize the ISR education deduction: `pmin(income × educ_share, tramo2 × educ_limit, gasto_educ_imp)`. `build_sim_renta_override()` carries them through automatically (not user-editable in the UI). Base scenario (sim_inc=0) has 4 brackets only — no 27% bracket — matching the official 2026 DR withholding scale.
+- **`sim_comp.csv` active row (sim_comp=1)**: `grupo_com=2, metodo_com=2, valor_com=500`. These differ from previous versions; they match the master Excel. The app overrides these with UI inputs when the user configures compensation, but the CSV values matter for standalone script runs.
+- **`sim_itbis.csv` row 2**: `tasa_itbis=16, nom_itbis="ITBIS tasa 16%"`. Row 1 ("Reducción exentos") has tasa=18; row 2 is the 16% reform scenario.
+- **`icv` in script 04** — since 2026-06-25, `icv` is read from microdata (`DOM26_SDIncome.RDS`) in the `dom_ingdis` select. The old `icv = 1` constant (which disabled ICV-based compensation targeting) was removed. The `icv` column must exist in the RDS for script 04 to run.
 - **Pipeline update integration pattern** — the pipeline scripts in `scripts/pipeline/` contain Shiny-specific additions (override hooks, forced base scenario 0, CSV reading via `fparam_csv`, headless-safe plot guards) absent from any standalone colleague versions. When integrating upstream script changes, port only the economics logic; never replace the file wholesale.
+- **DT result tables use `server = FALSE`** — all `renderDT` calls for Simular-tab result tables include `server = FALSE` to force complete client-side re-initialization when the number of scenario columns changes between runs.
 
 ## UI conventions
 
 - No references to internal variable names, pipeline mechanics, or "analista" labels in user-facing text.
-- Spanish UI throughout. Unicode escapes for accented chars (e.g. `\u00e1` = á).
+- Spanish UI throughout. Use literal UTF-8 characters for accented text directly in source (á, é, í, ó, ú, ñ, etc.) — do not use `\uXXXX` escape sequences.
 - Component status badge: `output$lib_{prefix}_status` shows "sin guardar" / "guardado" / "cambios sin guardar".
-- `reset_form_to_base()` resets the live form; `btn_reset_all` ("Nueva sesión") clears everything including libraries and autosave.
+- `reset_form_to_base()` resets the live form; `btn_reset_all` ("Nueva sesión") clears everything including libraries, autosave, and `sim_res_rv`.

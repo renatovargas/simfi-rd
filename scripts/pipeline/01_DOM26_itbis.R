@@ -515,6 +515,19 @@ tasas_itx1 <- tasas_itx %>%
   select(-cod_articulo) %>%
   left_join(tasa1, by=c("id_variedad"))
 
+## Cuando la app inyecta detalle_itbis_override, las variedades que no están en
+## el catálogo quedan con tasa NA tras el join.  Para esas variedades, la tasa de
+## reforma debe ser igual a la base (neutralidad), no los parámetros generales de
+## sim_itbis (que pueden tener uniforma_tasa/exentos_gravados = 1).
+if (exists("detalle_itbis_override", inherits = FALSE)) {
+  for (.cn in paste0("tasa", sim_itbis_esc[sim_itbis_esc > 0])) {
+    if (.cn %in% names(tasas_itx1)) {
+      tasas_itx1 <- tasas_itx1 %>%
+        mutate(!!.cn := if_else(is.na(.data[[.cn]]), tasa0, .data[[.cn]]))
+    }
+  }
+}
+
 for (i in sim_itbis_esc) {
   # Solo procesar escenarios de simulación (1, 2, ...), no el base (0)
   if (i > 0) {

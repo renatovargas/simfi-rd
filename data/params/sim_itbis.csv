@@ -1,7 +1,7 @@
 sim_itbis,activo,tasa_itbis,exentos_gravados,uniforma_tasa,nom_itbis,base_formal
 0,1,18,0,0,Base,4
 1,1,18,1,1,Reducción exentos,4
-2,1,18,1,1,Exentos al 10,4
+2,1,16,1,1,ITBIS tasa 16%,4
 3,0,16,1,1,ITBIS tasa única  16,4
 4,0,16,1,1,ITBIS 16 (menos 11 productos),4
 5,0,16,1,1,,
