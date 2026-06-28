@@ -999,7 +999,7 @@ ui <- page_navbar(
           nav_panel(
             title = "Incidencia",
             p(class = "small text-muted px-1",
-              "Los valores muestran el efecto fiscal de cada instrumento como porcentaje del ingreso disponible del hogar."),
+              "Los valores muestran el efecto fiscal de cada instrumento como porcentaje del ingreso disponible."),
             navset_card_pill(
               id = "incidencia_sub",
               nav_panel("Deciles",
