@@ -396,7 +396,7 @@ fiscal_post_measures_mat <- function(dom_list, scen_table_hdr_named) {
       nitx_v <- gv("nitx")
       neto_v <- nitx_v - if (is.na(comp_v)) 0 else comp_v
     }
-    c(gv("dtx_isr"), gv("itx_itb"), gv("sub_ele"), neto_v, comp_v, nitx_v)
+    c(gv("dtx_isr"), gv("itx_itb"), -gv("sub_ele"), neto_v, comp_v, nitx_v)
   }
 
   # Pre-reforma column uses base scenario (k = 0) from the first element of dom_list

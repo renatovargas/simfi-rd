@@ -999,9 +999,7 @@ ui <- page_navbar(
           nav_panel(
             title = "Incidencia",
             p(class = "small text-muted px-1",
-              tags$strong("Ingreso disponible:"),
-              " definición oficial. ",
-              "La incidencia neta es el efecto fiscal como % del ingreso."),
+              "Los valores muestran el efecto fiscal de cada instrumento como porcentaje del ingreso disponible del hogar."),
             navset_card_pill(
               id = "incidencia_sub",
               nav_panel("Deciles",
@@ -2350,10 +2348,10 @@ server <- function(input, output, session) {
     cn <- unname(scenario_headers_named()[names(dl)])
     tablas <- c("decinc", "estrinc", "urbinc", "sexinc", "catinc", "depinc")
 
-    build_block <- function(col_fn) {
+    build_block <- function(col_fn, mult = -1) {
       stats::setNames(
         lapply(tablas, function(tbl) {
-          incidencia_columna(dl, tbl, scenario_colnames = cn, col_fn = col_fn)
+          incidencia_columna(dl, tbl, scenario_colnames = cn, col_fn = col_fn, mult = mult)
         }),
         tablas
       )
@@ -2363,7 +2361,7 @@ server <- function(input, output, session) {
       efecto_neto  = build_block(function(k) paste0("nitx",     k, "_pc")),
       isr          = build_block(function(k) paste0("ddtx_isr", k, "_pc")),
       itbis        = build_block(function(k) paste0("ditx_itb", k, "_pc")),
-      subsidios    = build_block(function(k) paste0("dsub_ele", k, "_pc")),
+      subsidios    = build_block(function(k) paste0("dsub_ele", k, "_pc"), mult = 1),
       compensacion = build_block(function(k) paste0("dcomp",    k, "_pc"))
     )
   })
@@ -2395,7 +2393,9 @@ server <- function(input, output, session) {
     tg <- as.data.frame(m, optional = TRUE) %>%
       tibble::rownames_to_column("Indicador")
     datatable(tg, rownames = FALSE,
-              options = list(scrollX = TRUE, dom = "ftip", pageLength = 12),
+              extensions = "Buttons",
+              options = list(scrollX = TRUE, dom = "Bftip", pageLength = 12,
+                             buttons = list("csv", "excel")),
               class = "compact stripe hover") %>%
       formatRound(columns = seq(2, ncol(tg)), digits = round_digits)
   }
@@ -2435,7 +2435,9 @@ server <- function(input, output, session) {
     tg <- as.data.frame(summ()$desr, optional = TRUE) %>%
       tibble::rownames_to_column("Indicador")
     datatable(tg, rownames = FALSE,
-              options = list(dom = "ftip", scrollX = TRUE)) %>%
+              extensions = "Buttons",
+              options = list(dom = "Bftip", scrollX = TRUE,
+                             buttons = list("csv", "excel"))) %>%
       formatRound(columns = seq(2, ncol(tg)), digits = 4)
   })
   output$dash_tbl_fiscal <- renderDT(server = FALSE, {
@@ -2585,7 +2587,10 @@ server <- function(input, output, session) {
                               escenario_headers = scenario_headers_named())
     tab <- rename_depinc_cols(tab, scenario_headers_named())
     datatable(tab, rownames = FALSE,
-              options = list(scrollX = TRUE, dom = "ftip", pageLength = 12))
+              caption = "Valores expresados como porcentaje del ingreso disponible.",
+              extensions = "Buttons",
+              options = list(scrollX = TRUE, dom = "Bftip", pageLength = 12,
+                             buttons = list("csv", "excel")))
   })
 
   mk_inst_plot <- function(inst_key, title) {
