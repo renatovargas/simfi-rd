@@ -213,7 +213,7 @@ comb01_plotly_native <- function(
         automargin = TRUE
       ),
       showlegend = FALSE,
-      margin = list(l = 50, r = 20, b = 90, t = 50),
+      margin = list(l = 50, r = 20, b = 130, t = 50),
       font = list(family = "system-ui, sans-serif", size = base_font_size)
     ) %>%
     config(locale = "es")

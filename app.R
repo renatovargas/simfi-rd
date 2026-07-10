@@ -939,9 +939,9 @@ ui <- page_navbar(
               nav_panel("Desigualdad",
                 layout_columns(col_widths = c(6, 6),
                   card(card_header("Coeficiente de Gini"),
-                       plotlyOutput("dash_plot_gini", height = "360px")),
+                       plotlyOutput("dash_plot_gini", height = "420px")),
                   card(card_header("Cambio en Gini"),
-                       plotlyOutput("dash_plot_dgini", height = "360px"))
+                       plotlyOutput("dash_plot_dgini", height = "420px"))
                 ),
                 layout_columns(col_widths = c(6, 6),
                   card(card_header("Índice de Palma"),
@@ -2394,7 +2394,7 @@ server <- function(input, output, session) {
       tibble::rownames_to_column("Indicador")
     datatable(tg, rownames = FALSE,
               extensions = "Buttons",
-              options = list(scrollX = TRUE, dom = "Bftip", pageLength = 12,
+              options = list(destroy = TRUE, scrollX = TRUE, dom = "Bftip", pageLength = 12,
                              buttons = list("csv", "excel")),
               class = "compact stripe hover") %>%
       formatRound(columns = seq(2, ncol(tg)), digits = round_digits)
@@ -2436,7 +2436,7 @@ server <- function(input, output, session) {
       tibble::rownames_to_column("Indicador")
     datatable(tg, rownames = FALSE,
               extensions = "Buttons",
-              options = list(dom = "Bftip", scrollX = TRUE,
+              options = list(destroy = TRUE, dom = "Bftip", scrollX = TRUE,
                              buttons = list("csv", "excel"))) %>%
       formatRound(columns = seq(2, ncol(tg)), digits = 4)
   })
@@ -2589,7 +2589,7 @@ server <- function(input, output, session) {
     datatable(tab, rownames = FALSE,
               caption = "Valores expresados como porcentaje del ingreso disponible.",
               extensions = "Buttons",
-              options = list(scrollX = TRUE, dom = "Bftip", pageLength = 12,
+              options = list(destroy = TRUE, scrollX = TRUE, dom = "Bftip", pageLength = 12,
                              buttons = list("csv", "excel")))
   })
 
