@@ -1425,8 +1425,12 @@ server <- function(input, output, session) {
       if (on) {
         if (uid %in% cur) return(NULL)
         if (length(cur) >= 4L) {
-          showNotification("Solo puede comparar hasta 4 escenarios.",
-                           type = "warning")
+          showNotification(
+            paste0("Solo puede comparar hasta 4 escenarios. ",
+                   "Si import\u00f3 un archivo de escenarios, ",
+                   "use el bot\u00f3n \u201cNueva sesi\u00f3n\u201d ",
+                   "para empezar de cero."),
+            type = "warning")
           # Revertir la casilla en el DOM sin re-renderizar por cmp_rv$sel.
           render_nonce(render_nonce() + 1L)
           return(NULL)

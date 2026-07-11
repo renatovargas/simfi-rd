@@ -507,20 +507,38 @@ cat("Mean pondera R:    ", mean(base$pondera_2023, na.rm=TRUE), "\n")
 sub_hh_vars <- grep("^sub_.*_hh$", names(base), value = TRUE)
 mask_jefes  <- base$relation == 1
 
+# ============================================================================
+# CORREGIDO: el codigo original usaba pmin(x, y, na.rm = TRUE) en dos lugares.
+# Con na.rm = TRUE, pmin() NO preserva NA cuando uno de los dos vectores tiene
+# NA -- en su lugar devuelve el otro valor no-faltante (aqui, el percentil 99).
+# Esto convertia todo valor faltante en el percentil 99 (un valor ALTO) en vez
+# de dejarlo como NA para luego imputarle el promedio (mean_eff). El bug se
+# agravaba en escenarios mas focalizados (mas hogares con subsidio = 0
+# legitimo), inflando el promedio en vez de bajarlo.
+#
+# La correccion distingue explicitamente:
+#   - x_is_na / eff_is_na  -> dato realmente faltante (se imputa mean_eff)
+#   - eff_col == 0         -> hogar sin subsidio, valor legitimo (se conserva)
+# ============================================================================
 for (x in sub_hh_vars) {
   z       <- substr(x, 5, 8)
   pc_col  <- sub("hh$", "pc", x)
   eff_col <- paste0("eff_", z)
-  
+
+  # Missing REAL: hogar no encontrado en el merge con subelec (antes del replace_na)
+  x_is_na <- is.na(base[[x]])
   # replace x = 0 if x == .
   base[[x]] <- replace_na(base[[x]], 0)
   
   # gen double eff_z = x / monto_total
   base[[eff_col]] <- base[[x]] / base$monto_total
   
+  # eff missing real: sin match original, o monto_total NA/0 (produce NA/NaN)
+  eff_is_na <- x_is_na | is.na(base[[eff_col]]) | is.nan(base[[eff_col]])
+
   # qui summ eff_z [w=hweight] if relation==1 & !missing(eff_z) & eff_z!=0, detail
   # local mean_eff = r(mean)
-  mask_validos  <- mask_jefes & base[[eff_col]] != 0 & !is.na(base[[eff_col]])
+  mask_validos  <- mask_jefes & base[[eff_col]] != 0 & !eff_is_na
   eff_validos   <- base[[eff_col]][mask_validos]
   pesos_validos <- base$hweight[mask_validos]
   mean_eff      <- weighted.mean(eff_validos, pesos_validos, na.rm = TRUE)
@@ -530,16 +548,16 @@ for (x in sub_hh_vars) {
   perc99 <- quantile(eff_validos, probs = 0.99, type = 2, na.rm = TRUE)
   
   # replace eff_z = r(r1) if eff_z > r(r1) & !missing(eff_z)
-  base[[eff_col]] <- pmin(base[[eff_col]], perc99, na.rm = TRUE)
+  mask_gt <- !eff_is_na & base[[eff_col]] > perc99
+  base[[eff_col]][mask_gt] <- perc99
   
-  # replace eff_z = mean_eff if eff_z == 0 | eff_z == .
-  base[[eff_col]] <- ifelse(base[[eff_col]] == 0 | is.na(base[[eff_col]]),
-                            mean_eff, base[[eff_col]])
+  # replace eff_z = mean_eff if eff_z == . (SOLO missing real, no cero legitimo)
+  base[[eff_col]] <- ifelse(eff_is_na, mean_eff, base[[eff_col]])
   # gen pc = yd_pc * eff_z
   base[[pc_col]] <- base$yd_pc * base[[eff_col]]
   
-  # replace pc = yd_pc * r(mean) if pc == 0 | pc == .
-  base[[pc_col]] <- ifelse(base[[pc_col]] == 0 | is.na(base[[pc_col]]),
+  # resguardo de consistencia (ya no deberia activarse tras el fix de arriba)
+  base[[pc_col]] <- ifelse(is.na(base[[pc_col]]),
                            base$yd_pc * mean_eff,
                            base[[pc_col]])
   
@@ -593,10 +611,11 @@ base %>%
 base <- base %>%
   mutate(across(
     starts_with("rsub_ele") & ends_with("_pc"),
-    ~ pmin(.x, Hmisc::wtd.quantile(.x,
-                                   weights = pondera_2023,
-                                   probs   = 0.99),
-           na.rm = TRUE)
+    ~ {
+      q99 <- Hmisc::wtd.quantile(.x, weights = pondera_2023,
+                                 probs = 0.99, na.rm = TRUE)
+      ifelse(!is.na(.x) & .x > q99, q99, .x)
+    }
   ))
 
 
