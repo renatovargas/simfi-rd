@@ -1641,12 +1641,20 @@ server <- function(input, output, session) {
       return(NULL)
     }
     if (lvl == "grupo") {
+      pref <- paste0(input$itbis_grupo, "|")
+      rs <- tax_rv$rate_subclase; ns <- names(rs)
+      if (length(ns)) tax_rv$rate_subclase <- as.list(rs[!startsWith(ns, pref)])
+      rv <- tax_rv$rate_variedad; nv <- names(rv)
+      if (length(nv)) tax_rv$rate_variedad <- as.list(rv[!startsWith(nv, pref)])
       tax_rv$rate_grupo[[input$itbis_grupo]] <- rate
       showNotification("Tasa aplicada al grupo.", type = "message")
       return(NULL)
     }
     if (lvl == "subclase") {
       req(input$itbis_subclase)
+      pref <- paste0(input$itbis_subclase, "|")
+      rv <- tax_rv$rate_variedad; nv <- names(rv)
+      if (length(nv)) tax_rv$rate_variedad <- as.list(rv[!startsWith(nv, pref)])
       tax_rv$rate_subclase[[input$itbis_subclase]] <- rate
       showNotification("Tasa aplicada a la subclase.", type = "message")
       return(NULL)
