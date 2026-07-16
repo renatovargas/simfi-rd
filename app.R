@@ -851,7 +851,11 @@ ui <- page_navbar(
           col_widths = c(6, 6),
           downloadButton("dl_xlsx", "Exportar escenario en formato Excel",
                          class = "w-100 btn-outline-secondary"),
-          fileInput("up_xlsx", "Importar (.xlsx)",
+          fileInput("up_xlsx",
+                    tagList("Importar (.xlsx)",
+                            tags$br(),
+                            tags$small(class = "text-muted fw-normal",
+                              "Presione \u201cNueva sesi\u00f3n\u201d abajo antes de importar para limpiar el ambiente de trabajo.")),
                     accept = c(".xlsx"), width = "100%")
         ),
         hr(class = "my-2"),
