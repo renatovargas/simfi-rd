@@ -150,6 +150,8 @@
       custom = isTRUE(p$custom),
       nom_renta = as.character(p$nom_renta %||% nm),
       tramo = 1:6, lim_inf = li, lim_sup = ls, tasa_pct = tp,
+      educ_share = suppressWarnings(as.numeric(p$educ_share %||% NA_real_)),
+      educ_limit = suppressWarnings(as.numeric(p$educ_limit %||% NA_real_)),
       stringsAsFactors = FALSE
     )
   }
@@ -157,7 +159,9 @@
     return(data.frame(componente = character(), custom = logical(),
                       nom_renta = character(), tramo = integer(),
                       lim_inf = numeric(), lim_sup = numeric(),
-                      tasa_pct = numeric(), stringsAsFactors = FALSE))
+                      tasa_pct = numeric(),
+                      educ_share = numeric(), educ_limit = numeric(),
+                      stringsAsFactors = FALSE))
   }
   do.call(rbind, rows)
 }
@@ -173,7 +177,14 @@
       nom_renta = as.character(sub$nom_renta[1]),
       lim_inf   = .num6(sub$lim_inf),
       lim_sup   = .num6(sub$lim_sup),
-      tasa_pct  = .num6(sub$tasa_pct)
+      tasa_pct  = .num6(sub$tasa_pct),
+      # Compatibilidad: los Excel guardados antes de agregar estas columnas
+      # simplemente no las traen; en ese caso queda NA y la app usa el valor
+      # base al cargar el componente (ver apply_isr() en app.R).
+      educ_share = if ("educ_share" %in% names(sub))
+        suppressWarnings(as.numeric(sub$educ_share[1])) else NA_real_,
+      educ_limit = if ("educ_limit" %in% names(sub))
+        suppressWarnings(as.numeric(sub$educ_limit[1])) else NA_real_
     )
   }
   out

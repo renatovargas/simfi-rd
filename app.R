@@ -14,6 +14,7 @@ suppressPackageStartupMessages({
   library(scales)
   library(RColorBrewer)
 })
+
 options(DT.options = list(
   language = list(
     search      = "Buscar:",
@@ -31,11 +32,23 @@ options(DT.options = list(
 
 `%||%` <- function(x, y) if (is.null(x)) y else x
 
+# educ_share / educ_limit se guardan internamente como fracción (0.1 = 10%),
+# pero se muestran y editan en la UI como porcentaje (10). Estas dos funciones
+# convierten en cada sentido, preservando NA.
+frac_to_pct <- function(x) {
+  v <- suppressWarnings(as.numeric(x))
+  if (length(v) != 1L || is.na(v)) NA_real_ else v * 100
+}
+pct_to_frac <- function(x) {
+  v <- suppressWarnings(as.numeric(x))
+  if (length(v) != 1L || is.na(v)) NA_real_ else v / 100
+}
+
 strip_cli_markup <- function(x) {
   if (!length(x) || !nzchar(x)) return(x)
   x <- as.character(x)
-  x <- gsub("\\[[0-9;]*m", "", x, perl = TRUE)
-  x <- gsub("¤\\[[0-9;]*m", "", x, perl = TRUE)
+  x <- gsub("\\[[0-9;]*m", "", x, perl = TRUE)
+  x <- gsub("\u00a4\\[[0-9;]*m", "", x, perl = TRUE)
   x
 }
 
@@ -99,8 +112,8 @@ wizard_header <- function(step) {
 }
 
 # Fila de navegación inferior del asistente
-nav_row <- function(prev_id = NULL, prev_label = "← Anterior",
-                    next_id = NULL, next_label = "Siguiente →",
+nav_row <- function(prev_id = NULL, prev_label = "\u2190 Anterior",
+                    next_id = NULL, next_label = "Siguiente \u2192",
                     next_class = "btn-primary") {
   tags$div(
     class = "d-flex justify-content-between pt-3 mt-4 border-top",
@@ -286,13 +299,22 @@ isr_base_defaults <- local({
   fallback <- list(
     lim_inf  = c(0, 416220, 624329, 867123, 2400000, NA),
     lim_sup  = c(416220, 624329, 867123, 2400000, NA, NA),
-    tasa_pct = c(0, 15, 20, 25, 27, NA)
+    tasa_pct = c(0, 15, 20, 25, 27, NA),
+    educ_share = NA_real_,
+    educ_limit = NA_real_
   )
   out <- tryCatch({
     sr  <- read_param_csv("sim_renta", file.path(root, "data", "params"))
     row <- sr[sr$sim_inc == 0L, , drop = FALSE]
     if (nrow(row) < 1L) stop("sim_renta: no hay fila base (sim_inc = 0).")
-    isr_brackets_from_sim_renta_row(row[1, , drop = FALSE], max_slots = 6L)
+    r1       <- as.list(row[1, , drop = FALSE])
+    brackets <- isr_brackets_from_sim_renta_row(row[1, , drop = FALSE], max_slots = 6L)
+    es <- suppressWarnings(as.numeric(r1$educ_share))
+    el <- suppressWarnings(as.numeric(r1$educ_limit))
+    c(brackets, list(
+      educ_share = if (length(es) == 1L && is.finite(es)) es else NA_real_,
+      educ_limit = if (length(el) == 1L && is.finite(el)) el else NA_real_
+    ))
   }, error = function(e) fallback)
   out
 })
@@ -356,7 +378,7 @@ comp_describe <- function(comp) {
   }
   if (identical(as.character(comp$grupo_com), "3") &&
       length(comp$icv_com) && !is.na(comp$icv_com)) {
-    who <- paste0(g, " (ICV ≤ ", comp$icv_com, ")")
+    who <- paste0(g, " (ICV \u2264 ", comp$icv_com, ")")
   }
   how <- m
   if (identical(as.character(comp$metodo_com), "1") &&
@@ -405,12 +427,25 @@ slot_detail_ui <- function(sc) {
         if (length(v) != 1L || is.na(v)) "—" else as.character(round(v, 2))
       }, character(1))
     )
+    fmt_pct <- function(x) {
+      v <- frac_to_pct(x)
+      if (is.na(v)) "—" else as.character(round(v, 2))
+    }
+    educ_line <- {
+      es <- fmt_pct(sc$isr$educ_share); el <- fmt_pct(sc$isr$educ_limit)
+      if (identical(es, "—") && identical(el, "—")) NULL
+      else tags$p(class = "small text-muted mb-0 mt-1",
+                  sprintf(paste0("Gasto educativo deducible: %s%% del ingreso ",
+                                 "anual gravable, tope %s%% de la exención anual del ISR."),
+                          es, el))
+    }
     tagList(
       tags$p(class = "small fw-semibold mb-1",
              "Renta: escala personalizada ",
              tags$span(class = "text-muted",
                        paste0("(", sc$isr$nom_renta %||% "", ")"))),
-      df_to_compact_table(tbl)
+      df_to_compact_table(tbl),
+      educ_line
     )
   } else {
     tags$p(class = "small text-muted mb-2",
@@ -643,6 +678,20 @@ ui <- page_navbar(
                                     min = 0, max = 100, step = 0.5))
               )
             }))
+          ),
+          h6(class = "mt-3", "Deducción por gasto educativo"),
+          p(class = "text-muted small mb-2",
+            "Parámetros del beneficio de deducción de gastos educativos ",
+            "sobre el ISR. Los valores iniciales corresponden al escenario base."),
+          fluidRow(
+            column(6, numericInput("isr_educ_share",
+                                   "Proporción de gastos educativos sobre el ingreso anual gravable (%)",
+                                   value = frac_to_pct(isr_base_defaults$educ_share),
+                                   min = 0, max = 100, step = 0.5, width = "100%")),
+            column(6, numericInput("isr_educ_limit",
+                                   "Máximo % sobre exención anual del ISR",
+                                   value = frac_to_pct(isr_base_defaults$educ_limit),
+                                   min = 0, max = 100, step = 0.5, width = "100%"))
           )
         )
       ),
@@ -1010,11 +1059,12 @@ ui <- page_navbar(
                         plotlyOutput("dash_inc_dec", height = "400px")),
               nav_panel("Estrato",
                         p(class = "text-muted small mt-1 mb-0",
-                          "Los cuatro estratos corresponden a grupos socioeconómicos ",
-                          "construidos a partir de la Encuesta Nacional de Fuerza de Trabajo (ENCFT): ",
-                          "1 = más bajo, 4 = más alto. Permiten observar cómo se distribuye ",
-                          "el efecto de cada reforma entre segmentos de la población más ",
-                          "allá del decil de ingreso."),
+                            "Los cuatro estratos corresponden a grupos socioeconómicos ",
+                            "construidos a partir de la Encuesta Nacional de Fuerza de Trabajo (ENCFT): ",
+                            "Pobres, Vulnerables, Clase media y Residual (de menor a mayor ingreso). ",
+                            "Permiten observar cómo se distribuye ",
+                            "el efecto de cada reforma entre segmentos de la población más ",
+                            "allá del decil de ingreso."),
                         plotlyOutput("dash_inc_estr", height = "380px")),
               nav_panel("Área",
                         plotlyOutput("dash_inc_urb", height = "400px")),
@@ -1092,11 +1142,11 @@ ui <- page_navbar(
           )
         )
       ),
-      nav_row(prev_id = "nav_6_prev", prev_label = "← Volver a Revisar")
+      nav_row(prev_id = "nav_6_prev", prev_label = "\u2190 Volver a Revisar")
     )
-  ),
-
+  )
 )
+
 
 # Servidor
 server <- function(input, output, session) {
@@ -1155,7 +1205,9 @@ server <- function(input, output, session) {
     list(custom = isTRUE(input$custom_isr),
          nom_renta = input$nom_renta %||% "Personalizada",
          lim_inf = rd("isr_li_"), lim_sup = rd("isr_ls_"),
-         tasa_pct = rd("isr_tp_"))
+         tasa_pct = rd("isr_tp_"),
+         educ_share = pct_to_frac(input$isr_educ_share),
+         educ_limit = pct_to_frac(input$isr_educ_limit))
   }
   capture_sub <- function() {
     sv <- function(pref) vapply(1:7, function(j) {
@@ -1214,6 +1266,12 @@ server <- function(input, output, session) {
         updateNumericInput(session, paste0("isr_tp_", i),
                            value = if (is.finite(vp)) vp else NA)
       }
+      es <- frac_to_pct(p$educ_share %||% isr_base_defaults$educ_share)
+      el <- frac_to_pct(p$educ_limit %||% isr_base_defaults$educ_limit)
+      updateNumericInput(session, "isr_educ_share",
+                         value = if (is.finite(es)) es else NA)
+      updateNumericInput(session, "isr_educ_limit",
+                         value = if (is.finite(el)) el else NA)
     }
   }
   apply_sub <- function(p) {
@@ -1279,7 +1337,9 @@ server <- function(input, output, session) {
       isr_full <- list(custom = TRUE, tramos = pv$tramos, bases = pv$bases,
                        tasas = pv$tasas, nom_renta = isr_c$nom_renta %||% "Personalizada",
                        lim_inf = isr_c$lim_inf, lim_sup = isr_c$lim_sup,
-                       tasa_pct = isr_c$tasa_pct)
+                       tasa_pct = isr_c$tasa_pct,
+                       educ_share = isr_c$educ_share %||% isr_base_defaults$educ_share,
+                       educ_limit = isr_c$educ_limit %||% isr_base_defaults$educ_limit)
     }
     sub_p  <- comp_lib$sub[[ckey(scn$sub)]] %||% list(custom = FALSE)
     comp_p <- comp_lib$comp[[ckey(scn$comp)]] %||%
@@ -1474,6 +1534,10 @@ server <- function(input, output, session) {
       updateNumericInput(session, paste0("isr_tp_", i),
                          value = isr_base_defaults$tasa_pct[i])
     }
+    updateNumericInput(session, "isr_educ_share",
+                       value = frac_to_pct(isr_base_defaults$educ_share))
+    updateNumericInput(session, "isr_educ_limit",
+                       value = frac_to_pct(isr_base_defaults$educ_limit))
     updateNumericInput(session, "tasa_aplicar", value = NA)
     for (px in c("itbis", "isr", "sub", "comp")) {
       active_lib[[px]] <- ""
@@ -1893,7 +1957,9 @@ server <- function(input, output, session) {
         nom_renta  = input$nom_renta %||% "Personalizada",
         lim_inf    = li,
         lim_sup    = ls_v,
-        tasa_pct   = tp
+        tasa_pct   = tp,
+        educ_share = pct_to_frac(input$isr_educ_share),
+        educ_limit = pct_to_frac(input$isr_educ_limit)
       )
     }
 
@@ -2391,7 +2457,13 @@ server <- function(input, output, session) {
     enrich_insumos_live(sim_res()$insumos_live, insumos_template())
   })
 
-  labels_inc <- labels_inc_dom()
+    labels_inc <- labels_inc_dom()
+  # Leyendas de estrato solicitadas: reemplazan las etiquetas numéricas
+  # (1 = más bajo … 4 = más alto) que trae labels_inc_dom() por defecto,
+  # asumiendo el mismo orden ascendente de ingreso.
+  if (length(labels_inc$estrinc) == 4L) {
+    labels_inc$estrinc <- c("Pobres", "Vulnerables", "Clase media", "Residual")
+  }
 
   observeEvent(sim_res(), {
     r <- sim_res()

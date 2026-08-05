@@ -1216,14 +1216,18 @@ rm(dom_sim_itbis)
 rm(j, bsim_itbis_esc)
 rm(sim_itbis_esc)
 
-rm(
-  i_effects, gasto_total, lugares_formales, tasas_itx1, ratios, ratios_s, 
-  urban, col, cols_ef, cols_pc, columnas_deseadas, d, fila_totales,
-  i, itb_formal, itx_cols, mean_eff, nueva_tasa, 
-  row, titbisp, variable_values, 
-  estima_itbis, get_unique_sectors, list_libraries,
-  install_if_missing, loaded_successfully, n_sectors, diagnostico, 
-  cols)
+vars_to_remove <- c(
+  "i_effects", "gasto_total", "lugares_formales", "tasas_itx1", "ratios", 
+  "ratios_s",  "urban, col", "cols_ef", "cols_pc", "columnas_deseadas", "d", 
+  "fila_totales",   "i", "itb_formal", "itx_cols", "mean_eff", "nueva_tasa", 
+  "row", "titbisp", "variable_values", 
+  "estima_itbis", "get_unique_sectors", "list_libraries",
+  "install_if_missing", "loaded_successfully", "n_sectors", "diagnostico", 
+  "cols"
+)
+
+rm(list = intersect(vars_to_remove, ls()))
+
 
 
 # # Ver qué bandwidth usa R para cada grupo
