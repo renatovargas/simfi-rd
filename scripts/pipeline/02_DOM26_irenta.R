@@ -198,10 +198,12 @@ imponible2024 %>%
 saveRDS(dom_sim_irenta, paste0(fdbmod, "DOM_simirenta.rds"))
 
 ## eliminar datos de memoria
-rm(
-  dom_sim_irenta, imponible2024, educ_col,
-  isr_col, max_tram, ylab_col, calcular_isr_tramos,
-  esc, tram_cols, edu_pcty, edu_smin, min_impo
+vars_to_remove <- c(
+  "dom_sim_irenta", "imponible2024", "educ_col",
+  "isr_col", "max_tram", "ylab_col", "calcular_isr_tramos",
+  "esc", "tram_cols", "edu_pcty", "edu_smin", "min_impo"
 )
+
+rm(list = intersect(vars_to_remove, ls()))
 
 
