@@ -253,12 +253,18 @@ itbis_rate_choices <- {
   stats::setNames(as.character(rr), paste0(rr, "%"))
 }
 
-# Clave por fila precalculada (para resolver rápido la selección de la UI).
+# Claves precalculadas (selección UI y previsualización de cambios ITBIS).
 itbis_row_keys <- vapply(
   seq_len(nrow(itbis_catalog)),
   function(i) itbis_row_key(itbis_catalog[i, , drop = FALSE]),
   character(1)
 )
+itbis_subclase_keys <- vapply(
+  seq_len(nrow(itbis_catalog)),
+  function(i) itbis_subclase_key(itbis_catalog[i, , drop = FALSE]),
+  character(1)
+)
+itbis_grupo_keys <- as.character(itbis_catalog$COD_GRUPO)
 
 # Barra reutilizable "Guardar como / Cargar" para la biblioteca de un componente.
 # `prefix` ∈ {itbis, isr, sub, comp}. Genera ids lib_<prefix>_{name,save,pick,load}.
@@ -328,24 +334,47 @@ sub_reference_ui <- build_sub_reference_ui(sub_base_ref)
 # --- Helpers de previsualización para la pantalla Revisar ---
 
 # Productos cuya tasa efectiva difiere de la legal, dadas las listas de un escenario.
+# Vectorizado con claves precalculadas. max_rows limita el HTML de previsualización
+# (componentes con miles de variedades no deben bloquear la UI).
 itbis_changes_table <- function(rate_v = list(), rate_s = list(),
-                                rate_g = list()) {
+                                rate_g = list(), max_rows = 40L) {
   if (length(rate_v) + length(rate_s) + length(rate_g) == 0L) return(NULL)
-  d0 <- itbis_catalog
-  n  <- nrow(d0)
-  eff <- vapply(seq_len(n), function(i) {
-    tasa_efectiva_desde_listas(d0[i, , drop = FALSE],
-                               rate_v, rate_s, rate_g, "actual")
-  }, numeric(1))
-  ley     <- suppressWarnings(as.numeric(d0$tasa))
-  changed <- !is.na(ley) & abs(eff - ley) > 1e-6
+  d0  <- itbis_catalog
+  ley <- suppressWarnings(as.numeric(d0$tasa))
+  eff <- ley
+  # Precedencia igual que tasa_efectiva_desde_listas: grupo < subclase < variedad.
+  if (length(rate_g)) {
+    gv <- unlist(rate_g, use.names = TRUE)
+    m  <- match(itbis_grupo_keys, names(gv))
+    ok <- !is.na(m)
+    if (any(ok)) eff[ok] <- as.numeric(gv[m[ok]])
+  }
+  if (length(rate_s)) {
+    sv <- unlist(rate_s, use.names = TRUE)
+    m  <- match(itbis_subclase_keys, names(sv))
+    ok <- !is.na(m)
+    if (any(ok)) eff[ok] <- as.numeric(sv[m[ok]])
+  }
+  if (length(rate_v)) {
+    vv <- unlist(rate_v, use.names = TRUE)
+    m  <- match(itbis_row_keys, names(vv))
+    ok <- !is.na(m)
+    if (any(ok)) eff[ok] <- as.numeric(vv[m[ok]])
+  }
+  changed <- !is.na(ley) & is.finite(eff) & abs(eff - ley) > 1e-6
   if (!any(changed)) return(NULL)
-  tibble::tibble(
-    Grupo    = d0$DES_GRUPO[changed],
-    Producto = paste0(d0$ID_VARIEDAD[changed], ": ", d0$DES_VARIEDAD[changed]),
-    `Tasa vieja (%)` = round(ley[changed], 2),
-    `Tasa nueva (%)` = round(eff[changed], 2)
+  idx_all <- which(changed)
+  n_total <- length(idx_all)
+  idx <- if (n_total > max_rows) idx_all[seq_len(max_rows)] else idx_all
+  out <- tibble::tibble(
+    Grupo    = d0$DES_GRUPO[idx],
+    Producto = paste0(d0$ID_VARIEDAD[idx], ": ", d0$DES_VARIEDAD[idx]),
+    `Tasa vieja (%)` = round(ley[idx], 2),
+    `Tasa nueva (%)` = round(eff[idx], 2)
   )
+  attr(out, "total_changes") <- n_total
+  attr(out, "truncated")    <- n_total > max_rows
+  out
 }
 
 # Tabla HTML compacta de solo lectura desde un data.frame.
@@ -402,9 +431,14 @@ slot_detail_ui <- function(sc) {
     tags$p(class = "small text-muted mb-2",
            tags$strong("ITBIS:"), " sin cambios respecto a la referencia.")
   } else {
+    n_tot <- attr(ch, "total_changes") %||% nrow(ch)
+    trunc <- isTRUE(attr(ch, "truncated"))
     tagList(
       tags$p(class = "small fw-semibold mb-1",
-             sprintf("ITBIS: %d producto(s) modificado(s)", nrow(ch))),
+             sprintf("ITBIS: %d producto(s) modificado(s)", n_tot)),
+      if (trunc)
+        tags$p(class = "small text-muted mb-1",
+               sprintf("Vista previa: primeros %d de %d.", nrow(ch), n_tot)),
       tags$div(style = "max-height:180px;overflow:auto;",
                df_to_compact_table(ch))
     )
@@ -1171,6 +1205,9 @@ server <- function(input, output, session) {
   # Permite forzar un re-render puntual de las tarjetas (p. ej. al rechazar
   # una cuarta selección) sin depender de cmp_rv$sel.
   render_nonce <- reactiveVal(0L)
+  # uid cuyo detalle ITBIS/ISR está cargado bajo demanda (evita armar tablas
+  # de miles de filas al poblar "Escenarios guardados").
+  detail_open_uid <- reactiveVal(NULL)
 
   # Forma canónica para comparar payloads (ignora orden de nombres y redondea).
   .payload_canon <- function(x) {
@@ -1481,6 +1518,7 @@ server <- function(input, output, session) {
       scen_rv$scenarios <- Filter(function(s) !identical(s$uid, uid),
                                   scen_rv$scenarios)
       cmp_rv$sel <- setdiff(cmp_rv$sel, uid)
+      if (identical(detail_open_uid(), uid)) detail_open_uid(NULL)
       showNotification("Escenario eliminado.", type = "warning")
     })
     observeEvent(input[[paste0("scen_cmp_", uid)]], {
@@ -1504,6 +1542,18 @@ server <- function(input, output, session) {
         cmp_rv$sel <- setdiff(cur, uid)
       }
     }, ignoreInit = TRUE)
+    # Detalle bajo demanda: no se calcula al listar tarjetas.
+    output[[paste0("scen_detail_", uid)]] <- renderUI({
+      open <- detail_open_uid()
+      if (!identical(as.integer(open), as.integer(uid))) {
+        return(tags$p(
+          class = "small text-muted mb-0",
+          "Pulse «Ver detalle» para cargar la vista previa."))
+      }
+      sc <- Find(function(s) identical(s$uid, uid), scen_rv$scenarios)
+      if (is.null(sc)) return(NULL)
+      slot_detail_ui(compose_scenario_inputs(sc))
+    })
   }
   add_scenario <- function(rec) {
     uid <- scen_counter() + 1L
@@ -1517,6 +1567,14 @@ server <- function(input, output, session) {
     register_scenario_obs(uid)
     uid
   }
+
+  observeEvent(input$scen_detail_toggle, {
+    uid <- suppressWarnings(as.integer(input$scen_detail_toggle))
+    if (length(uid) != 1L || !is.finite(uid)) return(invisible(NULL))
+    cur <- detail_open_uid()
+    if (identical(as.integer(cur), uid)) detail_open_uid(NULL)
+    else detail_open_uid(uid)
+  }, ignoreInit = TRUE)
 
   # --- Restablecer todas las pantallas a la situación vigente (GEN-1) ---
   reset_form_to_base <- function() {
@@ -2107,6 +2165,7 @@ server <- function(input, output, session) {
     comp_lib$sub <- list();   comp_lib$comp <- list()
     scen_rv$scenarios <- list()
     cmp_rv$sel <- integer(0)
+    detail_open_uid(NULL)
     reset_form_to_base()
     scenario_autosave_clear(root)
     showNotification("Todo restablecido.", type = "warning")
@@ -2116,7 +2175,9 @@ server <- function(input, output, session) {
     paste0(": ", n_comparar(), " de 4 marcados para comparar")
   )
 
-  # Tarjetas de escenarios guardados (compositor)
+  # Tarjetas de escenarios guardados (compositor).
+  # Solo resumen ligero aquí: el detalle (tablas ITBIS, etc.) se carga bajo
+  # demanda al pulsar "Ver detalle", para no congelar la pantalla Revisar.
   output$scenarios_display <- renderUI({
     render_nonce()  # dependencia para forzar re-render puntual
     scs <- scen_rv$scenarios
@@ -2130,7 +2191,6 @@ server <- function(input, output, session) {
     }
     tagList(lapply(scs, function(sc) {
       uid <- sc$uid
-      full <- compose_scenario_inputs(sc)
       card(
         class = "mb-2 slot-card filled",
         card_body(
@@ -2148,9 +2208,15 @@ server <- function(input, output, session) {
               ),
               tags$details(
                 class = "mt-2",
-                tags$summary(class = "text-primary small",
-                             style = "cursor:pointer;", "Ver detalle"),
-                tags$div(class = "mt-2", slot_detail_ui(full))
+                tags$summary(
+                  class = "text-primary small",
+                  style = "cursor:pointer;",
+                  onclick = sprintf(
+                    "Shiny.setInputValue('scen_detail_toggle', %d, {priority:'event'})",
+                    as.integer(uid)),
+                  "Ver detalle"
+                ),
+                uiOutput(paste0("scen_detail_", uid))
               )
             ),
             tags$div(
@@ -2237,6 +2303,7 @@ server <- function(input, output, session) {
     comp_lib$sub   <- st$libs$sub   %||% list()
     comp_lib$comp  <- st$libs$comp  %||% list()
     scen_rv$scenarios <- list()
+    detail_open_uid(NULL)
     for (s in (st$scenarios %||% list())) {
       s$uid <- NULL
       add_scenario(s)
