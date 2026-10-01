@@ -1,0 +1,1104 @@
+## Banco Mundial,
+## Herramienta de Microsimulación del IVA
+## Country: República Dominicana 2026
+## Authors: Maynor Cabrera, Renato Vargas
+## Script: Maynor Cabrera
+## 05_DOM26_ConsolidaEscenarios.R
+## E-email:       mynorvc@gmail.com
+##  Dependencias:  0_GTM23WBN_Master.R
+## Input files
+## -- ENIGH 2022
+## -- ENCOVI 2023
+## Output files:
+## -- GTM_simcomp.rmd
+##  ----------------------------------------------------
+##  Fecha de creación:    2026-03-09 11:25:06 CST
+## Script version:    	  1.0
+## Modification Date:     9 Mar
+
+## 1. Importar archivos --------------------------------------------------------
+
+DOM_results <- readRDS(paste0(fdbmod, "DOM_simcompensacion.rds")) 
+
+DOM_results %>% arrange(hhid, hhin, trimestre) %>% select(matches("^y.*1_pc$")) %>% 
+  mutate(across(starts_with("y"), ~ . / 1))
+
+DOM_results %>% arrange(hhid, hhin, trimestre) %>%   
+  select(hhin, trimestre, yd0_pc, dtx_isr0_pc, dtx_isr1_pc, yd1_pc,
+        itx_itb0_pc, itx_itb1_pc, sub_ele0_pc, sub_ele1_pc, yc1_pc) %>% 
+  summary()
+
+
+## 2. Parámetros ---------------------------------------------------------------
+
+## Estratos según Paridad de poder adquisitivo (línea pobreza internacional)
+## Actualizado al ppp 2021
+estratos <- 23.135822 *(174.88908/148.47661) * 365 * c(8.3, 17, 98)
+
+# Escenarios
+escenarios <- read_excel(fparams, col_names = TRUE, sheet = "escenarios") %>%
+  janitor::clean_names() %>%
+  filter(activo == 1)
+
+## En qué escenarios hay compensación
+esc_inc <- c(0, unique(escenarios$escenario))
+
+v_pib <- parm_glob$valor[str_detect(parm_glob$descripcion, "PIB")]
+v_itb <- parm_glob$valor[str_detect(parm_glob$descripcion, "total ITBIS")]
+v_irp <- parm_glob$valor[str_detect(parm_glob$descripcion, "renta")]
+v_sub <- parm_glob$valor[str_detect(parm_glob$descripcion, "subsidios")]
+
+
+## 3. Funciones ---------------------------------------------------------------
+### Source: https://github.com/wbEPL/devCEQ/blob/main/R/fct_gini_poverty.R
+#' Compute Gini coefficient from a numeric vector
+#'
+#' @param x,w numeric vectors of values and population weights of equal length
+#' @param na.rm logical `TRUE` bu default. To omit NA values
+#' @param drop_zero_and_less logical `TRUE` bu default to drop negarive values
+#'   and zeros
+#'
+#' @export
+#'
+calc_gini <-
+  function(x, w = rep(1, length(x)), na.rm = TRUE, drop_zero_and_less = TRUE) {
+    if (!na.rm && any(is.na(x))) {
+      return(NA_real_)
+    }
+    if (is.null(w)) {
+      w <- rep(1, length(x))
+    }
+    if (drop_zero_and_less) {
+      drop <- x <= 0
+      w <- w[!drop]
+      x <- x[!drop]
+    }
+    x.sort <- sort(x)
+    x.order <- order(x)
+    x <- x.sort
+    n <- length(x)
+    w <- w[x.order] / sum(w)
+    w.c <- cumsum(w)
+    xw.c <- cumsum(w * x)
+    xw.c <- xw.c / xw.c[n]
+    Gini <- t(xw.c[-1]) %*% w.c[-n] - t(xw.c[-n]) %*% w.c[-1]
+    Gini[[1]]
+  }
+
+
+#' Compute Theil index from a numeric vector
+#'
+#' @inheritParams calc_gini
+#'
+#' @export
+calc_theil <-
+  function(x,
+           w = rep(1, length(x)),
+           na.rm = TRUE,
+           drop_zero_and_less = TRUE) {
+    if (!na.rm && any(is.na(x))) {
+      return(NA_real_)
+    }
+    
+    if (na.rm) {
+      drop <- is.na(x)
+      w <- w[!drop]
+      x <- x[!drop]
+    }
+    
+    if (is.null(w)) {
+      w <- rep(1, length(x))
+    }
+    
+    if (drop_zero_and_less) {
+      drop <- x <= 0
+      w <- w[!drop]
+      x <- x[!drop]
+    }
+    w_ratio <- w / sum(w, na.rm = na.rm)
+    x_wt_mean <- sum(x * w_ratio, na.rm = na.rm) / sum(w_ratio, na.rm = na.rm)
+    x_ratio <- x / x_wt_mean
+    theil <- sum(w_ratio * x_ratio * log(x_ratio), na.rm = na.rm)
+    return(theil)
+  }
+
+#' Compute Palma index from a numeric vector
+#'
+#' @inheritParams calc_gini
+#'
+#' @export
+calc_palma <-
+  function(x,
+           w = rep(1, length(x)),
+           d = rep(1, length(d)),
+           na.rm = TRUE,
+           drop_zero_and_less = TRUE) {
+    if (!na.rm && any(is.na(x))) {
+      return(NA_real_)
+    }
+    
+    if (na.rm) {
+      drop <- is.na(x)
+      w <- w[!drop]
+      x <- x[!drop]
+      d <- d[!drop]
+    }
+    
+    if (is.null(w)) {
+      w <- rep(1, length(x))
+    }
+    
+    if (drop_zero_and_less) {
+      drop <- x <= 0
+      w <- w[!drop]
+      x <- x[!drop]
+      d <- d[!drop]
+    }
+    
+    ratio10 <- sum(x[d == 10] * w[d == 10], na.rm = na.rm)
+    ratio14 <- sum(x[d < 5] * w[d < 5], na.rm = na.rm)
+    palma <- ratio10 / ratio14
+    return(palma)
+  }
+
+
+
+#' Compute FGT from a numeric matrix
+#'
+#' @inheritParams calc_gini
+#' @param pl poverty line
+#' @param alpha Foster-Greer-Thorbecke (FGT) povert parameter
+#'
+#' @export
+calc_pov_fgt <-
+  function(x,
+           pl,
+           alpha = 0,
+           w = rep(1, length(x)),
+           na.rm = TRUE,
+           ...) {
+    if (is.null(w)) {
+      w <- rep(1, length(x))
+    }
+    
+    if (na.rm) {
+      drop1 <- is.na(x)
+      drop2 <- is.na(w)
+      drop3 <- is.na(pl)
+      x <- x[!(drop1 | drop2 | drop3)]
+      w <- w[!(drop1 | drop2 | drop3)]
+      pl <- pl[!(drop1 | drop2 | drop3)]
+    }
+    
+    sum(w * (ifelse(x < pl, ((pl - x) / pl)^alpha, 0)), na.rm = TRUE) /
+      sum(w, na.rm = TRUE)
+  }
+
+#' Brecha de la pobreza por hogar en quetzales al mes para pobres antes de reforma
+#'
+#' @param x base, data frame
+#' @param w, h, y0, r vectores [factor de expansión, tamaño del hogar, ingreso
+#' @param ... en escenario 0, parentesco - para incluir solo el jefe del hogar-]
+#' @param pl poverty line
+#'
+#' @export
+calc_br0 <-
+  function(x, pl, w = rep(1, length(x)), h = rep(1, length(h)),
+           y0 = rep(1, length(y0)), r = rep(1, length(r)), na.rm = TRUE, ...) {
+    if (is.null(w)) {
+      w <- rep(1, length(x))
+    }
+    
+    if (na.rm) {
+      drop1 <- is.na(x)
+      drop2 <- is.na(w)
+      drop3 <- is.na(pl)
+      drop4 <- is.na(h)
+      drop5 <- (y0 >= pl) ## Elimina los no pobres en escenario 0
+      drop6 <- is.na(y0)
+      x <- x[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6)]
+      w <- w[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6)]
+      pl <- pl[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6)]
+      h <- h[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6)]
+      y0 <- y0[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6)]
+      r <- r[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6)]
+    }
+    
+    weighted.mean((ifelse(r == 1, (pl - x) * h / 12, NA)), na.rm = TRUE, w)
+  }
+
+#' Brecha de la pobreza por hogar en quetzales al mes para nuevos pobres
+#' después de reforma
+#'
+#' @param x base, data frame
+#' @param w, h, y0, r vectores [factor de expansión, tamaño del hogar, ingreso
+#' @param ... en escenario 0, parentesco - para incluir solo el jefe del hogar-]
+#' @param pl poverty line
+#'
+#' @export
+calc_br1 <-
+  function(x, pl, w = rep(1, length(x)), h = rep(1, length(h)),
+           y0 = rep(1, length(y0)),
+           r = rep(1, length(r)), na.rm = TRUE, ...) {
+    if (is.null(w)) {
+      w <- rep(1, length(x))
+    }
+    
+    if (na.rm) {
+      drop1 <- is.na(x)
+      drop2 <- is.na(w)
+      drop3 <- is.na(pl)
+      drop4 <- is.na(h)
+      drop5 <- (y0 < pl) ## Elimina los no pobres en escenario 0
+      drop6 <- is.na(y0)
+      drop7 <- (x > pl) ## E incluye los no pobres en el escenario x
+      
+      x <- x[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6 | drop7)]
+      w <- w[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6 | drop7)]
+      pl <- pl[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6 | drop7)]
+      h <- h[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6 | drop7)]
+      y0 <- y0[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6 | drop7)]
+      r <- r[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6 | drop7)]
+    }
+    
+    weighted.mean((ifelse(r == 1, (pl - x) * h / 12, NA)), na.rm = TRUE, w)
+  }
+
+#' Brecha de la pobreza para nuevos pobres como proporción del PIB
+#' después de reforma
+#'
+#' @param x base, data frame
+#' @param w, h, y0, r vectores [factor de expansión, tamaño del hogar, ingreso
+#' @param ... en escenario 0, parentesco - para incluir solo el jefe del hogar-]
+#' @param pl poverty line
+#'
+#' @export
+calc_br2 <-
+  function(x, pl, w = rep(1, length(x)), h = rep(1, length(h)),
+           y0 = rep(1, length(y0)),
+           r = rep(1, length(r)), na.rm = TRUE, ...) {
+    if (is.null(w)) {
+      w <- rep(1, length(x))
+    }
+    
+    if (na.rm) {
+      drop1 <- is.na(x)
+      drop2 <- is.na(w)
+      drop3 <- is.na(pl)
+      drop4 <- is.na(h)
+      drop5 <- (y0 < pl) ## Elimina los no pobres en escenario 0
+      drop6 <- is.na(y0)
+      drop7 <- (x > pl) ## E incluye los no pobres en el escenario x
+      
+      x <- x[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6 | drop7)]
+      w <- w[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6 | drop7)]
+      pl <- pl[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6 | drop7)]
+      h <- h[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6 | drop7)]
+      y0 <- y0[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6 | drop7)]
+      r <- r[!(drop1 | drop2 | drop3 | drop4 | drop5 | drop6 | drop7)]
+    }
+    
+    x1 <- sum(((pl - x) * w), na.rm = TRUE)
+    x1 / (parm_glob$valor[str_detect(parm_glob$descripcion, "PIB")] * 10000)
+  }
+
+#' Brecha de la pobreza por hogar en quetzales al mes para cada escenario
+#'
+#' @param x base, data frame
+#' @param w, h, r vectores [factor de expansión, tamaño del hogar,
+#' @param ... parentesco - para incluir solo el jefe del hogar-]
+#' @param pl poverty line
+#'
+#' @export
+
+calc_br <-
+  function(x,
+           pl,
+           w = rep(1, length(x)),
+           h = rep(1, length(h)),
+           r = rep(1, length(r)),
+           na.rm = TRUE,
+           ...) {
+    if (is.null(w)) {
+      w <- rep(1, length(x))
+    }
+    
+    if (na.rm) {
+      drop1 <- is.na(x)
+      drop2 <- is.na(w)
+      drop3 <- is.na(pl)
+      drop4 <- is.na(h)
+      x <- x[!(drop1 | drop2 | drop3 | drop4)]
+      w <- w[!(drop1 | drop2 | drop3 | drop4)]
+      pl <- pl[!(drop1 | drop2 | drop3 | drop4)]
+      h <- h[!(drop1 | drop2 | drop3 | drop4)]
+      r <- r[!(drop1 | drop2 | drop3 | drop4)]
+    }
+    br <- if_else(pl > x, (pl - x) * h / 12, 0)
+    weighted.mean((ifelse(r == 1, br, NA)), na.rm = TRUE, w)
+  }
+
+#' Estima datos de pobreza
+#' @param x,w, pline, r, h, y0
+#' @param vectores numéricos con datos de base de ingresos (x), linea de pobreza
+#' @param (pl), r, h, y0
+estima_pov <- function(x, pline, r, h, y0) {
+  # Calcular valores iniciales
+  pline12 <- weighted.mean(DOM_results[[pline]], DOM_results$factor) / 12
+  pline12h <- weighted.mean(
+    DOM_results[[pline]] * DOM_results$hsize,
+    DOM_results$factor
+  ) / 12
+  
+  # Asegurarnos de que tenemos todas las variables necesarias antes del pivot
+  x <- x %>%
+    ungroup() %>%
+    select(
+      yd0_pc, # Agregamos explícitamente yd0_pc
+      any_of(matches("y[d|c|z|i|e][0-9]_pc")),
+      !!sym(pline),
+      !!sym(r),
+      !!sym(h),
+      !!sym(y0),
+      factor
+    )
+  
+  # Guardar yd0_pc antes del pivot
+  yd0_pc_values <- x$yd0_pc
+  
+  x <- x %>%
+    pivot_longer(
+      names_to = "var",
+      cols = starts_with("y")
+    ) %>%
+    group_by(var) %>%
+    mutate(yd0_pc = yd0_pc_values) %>% # Reintroducir yd0_pc después del pivot
+    summarise(
+      rate = calc_pov_fgt(
+        x = value,
+        pl = !!sym(pline),
+        alpha = 0,
+        w = factor,
+        na.rm = TRUE
+      ) * 100,
+      headcount = round(
+        calc_pov_fgt(
+          x = value,
+          pl = !!sym(pline),
+          alpha = 0,
+          w = factor,
+          na.rm = TRUE
+        ) * sum(factor, na.rm = TRUE)
+      ),
+      gap = calc_pov_fgt(
+        x = value,
+        pl = !!sym(pline),
+        alpha = 1,
+        w = factor,
+        na.rm = TRUE
+      ) * 100,
+      gap_lcuhh = calc_br(
+        x = value,
+        pl = !!sym(pline),
+        h = !!sym(h),
+        r = !!sym(r),
+        w = factor,
+        na.rm = TRUE
+      ),
+      gap_lcupo = calc_br0(
+        x = value,
+        pl = !!sym(pline),
+        h = !!sym(h),
+        r = !!sym(r),
+        y0 = yd0_pc, # Usamos yd0_pc que mantuvimos
+        w = factor,
+        na.rm = TRUE
+      ),
+      gap_lcupon = calc_br1(
+        x = value,
+        pl = !!sym(pline),
+        h = !!sym(h),
+        r = !!sym(r),
+        y0 = yd0_pc, # Usamos yd0_pc que mantuvimos
+        w = factor,
+        na.rm = TRUE
+      ),
+      gap_lcupopib = calc_br2(
+        x = value,
+        pl = !!sym(pline),
+        h = !!sym(h),
+        r = !!sym(r),
+        y0 = yd0_pc, # Usamos yd0_pc que mantuvimos
+        w = factor,
+        na.rm = TRUE
+      ),
+      severity = calc_pov_fgt(
+        x = value,
+        pl = !!sym(pline),
+        alpha = 2,
+        w = factor,
+        na.rm = TRUE
+      ) * 100
+    ) %>%
+    ungroup() %>%
+    pivot_longer(
+      names_to = "parameter",
+      cols = c(
+        "rate", "headcount", "gap", "gap_lcuhh", "gap_lcupo", "gap_lcupon",
+        "gap_lcupopib", "severity"
+      ),
+      values_to = "Value"
+    ) %>%
+    filter(var != "yd_hh") %>%
+    separate(var, into = c("var", "escenario"), sep = "_") %>%
+    mutate(
+      escenario = as.numeric(if_else(str_sub(var, 3, 3) == "", "0",
+                                     str_sub(var, 3, 3)
+      )),
+      var = str_sub(var, 1, 2)
+    )
+  
+  # Convertir la columna en un factor con el orden deseado
+  custom_order <- c("yd", "yc", "yz", "yi", "ys")
+  x$var <- factor(x$var, levels = custom_order)
+  
+  # Ordenar basado en el orden personalizado
+  x <- x %>% arrange(var)
+  
+  return(x)
+}
+
+pov_matriz <- function(data, suffix) {
+  # Validar que el sufijo comience con "_"
+  if (!grepl("^_", suffix)) {
+    stop("El sufijo debe comenzar con '_'.")
+  }
+  
+  # Filtrar y transformar los datos
+  p1 <- data %>%
+    filter(parameter != "severity") %>%
+    pivot_wider(
+      names_from = c("var", "escenario"), names_sep = "_",
+      values_from = Value
+    ) %>%
+    mutate(
+      # Crear dinámicamente las diferencias para múltiples variables
+      across(matches(paste0("^(yd|yc|yz|yi|ys)", suffix, "$")),
+             ~ . - get(sub(suffix, "_0", cur_column())),
+             .names = "d{.col}"
+      )
+    )
+  
+  # Crear una matriz con los resultados de las selecciones específicas
+  result <- rbind(
+    p1 %>%
+      filter(parameter == "rate") %>%
+      select(any_of(c(
+        paste0("yd_0"), paste0("yc", suffix),
+        paste0("yz", suffix), paste0("yi", suffix), paste0("ys", suffix)
+      ))) %>%
+      as.numeric(),
+    p1 %>%
+      filter(parameter == "rate") %>%
+      select(matches(paste0("^d(yd|yc|yz|yi|ys)", suffix, "$"))) %>%
+      as.numeric(),
+    p1 %>%
+      filter(parameter == "headcount") %>%
+      select(matches(paste0("^d(yd|yc|yz|yi|ys)", suffix, "$"))) %>%
+      as.numeric(),
+    p1 %>%
+      filter(parameter == "gap") %>%
+      select(any_of(c(
+        paste0("yd_0"), paste0("yc", suffix),
+        paste0("yz", suffix), paste0("yi", suffix), paste0("ys", suffix)
+      ))) %>%
+      as.numeric(),
+    p1 %>%
+      filter(parameter == "gap_lcuhh") %>%
+      select(any_of(c(
+        paste0("yd_0"), paste0("yc", suffix),
+        paste0("yz", suffix), paste0("yi", suffix), paste0("ys", suffix)
+      ))) %>%
+      as.numeric(),
+    p1 %>%
+      filter(parameter == "gap_lcupo") %>%
+      select(any_of(c(
+        paste0("yd_0"), paste0("yc", suffix),
+        paste0("yz", suffix), paste0("yi", suffix), paste0("ys", suffix)
+      ))) %>%
+      as.numeric(),
+    p1 %>%
+      filter(parameter == "gap_lcupon") %>%
+      select(any_of(c(
+        paste0("yd_0"), paste0("yc", suffix),
+        paste0("yz", suffix), paste0("yi", suffix), paste0("ys", suffix)
+      ))) %>%
+      as.numeric() %>%
+      replace_na(0),
+    p1 %>%
+      filter(parameter == "gap_lcupopib") %>%
+      select(any_of(c(
+        paste0("yd_0"), paste0("yc", suffix),
+        paste0("yz", suffix), paste0("yi", suffix), paste0("ys", suffix)
+      ))) %>%
+      as.numeric() %>%
+      replace_na(0)
+  ) %>%
+    apply(2, round, digits = 4)
+  
+  return(result)
+}
+
+#' Matriz de datos de desigualdad
+#' @param data data frame con los datos de ingresos
+#' @param suffix es un valor numérico correspondiente al escenario
+#'
+#' @export
+#'
+inq_matriz <- function(data, suffix) {
+  # Validar que el sufijo comience con "_"
+  if (!grepl("^_", suffix)) {
+    stop("El sufijo debe comenzar con '_'.")
+  }
+  
+  # Filtrar y transformar los datos
+  p1 <- data %>%
+    pivot_wider(
+      names_from = c("var", "escenario"), names_sep = "_",
+      values_from = Value
+    ) %>%
+    mutate(
+      # Crear dinámicamente las diferencias para múltiples variables
+      across(matches(paste0("^(yd|yc|yz|yi|ys)", suffix, "$")),
+             ~ get(sub(suffix, "_0", cur_column())) - .,
+             .names = "d{.col}"
+      )
+    )
+  
+  # Crear una matriz con los resultados de las selecciones específicas
+  result <- rbind(
+    p1 %>%
+      filter(parameter == "Gini") %>%
+      select(all_of(c(
+        paste0("yd_0"), paste0("yc", suffix),
+        paste0("yz", suffix), paste0("yi", suffix), paste0("ys", suffix)
+      ))) %>%
+      as.numeric(),
+    p1 %>%
+      filter(parameter == "Gini") %>%
+      select(matches(paste0("^d(yd|yc|yz|yi|ys)", suffix, "$"))) %>%
+      as.numeric(),
+    p1 %>%
+      filter(parameter == "Palma") %>%
+      select(all_of(c(
+        paste0("yd_0"), paste0("yc", suffix),
+        paste0("yz", suffix), paste0("yi", suffix), paste0("ys", suffix)
+      ))) %>%
+      as.numeric(),
+    p1 %>%
+      filter(parameter == "Theil") %>%
+      select(all_of(c(
+        paste0("yd_0"), paste0("yc", suffix),
+        paste0("yz", suffix), paste0("yi", suffix), paste0("ys", suffix)
+      ))) %>%
+      as.numeric()
+  ) %>%
+    apply(2, round, digits = 4)
+  
+  return(result)
+}
+
+weighted_sum <- function(x, w, na.rm = TRUE) {
+  sum(x * w, na.rm = na.rm)
+}
+
+
+#' Estimar concentración según grupo especificado (% del total que va al grupo)
+#' @param current_data data frame con los datos de ingresos
+#' @param suffix es un valor numérico correspondiente al escenario
+#' @param weight_var es el factor de expansión
+#' @param rank es la variable de agrupación (deciles, por ejemplo)
+#'
+#' @export
+#'
+decile_con <- function(current_data, suffix, weight_var, rank) {
+  # Pre-calcular nombres
+  dif1 <- paste0("ditx_itb", suffix, "_pc")
+  dif2 <- paste0("dsub_ele", suffix, "_pc")
+  dif3 <- paste0("dcomp", suffix, "_pc")
+  neto <- paste0("nitx", suffix, "_pc")
+  variables_to_sum <- c(
+    "itx_itb0_pc", "sub_ele0_pc",
+    paste0("itx_itb", suffix, "_pc"),
+    paste0("sub_ele", suffix, "_pc"),
+    paste0("comp", suffix, "_pc"),
+    paste0("ditx_itb", suffix, "_pc"),
+    paste0("dsub_ele", suffix, "_pc"),
+    paste0("dcomp", suffix, "_pc"), paste0("nitx", suffix, "_pc")
+  )
+  
+  current_data <- current_data %>%
+    filter(!is.na({{ rank }})) %>%
+    mutate(
+      !!sym(dif1) := !!sym(paste0("itx_itb", suffix, "_pc")) - itx_itb0_pc,
+      !!sym(dif2) := !!sym(paste0("sub_ele", suffix, "_pc")) - sub_ele0_pc,
+      !!sym(dif3) := !!sym(paste0("comp", suffix, "_pc")),
+      !!sym(neto) := !!sym(dif1) + !!sym(dif2) - !!sym(dif3)
+    ) %>%
+    group_by({{ rank }}) %>%
+    summarise(across(all_of(variables_to_sum), ~
+                       sum(. * .data[[weight_var]], na.rm = TRUE))) %>%
+    arrange({{ rank }}) %>%
+    filter(!is.na({{ rank }})) %>%
+    as_tibble() %>%
+    adorn_totals("row")
+  
+  numeric_cols <- current_data %>%
+    select_if(is.numeric) %>%
+    names()
+  
+  # Obtener los valores de la última fila para columnas numéricas
+  last_row <- current_data %>%
+    slice_tail(n = 1) %>%
+    select(all_of(numeric_cols))
+  
+  # Normalizar todas las columnas numéricas
+  current_data <- current_data %>%
+    mutate(across(
+      all_of(numeric_cols),
+      ~ . * 100 / last_row[[cur_column()]]
+    )) %>%
+    mutate(across(where(is.numeric), ~ if_else(is.na(.), 0, round(., digits = 1))))
+  
+  current_data
+}
+
+#' Estimar incidencia fiscal según grupo especificado (variable / ing disponible)
+#' @param current_data data frame con los datos de ingresos
+#' @param suffix es un valor numérico correspondiente al escenario
+#' @param weight_var es el factor de expansión
+#' @param rank es la variable de agrupación (deciles, por ejemplo)
+#'
+#' @export
+#'
+decile_inc <- function(current_data, suffix, weight_var, rank) {
+  # Pre-calcular nombres
+  dif1 <- paste0("ditx_itb", suffix, "_pc")
+  dif2 <- paste0("dsub_ele", suffix, "_pc")
+  dif3 <- paste0("dcomp", suffix, "_pc")
+  neto <- paste0("nitx", suffix, "_pc")
+  
+  variables_to_sum <- c(
+    "itx_itb0_pc", "sub_ele0_pc",
+    paste0("itx_itb", suffix, "_pc"),
+    paste0("sub_ele", suffix, "_pc"),
+    paste0("comp", suffix, "_pc"),
+    dif1, dif2, dif3, neto
+  )
+  
+  # Pipeline optimizada con adorn_totals (más confiable)
+  result <- current_data %>%
+    filter(!is.na({{ rank }})) %>%
+    mutate(
+      !!sym(dif1) := !!sym(paste0("itx_itb", suffix, "_pc")) - itx_itb0_pc,
+      !!sym(dif2) := !!sym(paste0("sub_ele", suffix, "_pc")) - sub_ele0_pc,
+      !!sym(dif3) := !!sym(paste0("comp", suffix, "_pc")),
+      !!sym(neto) := !!sym(dif1) + !!sym(dif2) - !!sym(dif3)
+    ) %>%
+    group_by({{ rank }}) %>%
+    summarise(
+      incpc = sum(yd_pc * !!sym(weight_var), na.rm = TRUE),
+      across(
+        all_of(variables_to_sum),
+        ~ sum(.x * !!sym(weight_var), na.rm = TRUE)
+      ),
+      .groups = "drop"
+    ) %>%
+    arrange({{ rank }}) %>%
+    janitor::adorn_totals("row") %>%
+    mutate(
+      across(
+        all_of(variables_to_sum),
+        ~ round((.x * 100) / incpc, 2)
+      )
+    ) %>%
+    select(-incpc)
+  
+  return(result)
+}
+
+#' Estimar totales según grupo especificado (en millones)
+#' @param current_data data frame con los datos de ingresos
+#' @param suffix es un valor numérico correspondiente al escenario
+#' @param weight_var es el factor de expansión
+#' @param rank es la variable de agrupación (deciles, por ejemplo)
+#'
+#' @export
+#'
+
+decile_sum <- function(current_data, suffix, weight_var, rank) {
+  dif1 <- paste0("ditx_itb", suffix, "_pc")
+  dif2 <- paste0("dsub_ele", suffix, "_pc")
+  dif3 <- paste0("dcomp", suffix, "_pc")
+  neto <- paste0("nitx", suffix, "_pc")
+  
+  
+  variables_to_sum <- c(
+    "itx_itb0_pc", "sub_ele0_pc",
+    paste0("itx_itb", suffix, "_pc"),
+    paste0("sub_ele", suffix, "_pc"),
+    paste0("comp", suffix, "_pc"),
+    paste0("ditx_itb", suffix, "_pc"),
+    paste0("dsub_ele", suffix, "_pc"),
+    paste0("dcomp", suffix, "_pc"), paste0("nitx", suffix, "_pc")
+  )
+  
+  
+  current_data <- current_data %>%
+    mutate(
+      !!sym(dif1) := !!sym(paste0("itx_itb", 0, "_pc")) -
+        !!sym(paste0("itx_itb", suffix, "_pc")),
+      !!sym(dif2) := !!sym(paste0("sub_ele", 0, "_pc")) -
+        !!sym(paste0("sub_ele", suffix, "_pc")),
+      !!sym(dif3) := !!sym(paste0("comp", 0, "_pc")) -
+        !!sym(paste0("comp", suffix, "_pc")),
+      !!sym(neto) := !!sym(dif1) + !!sym(dif2) - !!sym(dif3)
+    ) %>%
+    group_by({{ rank }}) %>%
+    summarise(across(all_of(variables_to_sum), ~
+                       sum(. * !!sym(weight_var) / 1000000, na.rm = TRUE))) %>%
+    arrange({{ rank }}) %>%
+    as_tibble() %>%
+    adorn_totals("row") %>%
+    mutate(across(where(is.numeric), ~ round(., digits = 1)))
+  
+  current_data
+}
+
+#' Estimar totales según grupo especificado (en porcentaje del PIB)
+#' @param current_data data frame con los datos de ingresos
+#' @param suffix es un valor numérico correspondiente al escenario
+#' @param weight_var es el factor de expansión
+#' @param rank es la variable de agrupación (deciles, por ejemplo)
+#'
+#' @export
+#'
+
+decile_pib <- function(current_data, suffix, weight_var, rank) {
+  variables_to_sum <- c("itx_itb0_pc", "sub_ele0_pc",
+    paste0("itx_itb", suffix, "_pc"),  paste0("sub_ele", suffix, "_pc"),
+    paste0("comp", suffix, "_pc")
+  )
+  
+  itb_n <- paste0("itx_itb", suffix, "_pc")
+  sub_n <- paste0("sub_ele", suffix, "_pc")
+  com_n <- paste0("comp", suffix, "_pc")
+  
+  dif1 <- paste0("ditx_itb", suffix, "_pc")
+  dif2 <- paste0("dsub_ele", suffix, "_pc")
+  dif3 <- paste0("dcomp",    suffix, "_pc")
+  neto <- paste0("nitx",    suffix, "_pc")
+  
+  f_itb <- vs_itb / (v_itb / v_pib)
+  f_sub <- vs_sub / (v_sub / v_pib)
+  
+  current_data <- current_data %>%
+    group_by({{ rank }}) %>%
+    summarise(across(all_of(variables_to_sum), ~
+                       sum(. * !!sym(weight_var) / 1000000, na.rm = TRUE))) %>%
+    arrange({{ rank }}) %>%
+    as_tibble() %>%
+    adorn_totals("row") %>%
+    mutate(across(where(is.numeric), ~ round(., digits = 1))) %>%
+    mutate(
+      itx_itb0_pc  =  itx_itb0_pc / f_itb * 100,
+      sub_ele0_pc  =  sub_ele0_pc / f_sub * 100,
+      !!sym(itb_n) := !!sym(paste0("itx_itb", suffix, "_pc")) / f_itb * 100,
+      !!sym(sub_n) := !!sym(paste0("sub_ele", suffix, "_pc")) / f_sub * 100,
+      !!sym(com_n) := !!sym(paste0("comp", suffix, "_pc")) / v_pib * 100
+    ) %>%
+    mutate(
+      !!sym(dif1) := !!sym(paste0("itx_itb", suffix, "_pc")) - itx_itb0_pc,
+      !!sym(dif2) := !!sym(paste0("sub_ele", suffix, "_pc")) - sub_ele0_pc,
+      !!sym(dif3) := !!sym(paste0("comp", suffix, "_pc")),
+      !!sym(neto) := !!sym(dif1) + !!sym(dif2) - !!sym(dif3)
+    )
+  
+  current_data
+}
+
+
+
+#' Estimar concentración/incidencia según grupo especificado (% del total que va al grupo)
+#' @param current_data data frame con los datos de ingresos
+#' @param suffix es un valor numérico correspondiente al escenario
+#' @param weight_var es el factor de expansión
+#' @param rank es la variable de agrupación (deciles, por ejemplo)
+#' @param opt es la opción de cálculo (1, 2 o 3)
+#'
+#' @export
+#'
+suma_esp <- function(current_data, suffix, weight_var, rank, opt) {
+  # Manejo de errores inicial
+  if (!suffix %in% seq_along(escenarios$sim_esp)) {
+    stop("suffix no es un índice válido para escenarios$sim_esp.")
+  }
+  if (!weight_var %in% names(current_data)) {
+    stop("weight_var no se encuentra en current_data.")
+  }
+  if (!as.character(rlang::enexpr(rank)) %in% names(current_data)) {
+    stop("rank no se encuentra en current_data.")
+  }
+  if (!opt %in% c(1, 2, 3)) {
+    stop("opt debe ser 1, 2 o 3.")
+  }
+  
+  # Obtener el escenario correspondiente al sufijo
+  
+  
+  # Construir los nombres de las variables a sumar
+  base_vars <- c("itx_cmnt", "itx_tabc", "itx_bnas", "itx_balc", "itx_comb", "itx_comi")
+  
+  # # Generar los nombres de las nuevas variables
+  new_vars <- paste0(base_vars, suffix, "_pc")
+  
+  
+  variables_to_sum <- c(
+    paste0(base_vars, "0_pc"),
+    paste0(base_vars, suffix, "_pc"),
+    # paste0("d", base_vars, sim_esc, "_pc")
+    paste0("d", base_vars, suffix, "_pc")
+  )
+  
+  # Construir los nombres de las diferencias para las mutaciones
+  dif_vars <- paste0("d", base_vars, suffix, "_pc")
+  
+  for (i in seq_along(base_vars)) {
+    col_name <- dif_vars[i]
+    col_0 <- paste0(base_vars[i], "0_pc")
+    col_suffix <- paste0(base_vars[i], suffix, "_pc")
+    # current_data[[col_name]] <- current_data[[col_suffix]] - current_data[[col_0]]
+    current_data <- current_data %>%
+      mutate(!!sym(col_name) := !!sym(paste0(col_suffix)) - !!sym(paste0(col_0)))
+  }
+  
+  
+  # result <- current_data %>%
+  #     select(all_of(variables_to_sum))
+  
+  if (opt == 1) {
+    # Opción 1: Suma ponderada y porcentaje del total
+    result <- current_data %>%
+      group_by({{ rank }}) %>%
+      summarise(across(
+        all_of(variables_to_sum),
+        ~ sum(. * .data[[weight_var]], na.rm = TRUE)
+      )) %>%
+      arrange({{ rank }}) %>%
+      filter(!is.na({{ rank }})) %>%
+      as_tibble() %>%
+      adorn_totals("row")
+    
+    totales <- result %>%
+      filter({{ rank }} != "Total") %>%
+      summarise(across(where(is.numeric), sum))
+    
+    result <- result %>%
+      mutate(across(where(is.numeric), ~ . * 100 / totales[[cur_column()]])) %>%
+      mutate(across(
+        where(is.numeric),
+        ~ ifelse(is.na(.), 0, round(., digits = 1))
+      ))
+  } else if (opt == 2) {
+    # Opción 2: Incidencia relativa a yd_pc
+    incval <- current_data %>%
+      group_by({{ rank }}) %>%
+      summarise(incpc = sum(yd_pc * !!sym(weight_var), na.rm = TRUE)) %>%
+      arrange({{ rank }}) %>%
+      filter(!is.na({{ rank }})) %>%
+      adorn_totals("row")
+    
+    result <- current_data %>%
+      group_by({{ rank }}) %>%
+      summarise(across(all_of(variables_to_sum), ~
+                         sum(. * .data[[weight_var]], na.rm = TRUE))) %>%
+      arrange({{ rank }}) %>%
+      filter(!is.na({{ rank }})) %>%
+      adorn_totals("row") %>%
+      left_join(incval, by = as_label(enquo(rank))) %>%
+      mutate(across(all_of(variables_to_sum), ~ (. * 100) / incpc)) %>%
+      select(-incpc) %>%
+      mutate(across(where(is.numeric), ~ round(., digits = 3)))
+  } else if (opt == 3) {
+    # Opción 3: Suma ponderada dividida por 1,000,000
+    f_esp <- vs_esp / (v_esp / v_pib)
+    result <- current_data %>%
+      group_by({{ rank }}) %>%
+      summarise(across(all_of(variables_to_sum), ~
+                         sum(. * !!sym(weight_var) / 1000000, na.rm = TRUE))) %>%
+      arrange({{ rank }}) %>%
+      as_tibble() %>%
+      adorn_totals("row") %>%
+      mutate(across(where(is.numeric), ~ round((. / f_esp) * 100, digits = 3)))
+  }
+  
+  return(result)
+}
+
+#' Resumen escenarios
+#' @param num es un valor numérico correspondiente al escenario
+#'
+#' @export
+#'
+sum_escenarios <- function(num) {
+  suff <- paste0("_", as.character(num))
+  x <- list(
+    pov_gral = pov_matriz(pov_gral, suff),
+    pov_ext = pov_matriz(pov_ext, suff),
+    pov_int = pov_matriz(pov_int, suff),
+    ineq = inq_matriz(ineq, suff),
+    deccon = decile_con(DOM_results, num, "factor", decyd),
+    decsum = decile_pib(DOM_results, num, "factor", decyd),
+    decinc = decile_inc(DOM_results, num, "factor", decyd),
+    estrcon = decile_con(DOM_results, num, "factor", gr_estrato0),
+    estrsum = decile_pib(DOM_results, num, "factor", gr_estrato0),
+    estrinc = decile_inc(DOM_results, num, "factor", gr_estrato0),
+    urbcon = decile_con(DOM_results, num, "factor", urban),
+    urbsum = decile_pib(DOM_results, num, "factor", urban),
+    urbinc = decile_inc(DOM_results, num, "factor", urban),
+    sexcon = decile_con(DOM_results, num, "factor", sjefe),
+    sexsum = decile_pib(DOM_results, num, "factor", sjefe),
+    sexinc = decile_inc(DOM_results, num, "factor", sjefe),
+    catcon = decile_con(DOM_results, num, "factor", cathhd),
+    catsum = decile_pib(DOM_results, num, "factor", cathhd),
+    catinc = decile_inc(DOM_results, num, "factor", cathhd),
+    depcon = decile_con(DOM_results, num, "factor", macro_region),
+    depsum = decile_pib(DOM_results, num, "factor", macro_region),
+    depinc = decile_inc(DOM_results, num, "factor", macro_region)
+  )
+  
+  x
+}
+
+
+#' Resumen específicos
+#' @param num es un valor numérico correspondiente al escenario
+#'
+#' @export
+#'
+sum_especificos <- function(num) {
+  suff <- paste0("_", as.character(num))
+  x <- list(
+    deccon  = suma_esp(DOM_results, num, "factor", decyd, 1),
+    decsum  = suma_esp(DOM_results, num, "factor", decyd, 3),
+    decinc  = suma_esp(DOM_results, num, "factor", decyd, 2),
+    estrcon = suma_esp(DOM_results, num, "factor", gr_estrato0, 1),
+    estrsum = suma_esp(DOM_results, num, "factor", gr_estrato0, 3),
+    estrinc = suma_esp(DOM_results, num, "factor", gr_estrato0, 2),
+    urbcon  = suma_esp(DOM_results, num, "factor", urban, 1),
+    urbsum  = suma_esp(DOM_results, num, "factor", urban, 3),
+    urbinc  = suma_esp(DOM_results, num, "factor", urban, 2),
+    sexcon  = suma_esp(DOM_results, num, "factor", sjefe, 1),
+    sexsum  = suma_esp(DOM_results, num, "factor", sjefe, 3),
+    sexinc  = suma_esp(DOM_results, num, "factor", sjefe, 2),
+    catcon  = suma_esp(DOM_results, num, "factor", cathhd, 1),
+    catsum  = suma_esp(DOM_results, num, "factor", cathhd, 3),
+    catinc  = suma_esp(DOM_results, num, "factor", cathhd, 2),
+    depcon  = suma_esp(DOM_results, num, "factor", depto, 1),
+    depsum  = suma_esp(DOM_results, num, "factor", depto, 3),
+    depinc  = suma_esp(DOM_results, num, "factor", depto, 2)
+  )
+  x
+}
+
+
+## 4. Recolectar información de simulaciones  ----------------------------------
+
+
+
+#6. Estimacion de indicadores --------------------------------------------------
+##.  Estima indicadores de desigualdad: Gini, Theil y Palma 
+ineq <- DOM_results %>%
+  mutate(factor = factor_expansion_anual) %>%
+  ungroup() %>%
+  select(any_of(matches("y[d|c|z|i|s][0-9]_pc")), factor) %>%
+  summarise(
+    across(
+      any_of(starts_with("y")),
+      ~ calc_gini(., factor),
+      .names = "Gini__{.col}"
+    ),
+    across(
+      any_of(starts_with("y")),
+      ~ calc_theil(., factor),
+      .names = "Theil__{.col}"
+    ),
+    across(
+      any_of(starts_with("y")),
+      ~ calc_palma(., factor, DOM_results$decyd),
+      .names = "Palma__{.col}"
+    )
+  ) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "var",
+    values_to = "Value"
+  ) %>%
+  separate(var, into = c("parameter", "var"), sep = "__") %>%
+  separate(var, into = c("var", "escenario"), sep = "_") %>%
+  mutate(
+    escenario = as.numeric(if_else(str_sub(var, 3, 3) == "", "0",
+                                   str_sub(var, 3, 3)
+    )),
+    var = str_sub(var, 1, 2)
+  )
+
+## Función para estimar pobreza (se requiere para estimarla para cada línea)
+#  Se estiman líneas de pobreza general, extrema e internacional
+
+# Llamada a la función
+DOM_results <-  DOM_results %>%
+  mutate(factor = factor_expansion_anual, 
+         pline_830 = 365*8.30 * 23.135822 *(174.88908/148.47661) ) 
+pov_gral <- estima_pov(DOM_results, "pline_mod", "relation", "hsize", "yd0_pc")
+pov_ext <- estima_pov(DOM_results, "pline_ext", "relation", "hsize", "yd0_pc")
+pov_int <- estima_pov(DOM_results, "pline_830", "relation", "hsize", "yd0_pc")
+
+DOM_results <- DOM_results %>%
+  mutate(tot_ = 1) %>%
+  rename(gr_estrato0 = gr_estrato) 
+  
+DOM_results <- DOM_results %>%  
+  mutate(urban = (zona ==1)) 
+
+saveRDS(DOM_results, paste0(fdbmod, "DOM_simulaciones"))
+#rm(gtm_simcomp, gtm_ingdis)
+# Lista de escenarios
+variable_values <- c(escenarios$escenario) # estima las simulaciones
+
+# Ejecuta sum_escenarios para cada valor y guarda los resultados en una lista
+resultados_escenarios <- sapply(
+  setNames(variable_values, paste0("escenario_", variable_values)),
+  sum_escenarios,
+  simplify = FALSE
+)
+
+# resultados_especificos <- sapply(variable_values, sum_especificos,
+#                                  simplify = FALSE
+# )
+
+saveRDS(DOM_results, paste0(fdbmod,            "DOM_resultados.rds"))
+# saveRDS(resultados_especificos, paste0(fdbmod, "DOM_resumenesp"))
+saveRDS(resultados_escenarios, paste0(fdbmod,  "DOM_resumen.rds"))
+
+rm(
+  chihh, DOM_results, 
+  balc_items, colname_, cols_itx, colsim,
+  comb_items, d, esc_inc, estratos, fila_totales, i, fixprice,
+  loaded_successfully,  nom_comp, nom_es, nom_espx, nom_isrx, nom_ivax,
+  nom_tabx, nom_yc, nom_yd, nom_ye, nom_yi, nom_yz, estima_iva,
+  suma_esp, oldhh, v_esp,  v_pib, vs_esp, vs_iva, decile_con,
+  decile_inc, decile_pib
+)
+rm(dispinc2024, dom_ingdis, ineq, pov_ext, pov_gral, pov_int, 
+   resultados_escenarios)

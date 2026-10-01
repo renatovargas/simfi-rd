@@ -1,0 +1,16 @@
+DOM_resumen <- readRDS(paste0(fdbmod, "DOM_resumen.rds")) 
+
+library(tidyverse)
+library(writexl)
+
+# 1. Tu dataframe (ejemplo con datos de políticas fiscales o sociales)
+# df <- mi_dataset_real 
+
+# 2. Creamos el esqueleto del diccionario
+esqueleto_diccionario <- tibble(
+  variable = names(DOM_resumen$escenario_1),
+  descripcion = "" # Columna vacía para llenar en Excel
+)
+
+# 3. Exportar
+write_xlsx(esqueleto_diccionario, paste0(fdbmod, "diccionario_pendiente.xlsx"))
