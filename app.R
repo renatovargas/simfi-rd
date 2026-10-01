@@ -829,8 +829,11 @@ ui <- page_navbar(
                                   "Umbral ICV",
                                   choices = c(
                                     "Sin seleccionar" = "",
-                                    stats::setNames(as.character(1:4),
-                                                    paste("ICV", 1:4))
+                                    stats::setNames(as.character(1:4), c(
+                                      "ICV 1 \u2013 Pobreza extrema",
+                                      "ICV 2 \u2013 Pobreza moderada",
+                                      "ICV 3 \u2013 Estrato medio",
+                                      "ICV 4 \u2013 Estrato alto"))
                                   ), selected = ""))),
             p(class = "text-muted small",
               "Reciben la compensación los hogares con ICV hasta el umbral.")
@@ -1311,8 +1314,13 @@ server <- function(input, output, session) {
                          value = if (is.finite(el)) el else NA)
     }
   }
+  # Al cargar un componente, marcar la casilla dispara el prellenado con las
+  # tarifas vigentes, que sobrescribiría los valores cargados.
+  sub_prefill <- new.env(parent = emptyenv())
+  sub_prefill$skip <- FALSE
   apply_sub <- function(p) {
     cust <- isTRUE(p$custom)
+    if (cust && !isTRUE(input$custom_sub_ele)) sub_prefill$skip <- TRUE
     updateCheckboxInput(session, "custom_sub_ele", value = cust)
     if (cust) {
       upd7 <- function(nm, key) {
@@ -1985,6 +1993,10 @@ server <- function(input, output, session) {
   # Subsidio eléctrico: al personalizar, partir de las tarifas vigentes (base).
   observeEvent(input$custom_sub_ele, {
     if (!isTRUE(input$custom_sub_ele)) return(invisible(NULL))
+    if (isTRUE(sub_prefill$skip)) {
+      sub_prefill$skip <- FALSE
+      return(invisible(NULL))
+    }
     p <- paths()
     r <- read_sim_sub_template_row(p$param_csv, 0L)
     fill_sub_ele_inputs_from_row(session, r)
