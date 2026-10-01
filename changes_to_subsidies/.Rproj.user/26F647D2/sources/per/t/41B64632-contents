@@ -1,0 +1,729 @@
+## Banco Mundial
+## Herramienta de Microsimulación
+## Country: Dominican Republic, 2026
+## Authors: Maynor Cabrera, Renato Vargas
+## Script: Maynor Cabrera
+## 03_DOM26_subsidios.R
+## E-email:       mynorvc@gmail.com
+##  Dependencias:  00_DOM26_Master.R
+##
+## Input files
+## -- DOM_parametros_simulaciones.xlsx
+## -- ENGHI 20180
+## ---- elec.dta
+## ---- DOM26_gtotal.dta
+## ---- DOMCEQ_DIncome.dta
+## ---- urban.dta
+## ---- tipo_establecimiento.dta
+
+## -- ENCFT 2024
+## ---- DOM26_SDIncome.dta
+##
+## Output files:
+## -- DOM_simsubsidio.rds
+##
+##
+## Fecha de creación:         5 Mar 2026 - 15:02
+## Version:    	  			      2.0 (optimizada)
+## Fecha de modificación:     2026-03-10
+
+# 0. Importar archivos y definir funciones -------------------------------------
+library(tictoc)  # perfilado de tiempos — remover tras diagnóstico
+
+## 0.1 Importar archivos -------------------------------------------------------
+
+sim_sub_esc <- sort(unique(escenarios$sim_sub))
+
+sim_sub <- read_excel(fparams, col_names = TRUE, sheet = "sim_sub",
+                      range = "A1:BC11") %>%
+  janitor::clean_names() %>%
+  filter(activo == 1) %>%
+  filter(sim_sub %in% sim_sub_esc)
+
+# Prefijos y nombres de cada matriz
+matrices_sim <- list(
+  basesur  = "bsur",
+  block    = "block",
+  basenor  = "bnorte",
+  baseest  = "beste",
+  tarifest = "teste",
+  tarifsur = "tsur",
+  tarifnor = "tnorte"
+)
+
+for (nombre in names(matrices_sim)) {
+  assign(nombre, sim_sub %>%
+           select(starts_with(matrices_sim[[nombre]])) %>%
+           select(where(~ !all(is.na(.)))) %>%
+           as.matrix()
+  )
+}
+
+## Ingreso disponible 2024
+base2024 <- read_dta(paste0(fpresim, "DOM26_SDIncome.dta"),
+                     col_select = c("hhid", "hhin", "trimestre",
+                                    "factor_expansion_anual",
+                                    "yd_pc", "zona",
+                                    "tipo_alumbrado")) %>%
+  arrange(hhid, hhin)
+
+## Ingreso disponible CEQ 2023
+dispinc2018 <- read_dta(paste0(finput, "DOMCEQ_DIncome.dta"),
+                        col_select = c("hhid", "yd_pc", "ym_pc",
+                                       "relation", "weight", "urban",
+                                       "pondera_2023")) %>%
+  arrange(hhid)
+
+elec <- read_dta(paste0(fpresim, "elec.dta"))
+
+## 0.2 FUNCIONES ---------------------------------------------------------------
+
+percap <- function(data, varlist) {
+  for (x in varlist) {
+    sufijo <- substr(x, nchar(x) - 1, nchar(x))
+    if (sufijo == "in") {
+      col_hh <- sub("in$", "hh", x)
+      col_pc <- sub("in$", "pc", x)
+      data <- data %>%
+        group_by(hhid) %>%
+        mutate(!!col_hh := sum(.data[[x]], na.rm = TRUE)) %>%
+        ungroup() %>%
+        mutate(!!col_pc := .data[[col_hh]] / hsize)
+    }
+    if (sufijo == "hh") {
+      col_pc <- sub("hh$", "pc", x)
+      data <- data %>%
+        mutate(!!col_pc := .data[[x]] / hsize)
+    }
+  }
+  return(data)
+}
+
+# ── Función auxiliar: pago por bloques tarifarios ────────────────────────────
+calcular_pago_bloques <- function(consumo, base, tarif, acum, block, tt, to) {
+  consumo_r <- round_stata(consumo, 0)
+  valido    <- !is.na(consumo)
+  pago      <- rep(0, length(consumo))
+  
+  # Primer bloque
+  m1 <- valido & consumo_r <= block[1, 2] & consumo > 0
+  pago[m1] <- base[1] + tarif[1] * consumo[m1]
+  
+  # Bloques intermedios
+  for (ij in 2:tt) {
+    m <- valido & consumo_r > block[1, ij] & consumo_r <= block[1, ij + 1]
+    pago[m] <- acum[ij - 1] + (consumo[m] - block[1, ij]) * tarif[ij]
+  }
+  
+  # Bloque final
+  mf <- valido & consumo_r > block[1, to]
+  pago[mf] <- acum[tt] + (consumo[mf] - block[1, to]) * tarif[to]
+  
+  return(pago)
+}
+
+#' Función para convertir todas los ratios a valores suavizados usando
+#' regresión local polinómica
+#'
+#' @param data      data frame  con datos
+#' @param group_col grupo (urbano)
+#' @param xcol      valores x para el suavizamiento
+#' @param degree    grado del polinomio local utilizado
+#' @param gridsize  número de puntos de cuadrícula para estimar la función
+#'
+#'
+suav_subs_ur <- function(data,
+                           group_col = "urban",
+                           xcol = "centil",
+                           degree = 0,
+                           gridsize = 100) {
+  
+  # Verificar columna de agrupación
+  if (!group_col %in% names(data)) {
+    stop(paste("La columna", group_col, "no existe en el data frame"))
+  }
+  
+  # Identificar columnas rsub
+  rsub_cols <- grep("^rsub", names(data), value = TRUE)
+  
+  if (length(rsub_cols) == 0) {
+    return("No se encontraron columnas que comiencen con 'ritx' en dataframe")
+  }
+  
+  # Procesar por grupo
+  resultado <- data %>%
+    group_by(across(all_of(group_col))) %>%
+    group_modify(~ {
+      
+      # CORRECCIÓN: usar .y en lugar de cur_group()
+      grupo_actual <- .y[[1]]  # .y contiene los valores de las variables de agrupación
+      message(paste("\n=== Procesando grupo:", grupo_actual, "==="))
+      
+      data_grupo <- .x
+      
+      for (col in rsub_cols) {
+        new_col <- gsub("^rsub", "psub", col)
+        
+        x_values <- data_grupo[[xcol]]
+        y_values <- data_grupo[[col]]
+        
+        valid_indices <- which(!is.na(x_values) & !is.na(y_values))
+        x_valid <- x_values[valid_indices]
+        y_valid <- y_values[valid_indices]
+        
+        if (length(valid_indices) == 0) {
+          warning(paste("Grupo", grupo_actual, "- Sin datos válidos en", col))
+          next
+        }
+        
+        bw <- try(dpill(x_valid, y_valid), silent = TRUE)
+        
+        if (inherits(bw, "try-error") || is.na(bw) || bw <= 0) {
+          bw <- 0.2 * diff(range(x_valid))
+        }
+        
+        ajuste <- try(locpoly(
+          x = x_valid,
+          y = y_valid,
+          degree = degree,
+          bandwidth = bw,
+          kernel = "epanech",
+          gridsize = gridsize,
+          range.x = c(1, 100)  # forzar rango exacto 1-100 como Stata
+        ), silent = TRUE)
+        
+        if (inherits(ajuste, "try-error")) {
+          warning(paste("Grupo", grupo_actual, "- Error en regresión para", col))
+          next
+        }
+        
+        predictions <- rep(NA, nrow(data_grupo))
+        valid_predictions <- approx(
+          x = ajuste$x,
+          y = ajuste$y,
+          xout = x_valid,
+          rule = 2
+        )$y
+        
+        predictions[valid_indices] <- valid_predictions
+        data_grupo[[new_col]] <- predictions
+        
+        message(paste("Grupo", grupo_actual, "- Procesado:", col))
+      }
+      
+      return(data_grupo)
+    }) %>%
+    ungroup()
+  
+  return(resultado)
+}
+
+
+# 1. Estimación de escenarios --------------------------------------------------
+
+# OPTIMIZACIÓN: precalcular fuera del loop los valores que no cambian entre
+# escenarios (b2, t2, n_bloques, tt, to), y precalcular sin_contpub una sola vez.
+n_bloques <- ncol(tarifnor)
+tt        <- n_bloques - 1
+to        <- n_bloques
+
+# Tarifas y bases promedio Edesur/Edeeste (escenario base "0") — fijas
+b2 <- (basesur[1, ] + baseest[1, ]) / 2
+t2 <- (tarifsur[1, ] + tarifest[1, ]) / 2
+
+# Condición sin contador: se calcula una sola vez
+elec <- elec %>%
+  mutate(sin_contpub = sub_sincontador == 1 & a219 == 1)
+
+# Máscaras de distribuidora — se calculan una sola vez
+mask_norte <- elec$a219 == 1 &  elec$estrato %in% c(21, 22)
+mask_sures <- elec$a219 == 1 & !elec$estrato %in% c(21, 22)
+
+for (s in sim_sub_esc) {
+  cat(sprintf("\n========== Escenario %d ==========\n", s))
+  st <- s + 1
+  
+  ## 1.1. Gasto acumulado máximo según bloque-----------------------------------
+  
+  tic("  1. Acumulados tarifarios")
+  # Acumulado Edenorte
+  acunor    <- numeric(tt)
+  acunor[1] <- basenor[st, 2] + block[1, 2] * tarifnor[st, 1]
+  acunor[2] <- acunor[1] + (block[1, 3] - block[1, 2]) * tarifnor[st, 2]
+  for (ij in 3:tt) {
+    acunor[ij] <- acunor[ij - 1] +
+      (block[1, ij + 1] - block[1, ij]) * tarifnor[st, ij]
+  }
+  
+  # Acumulado Edesur/Edeeste
+  acuses    <- numeric(tt)
+  acuses[1] <- b2[2] + block[1, 2] * t2[1]
+  acuses[2] <- acuses[1] + (block[1, 3] - block[1, 2]) * tarifnor[st, 2]
+  for (ij in 3:tt) {
+    acuses[ij] <- acuses[ij - 1] +
+      (block[1, ij + 1] - block[1, ij]) * t2[ij]
+  }
+  
+  assign(paste0("acunor_", s), acunor)
+  assign(paste0("acuses_", s), acuses)
+  toc()
+  
+  ## 1.2. Estimar pago conforme a tarifas---------------------------------------
+  
+  tic("  2. Pago por bloques tarifarios")
+  pago_col <- paste0("pago_e_", s)
+  
+  pago_vals <- rep(0, nrow(elec))
+  pago_vals[mask_norte] <- calcular_pago_bloques(
+    elec$consumo_e[mask_norte], basenor[st, ], tarifnor[st, ], acunor, 
+      block, tt, to
+  )
+  pago_vals[mask_sures] <- calcular_pago_bloques(
+    elec$consumo_e[mask_sures], b2, t2, acuses, block, tt, to
+  )
+  elec[[pago_col]] <- pago_vals
+  toc()
+  
+  ##
+  # 1.3. Precio medio-----------------------------------------------------------
+  ##
+  tic("  3. Precio medio y costos")
+  precio_col <- paste0("precio_me_", s)
+  elec[[precio_col]] <- elec[[pago_col]] / elec$consumo_e
+  
+  ## 1.4. Costos----------------------------------------------------------------
+  
+  costo_col  <- paste0("costo_ekwh_", s)
+  cnorte_val <- as.numeric(sim_sub[sim_sub$sim_sub == s, "costnorte"])
+  csur_val   <- as.numeric(sim_sub[sim_sub$sim_sub == s, "costsur"])
+  ceste_val  <- as.numeric(sim_sub[sim_sub$sim_sub == s, "costeste"])
+  costo_sures <- (csur_val + ceste_val) / 2
+  
+  elec[[costo_col]] <- ifelse(elec$estrato %in% c(21, 22), cnorte_val, costo_sures)
+  toc()
+  
+  
+  ## 1.5. Subsidio para quienes reportaron pagos--------------------------------
+  
+  tic("  4. Subsidio reportados + elec_stats")
+  sub_col  <- paste0("subsidio_e_",  s)
+  subt_col <- paste0("subsidio_et_", s)
+  
+  elec[[sub_col]]  <- pmax(0, elec[[costo_col]] - elec[[precio_col]],
+	na.rm = TRUE)
+  elec[[subt_col]] <- pmax(0,
+                           elec$consumo_e * elec[[costo_col]] -
+						   elec[[pago_col]],na.rm = TRUE)
+  
+  ## consumo por decil
+  elec_filt      <- fsubset(elec, a219 == 1 & sub_sincontador != 1 & consumo_e > 0)
+  elec_filt$sub_temp <- elec_filt[[sub_col]]
+  elec_stats <- elec_filt %>%
+    fgroup_by(decyd) %>%
+    fsummarise(
+      mean_consumo  = fmean(consumo_e, w = weight),
+      mean_subsidio = fmean(sub_temp,  w = weight)
+    )
+  
+  # usar match() en vez de left_join + select dentro del loop
+  idx_decil      <- match(elec$decyd, elec_stats$decyd)
+  mean_consumo_v <- elec_stats$mean_consumo[idx_decil]
+  mean_sub_v     <- elec_stats$mean_subsidio[idx_decil]
+  toc()
+  
+  
+  ### 5b. Subsidio para quienes no reportaron pagos (sin contador)--------------
+  
+  tic("  5. Subsidio sin contador")
+  subs1_col  <- paste0("subs1_",  s)
+  subs2_col  <- paste0("subs2_",  s)
+  subsa2_col <- paste0("subsa2_", s)
+  
+  elec[[subs1_col]]  <- ifelse(!elec$sin_contpub, elec[[subt_col]], 0)
+  elec[[subs2_col]]  <- ifelse( elec$sin_contpub,
+                                mean_consumo_v * elec[[costo_col]], 0)
+  elec[[subsa2_col]] <- ifelse( elec$sin_contpub,
+                                mean_consumo_v * mean_sub_v, 0)
+  toc()
+  
+  
+  ## 1.6. Pago estimado para quienes no reportaron pago pero sí consumo---------
+  
+  tic("  6. Pago estimado sin contador (pa4o)")
+  pa4o_col  <- paste0("pa4o_e_", s)
+  consumo2  <- ifelse(elec$sin_contpub, mean_consumo_v, elec$consumo_e)
+  
+  pa4o_vals <- elec[[pago_col]]
+  pa4o_vals[mask_norte] <- calcular_pago_bloques(
+    consumo2[mask_norte], basenor[st, ], tarifnor[st, ], acunor, block, tt, to
+  )
+  pa4o_vals[mask_sures] <- calcular_pago_bloques(
+    consumo2[mask_sures], b2, t2, acuses, block, tt, to
+  )
+  elec[[pa4o_col]] <- pa4o_vals
+  toc()
+}
+
+# 2. Guardar datos subsidios simulados -----------------------------------------
+
+tic("C. Construcción subelec")
+
+cols_keep <- c("hhid", "miembro", "FPOBRE6N4", "weight", "consumo_e",
+               "icv_met", "sub_sincontador", "hsize", "a219", "electricos",
+               "estrato",
+               grep("^subs[12]_|^subsa|^pago_e_|^pa4o_e_",
+                    names(elec), value = TRUE))
+
+subs1_cols <- grep("^subs1_",  cols_keep, value = TRUE)
+subs2_cols <- grep("^subs2_",  cols_keep, value = TRUE)
+max_vars   <- grep("^pago_e_|^subsa|^pa4o_e_", cols_keep, value = TRUE)
+
+# CORRECCIÓN: eliminar fsubset(!is.na(consumo_e)) — Stata no filtra por consumo_e
+# en el keep, incluye todos los hogares igual que Stata
+elec_sub <- elec[, cols_keep]
+
+for (col in subs1_cols) {
+  elec_sub[[paste0("sub_ele1_hh_", col)]] <- fmax(elec_sub[[col]],
+                                                  g   = elec_sub$hhid,
+                                                  TRA = "replace")
+}
+for (col in subs2_cols) {
+  elec_sub[[paste0("sub_ele2_hh_", col)]] <- fmax(elec_sub[[col]],
+                                                  g   = elec_sub$hhid,
+                                                  TRA = "replace")
+}
+
+sub_ele_cols <- grep("^sub_ele", names(elec_sub), value = TRUE)
+
+subelec <- elec_sub %>%
+  fgroup_by(hhid) %>%
+  fsummarise(
+    across(all_of(sub_ele_cols), fmax),
+    across(all_of(max_vars),     fmax),
+    consumo_e       = fmax(consumo_e),
+    sub_sincontador = fmax(sub_sincontador),
+    estrato         = fmax(estrato),
+    electricos      = fmax(electricos),
+    a219            = fmax(a219),
+    hsize           = fmean(hsize)
+  )
+
+rm(elec_sub)
+
+rename_map <- setNames(
+  c(paste0("sub_ele1_hh_subs1_", sim_sub_esc),
+    paste0("sub_ele2_hh_subs2_", sim_sub_esc),
+    paste0("subsa2_",            sim_sub_esc)),
+  c(paste0("sub_ela", sim_sub_esc, "_hh"),
+    paste0("sub_elb", sim_sub_esc, "_hh"),
+    paste0("sub_elc", sim_sub_esc, "_hh"))
+)
+subelec <- rename(subelec, all_of(rename_map))
+
+subelec <- percap(subelec, grep("sub_el.*_hh$", names(subelec), value = TRUE))
+
+extra_cols <- lapply(sim_sub_esc, function(s) {
+  tibble(
+    !!paste0("sub_ele", s, "_pc") :=
+      subelec[[paste0("sub_ela", s, "_pc")]] +
+      subelec[[paste0("sub_elb", s, "_pc")]],
+    !!paste0("sub_ele", s, "_hh") :=
+      subelec[[paste0("sub_ela", s, "_hh")]] +
+      subelec[[paste0("sub_elb", s, "_hh")]]
+  )
+}) %>% bind_cols()
+
+subelec <- bind_cols(subelec, extra_cols)
+
+# Verificación
+cat("N subelec:         ", nrow(subelec), "\n")           # debe dar 8,892
+cat("Sum sub_ele0_pc:   ", sum(subelec$sub_ele0_pc, na.rm=TRUE), "\n")
+cat("Mean sub_ele0_pc:  ", mean(subelec$sub_ele0_pc, na.rm=TRUE), "\n") # debe ≈ 314.8
+cat("Sum sub_ele1_pc:   ", sum(subelec$sub_ele1_pc, na.rm=TRUE), "\n")
+cat("Mean sub_ele1_pc:  ", mean(subelec$sub_ele1_pc, na.rm=TRUE), "\n") # debe ≈ 304.7
+
+toc()
+
+# 3. Imputar resultados --------------------------------------------------------
+
+base <- read_dta(paste0(finput, "DOMCEQ_DIncome.dta"),
+                 col_select = c("hhid", "hhin", "yd_pc", "ym_pc",
+                                "relation", "pondera_2023", "urban", "hsize"))
+
+gtotal <- read_dta(paste0(fpresim, "DOM26_gtotal.dta"),
+                   col_select = c("hhid", "gasto_total"))
+
+cod_gasto <- read_excel(fparams, col_names = TRUE, sheet = "itbis_base") %>%
+  janitor::clean_names() %>%
+  select(-x23, -x24, -x25, -dgii_gr, -dgii_efitbis, -dgii_efisc,
+         -grupo_isc, -cod_arancelario) %>%
+  select(id_variedad, cod_grupo)
+
+gtotals <- read_dta(paste0(fpresim, "DOM26_gtotals.dta"),
+                    col_select = c("hhid", "id_variedad", "monto_total_mensual")) %>%
+  left_join(cod_gasto, by = "id_variedad") %>%
+  filter(cod_grupo != 20) %>%
+  group_by(hhid) %>%
+  summarise(monto_total = sum(monto_total_mensual, na.rm = TRUE))
+
+base <- base %>%
+  left_join(subelec %>% select(-hsize), by = "hhid") %>%
+  left_join(gtotal,  by = "hhid") %>%
+  left_join(gtotals, by = "hhid") %>%
+  filter(!(yd_pc == 0 & ym_pc == 0)) %>%
+  select(-starts_with("sub_ela"), -starts_with("sub_elb"),
+         -starts_with("sub_elc")) 
+
+# Replicar exactamente:
+
+base <- base %>%
+  mutate(
+    pondera_2023 = round_stata(pondera_2023, 0),         
+    hweight      = round_stata(pondera_2023 / hsize, 0) 
+  )                                                     
+
+# Verificar que hweight coincide con Stata:
+cat("Mean hweight R:    ", mean(base$hweight, na.rm=TRUE), "\n")
+cat("Mean pondera R:    ", mean(base$pondera_2023, na.rm=TRUE), "\n")
+# Stata: summ hweight pondera_2023
+
+sub_hh_vars <- grep("^sub_.*_hh$", names(base), value = TRUE)
+mask_jefes  <- base$relation == 1
+
+tic("D. Loop ajuste eficiencia (sub_hh_vars)")
+for (x in sub_hh_vars) {
+  z       <- substr(x, 5, 8)
+  pc_col  <- sub("hh$", "pc", x)
+  eff_col <- paste0("eff_", z)
+  
+  # replace x = 0 if x == .
+  base[[x]] <- replace_na(base[[x]], 0)
+  
+  # gen double eff_z = x / monto_total
+  base[[eff_col]] <- base[[x]] / base$monto_total
+  
+  # qui summ eff_z [w=hweight] if relation==1 & !missing(eff_z) & eff_z!=0, detail
+  # local mean_eff = r(mean)
+  mask_validos  <- mask_jefes & base[[eff_col]] != 0 & !is.na(base[[eff_col]])
+  eff_validos   <- base[[eff_col]][mask_validos]
+  pesos_validos <- base$hweight[mask_validos]
+  mean_eff      <- weighted.mean(eff_validos, pesos_validos, na.rm = TRUE)
+  print(mean_eff)
+  
+  # _pctile eff_z if relation==1 & !missing(eff_z) & eff_z!=0, p(99)
+  perc99 <- quantile(eff_validos, probs = 0.99, type = 2, na.rm = TRUE)
+  
+  # replace eff_z = r(r1) if eff_z > r(r1) & !missing(eff_z)
+  base[[eff_col]] <- pmin(base[[eff_col]], perc99, na.rm = TRUE)
+  
+  # replace eff_z = mean_eff if eff_z == 0 | eff_z == .
+  base[[eff_col]] <- ifelse(base[[eff_col]] == 0 | is.na(base[[eff_col]]),
+                            mean_eff, base[[eff_col]])
+  # gen pc = yd_pc * eff_z
+  base[[pc_col]] <- base$yd_pc * base[[eff_col]]
+  
+  # replace pc = yd_pc * r(mean) if pc == 0 | pc == .
+  base[[pc_col]] <- ifelse(base[[pc_col]] == 0 | is.na(base[[pc_col]]),
+                           base$yd_pc * mean_eff,
+                           base[[pc_col]])
+  
+  cat(sprintf("%-20s p99=%.6f  mean_eff=%.6f  max=%.6f\n",
+              eff_col, perc99, mean_eff,
+              max(base[[eff_col]][mask_jefes], na.rm = TRUE)))
+}
+toc()
+
+base %>%
+  filter(hhid == 100191) %>%
+  select(monto_total, sub_ele0_hh, eff_ele0, sub_ele0_pc) %>%
+  mutate(across(everything(), ~ formatC(., format = "f", digits = 7)))
+
+# Verificación — debe coincidir con Stata:
+format(summary(base$eff_ele0[mask_jefes]), scientific=FALSE, digits=3)
+
+format(summary(base$eff_ele0[base$relation == 1]), scientific = FALSE,
+       digits = 3)
+format(summary(base$eff_ele0), scientific = FALSE, digits = 3)
+
+## 3.1 Ratio sobre ingreso disponible ------------------------------------------
+
+tic("D. Ratio sobre ingreso disponible")
+base <- base %>%
+  mutate(across(starts_with("sub") & ends_with("pc"),
+                ~ .x / yd_pc,
+                .names = "r{.col}"))
+toc()
+
+format(summary(base$rsub_ele0_pc), scientific = FALSE, digits = 3)
+
+base2 <- base %>%
+  rename(sub_ele0_h2 = sub_ele0_hh, sub_ele1_h2 = sub_ele1_hh,
+         sub_ele0_p2 = sub_ele0_pc, sub_ele1_p2 = sub_ele1_pc,)
+# write_dta(base2, paste0(fdbmod,"sub2018_R.dta"))
+# rm(base2)
+
+# 4. Estimar ratios  ----------------------------------------------------
+tic("E. Deciles/centiles + p99")
+base <- base %>%
+  mutate(
+    decil  = xtile(yd_pc, wt = pondera_2023, n = 10),
+    centil = xtile(yd_pc, wt = pondera_2023, n = 100)
+  )
+
+weighted.mean(base$rsub_ele0_pc, base$pondera_2023)
+
+base %>%
+  group_by(decil) %>%
+  summarise(rsub0 = weighted.mean(rsub_ele0_pc, pondera_2023))
+
+# Calcular p99 por variable — en un solo mutate
+base <- base %>%
+  mutate(across(
+    starts_with("rsub_ele") & ends_with("_pc"),
+    ~ pmin(.x, Hmisc::wtd.quantile(.x,
+                                   weights = pondera_2023,
+                                   probs   = 0.99),
+           na.rm = TRUE)
+  ))
+toc()
+
+format(summary(base$rsub_ele0_pc), scientific = FALSE, digits = 3)
+
+tic("E. sub_percentil weighted means")
+sub_percentil <- base %>%
+  group_by(centil, urban) %>%
+  summarise(across(starts_with("rsub_") & ends_with("_pc"),
+                   ~ weighted.mean(.x, round_stata(pondera_2023, 0),
+                                   na.rm = TRUE)),
+            .groups = "drop")
+toc()
+
+# sub2 <- sub_percentil %>%
+#   rename(rsub_ele0_p2  = rsub_ele0_pc, rsub_ele1_p2 = rsub_ele1_pc,
+#          srsub_ele0_p2 = srsub_ele0_pc, srsub_ele1_p2 = srsub_ele1_pc,
+#          susub_ele0_p2 = susub_ele0_pc, susub_ele1_p2 = susub_ele1_pc)
+# write_dta(sub2, paste0(fdbmod,"subperc_R.dta"))
+# rm(sub2)
+
+
+tic("E. Suavizado locpoly")
+## 4.1 Suavizado locpoly ------------------------------------------------------
+
+subratios <- base %>%
+  filter(electricos != 0 | pago_e_0 != 0) %>%
+  group_by(centil, urban) %>%
+  summarise(
+    across(
+      starts_with("rsub"),
+      ~ weighted.mean(., w = round_stata(pondera_2023, 0)),
+      .names = "{.col}"
+    ),
+    .groups = "drop"
+  )
+
+sub_percentil <- suav_subs_ur(
+  data = subratios,
+  group_col = "urban",  
+  xcol = "centil",
+  degree = 0,
+  gridsize = 100
+)
+
+# Verificar que los ratios ahora coinciden con Stata:
+cat("=== Ratios suavizados corregidos ===\n")
+sub_percentil %>%
+  group_by(urban) %>%
+  summarise(
+    mean_susub = mean(coalesce(rsub_ele0_pc, psub_ele0_pc), na.rm = TRUE))
+## 0.0286 0.0262
+# Debe dar: rural ≈ 0.0291, urbano ≈ 0.0264  (valores Stata)
+
+toc()
+
+plot(
+  sub_percentil$centil[sub_percentil$urban == 1],
+  sub_percentil$rsub_ele0_pc[sub_percentil$urban == 1],
+  pch  = 18, col  = "lightblue",
+  xlab = "Centil", ylab = "Ratio", main = "Urbano"
+)
+lines(sub_percentil$centil[sub_percentil$urban == 1],
+      sub_percentil$psub_ele0_pc[sub_percentil$urban == 1],
+      col = "blue", lwd = 2)
+
+# 5. Imputación de subsidio eléctrico en ENCFT ---------------------------------
+
+tic("E. Imputación base2024")
+
+base2024 <- base2024 %>%
+  mutate(
+		centil = xtile(round(yd_pc,0), wt = round(factor_expansion_anual, 0), 
+		n = 100),
+    urban  = as.integer(zona == 1)
+  ) %>%
+  left_join(sub_percentil, by = c("urban", "centil"))
+
+base2024 %>%
+	group_by(centil) %>%
+	summarise(n = n())
+
+# OPTIMIZACIÓN: construir todas las columnas sub_ele*_pc en un solo mutate
+sub_cols_2024 <- lapply(sim_sub_esc, function(s) {
+  tibble(
+    !!paste0("sub_ele", s, "_pc") :=
+      base2024$yd_pc *
+      ifelse(base2024$urban == 1,
+             base2024[[paste0("psub_ele", s, "_pc")]]  *
+      (base2024$tipo_alumbrado == 1),
+             base2024[[paste0("psub_ele", s, "_pc")]] *
+      (base2024$tipo_alumbrado == 1))
+  )
+}) %>% bind_cols()
+
+base2024 <- bind_cols(base2024, sub_cols_2024)
+
+
+toc()
+
+# Sintaxis correcta de fsum con pesos en collapse:
+fsum(base2024$sub_ele0_pc, w = base2024$factor_expansion_anual, na.rm = TRUE)
+fsum(base2024$yd_pc, w = base2024$factor_expansion_anual, na.rm = TRUE)/1000
+
+base2024[, c("hhid","hhin", "trimestre","urban", "sub_ele0_pc",
+             "sub_ele1_pc","psub_ele0_pc")]
+
+# 6. Guardar resultados  -------------------------------------------------------
+# Guardar
+tic("Guardar RDS")
+base2024 <- base2024 %>%
+  select(hhid, hhin, trimestre, starts_with("sub_ele"))
+
+saveRDS(base2024, paste0(fdbmod, "DOM_simsubele.rds"))
+rm(list = ls(pattern = "base"))
+rm(list = ls(pattern = "elec"))
+rm(list = ls(pattern = "tarif"))
+rm(list = ls(pattern = "dispinc"))
+rm(list = ls(pattern = "block"))
+rm(list = ls(pattern = "cod_gasto"))
+rm(list = ls(pattern = "extra_cols"))
+rm(list = ls(pattern = "gtotal"))
+rm(list = ls(pattern = "matrices_sim"))
+rm(list = ls(pattern = "smooth_"))
+rm(list = ls(pattern = "sub_"))
+rm(list = ls(pattern = "tram_"))
+rm(list = ls(pattern = "dat_u"))
+rm(list = ls(pattern = "col"))
+rm(acunor_0, acunor_1, acuses, acuses_0, acuses_1, b2,
+   ceste_val, cnorte_val, 
+   csur_val,  ij,     
+   mean_eff, n_bloques, nombre, 
+   perc99, s, st, t2, to, tt, uniforma, x, z)
+
+toc()
+
+# Ver qué bandwidth usa R para cada grupo
+for (grp in c(0, 1)) {
+  x <- subratios$centil[subratios$urban == grp]
+  y <- subratios$rsub_ele0_pc[subratios$urban == grp]
+  bw <- dpill(x, y)
+  cat("Urban =", grp, "| BW dpill:", round(bw, 4), "\n")
+}

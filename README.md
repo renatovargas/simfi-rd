@@ -2,6 +2,8 @@
 
 Panel Shiny para construcción y comparación de escenarios de reforma fiscal para República Dominicana. Corre localmente; no requiere servidor Shiny.
 
+[Vídeo de instrucciones para correr la aplicación en una computadora personal](https://youtu.be/jXF6b9S3hiI).
+
 ---
 
 ## Instalación de paquetes R
