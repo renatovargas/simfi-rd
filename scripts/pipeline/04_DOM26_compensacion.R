@@ -59,6 +59,12 @@ dom_sim_subele <- readRDS(paste0(fdbmod, "DOM_simsubele.rds"))
 ## Actualizado al ppp 2021
 estratos <- 23.135822 * (174.88908 / 148.47661) * 365 * c(8.3, 17, 98)
 
+## Límite superior del puntaje ICV (0-100) para cada categoría ICV 1-4
+## (Dalenius ENCFT 2020, Cuadro 4.14; reproduce la variable dal_icv).
+## Puntos medios entre categorías contiguas para evitar errores de redondeo.
+## icv_com en sim_comp es la categoría, no el puntaje.
+icv_cortes <- c(49.6807, 62.0833, 70.3654, Inf)
+
 # 2. Construir base principal -------------------------------------------------
 # OPT: pre-unir tablas de simulación entre sí antes del join con dom_ingdis
 #      → reduce de 3 joins encadenados sobre dom_ingdis a 1
@@ -194,6 +200,7 @@ for (i in variable_values) {
   valor_i  <- sim_i$valor_com
   decyd_i  <- sim_i$decil_com
   icv_i    <- sim_i$icv_com
+  icv_lim  <- if (isTRUE(icv_i %in% 1:4)) icv_cortes[icv_i] else NA_real_
   valor_wm <- comp_precomputed[[as.character(i)]]
 
   DOM_results <- DOM_results %>%
@@ -209,7 +216,8 @@ for (i in variable_values) {
         grupo_i == 2 ~ !!sym(valor_comp) * as.numeric(relation == 1) *
                          as.numeric(decyd <= decyd_i),
         grupo_i == 3 ~ !!sym(valor_comp) * as.numeric(relation == 1) *
-                         as.numeric(icv <= icv_i),
+                         as.numeric(!is.na(icv) & !is.na(icv_lim) &
+                                    icv <= icv_lim),
         .default = 0
       )
     )
@@ -284,6 +292,6 @@ rm(dom_ingdis, DOM_results, dom_sim_irenta,
    indices, indices_yc, indices_comp, metodo_i)
 rm(list = ls(pattern = "mask"))
 rm(list = ls(pattern = "nom"))
-rm(new_cols, estratos, grupo_i, i, icv_i, sim_com_esc, sim_comp_i, valor_comp,
+rm(new_cols, estratos, grupo_i, i, icv_i, icv_lim, icv_cortes, sim_com_esc, sim_comp_i, valor_comp,
    valor_i, valor_wm, variable_values, vs_itb, vs_sub)
 

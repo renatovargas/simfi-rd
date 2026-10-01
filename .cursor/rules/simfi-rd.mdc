@@ -69,7 +69,7 @@ Delta (change) columns: `ddtx_isr{k}_pc`, `ditx_itb{k}_pc`, `dsub_ele{k}_pc`, `d
 - **`sim_renta.csv` has `educ_share` and `educ_limit` columns** (added 2026-06-23). Script 02 reads these per scenario to parameterize the ISR education deduction: `pmin(income × educ_share, tramo2 × educ_limit, gasto_educ_imp)`. `build_sim_renta_override()` carries them through automatically (not user-editable in the UI). Base scenario (sim_inc=0) has 4 brackets only — no 27% bracket — matching the official 2026 DR withholding scale.
 - **`sim_comp.csv` active row (sim_comp=1)**: `grupo_com=2, metodo_com=2, valor_com=500`. These differ from previous versions; they match the master Excel. The app overrides these with UI inputs when the user configures compensation, but the CSV values matter for standalone script runs.
 - **`sim_itbis.csv` row 2**: `tasa_itbis=16, nom_itbis="ITBIS tasa 16%"`. Row 1 ("Reducción exentos") has tasa=18; row 2 is the 16% reform scenario.
-- **`icv` in script 04** — since 2026-06-25, `icv` is read from microdata (`DOM26_SDIncome.RDS`) in the `dom_ingdis` select. The old `icv = 1` constant (which disabled ICV-based compensation targeting) was removed. The `icv` column must exist in the RDS for script 04 to run.
+- **`icv` in script 04** — since 2026-06-25, `icv` is read from microdata (`DOM26_SDIncome.RDS`) in the `dom_ingdis` select. The old `icv = 1` constant (which disabled ICV-based compensation targeting) was removed. The `icv` column must exist in the RDS for script 04 to run. `icv` is a continuous 0–100 score, but `icv_com` (UI "Umbral ICV", `sim_comp.csv`) is a category 1–4; script 04 converts it to a score limit via `icv_cortes` (Dalenius ENCFT 2020 cut-offs, Cuadro 4.14; midpoints between categories that exactly reproduce microdata `dal_icv`). Never compare `icv` directly against `icv_com` — that selects nobody.
 - **Pipeline update integration pattern** — the pipeline scripts in `scripts/pipeline/` contain Shiny-specific additions (override hooks, forced base scenario 0, CSV reading via `fparam_csv`, headless-safe plot guards) absent from any standalone colleague versions. When integrating upstream script changes, port only the economics logic; never replace the file wholesale.
 - **DT result tables use `server = FALSE`** — all `renderDT` calls for Simular-tab result tables include `server = FALSE` to force complete client-side re-initialization when the number of scenario columns changes between runs.
 
@@ -80,3 +80,30 @@ Delta (change) columns: `ddtx_isr{k}_pc`, `ditx_itb{k}_pc`, `dsub_ele{k}_pc`, `d
 - **Encoding — NEVER use StrReplace or Write tools on any file in this project.** Both tools default to Latin-1 and will silently corrupt every multi-byte UTF-8 character in the file (accented letters, arrows, dashes, etc.), even when the edited lines themselves are ASCII. For ALL file edits, use a Python shell write: read with `encoding='utf-8'`, apply changes, then write with `open(path, 'wb'); f.write(src.encode('utf-8'))`. For separator glyphs in R string literals, prefer `\uXXXX` R-escape notation — this keeps those characters ASCII in the file and immune to encoding round-trips.
 - Component status badge: `output$lib_{prefix}_status` shows "sin guardar" / "guardado" / "cambios sin guardar".
 - `reset_form_to_base()` resets the live form; `btn_reset_all` ("Nueva sesión") clears everything including libraries, autosave, and `sim_res_rv`.
+
+## If and when we decide to refactor the app
+
+Not planned work. DO NOT UNDERTAKE ANY OF THE ITEMS BELOW UNPROMPTED. This is an assessment (2026-10-01) for a future agent, written to pick up from here if the user decides to streamline the app, e.g. to run it on Posit Connect (it currently does not fit there).
+
+### Diagnosis
+- The app wraps a faithful port of a batch Stata workflow; it was never designed as an app.
+- Disk size is not the problem: `data/presim` is ~37 MB, and 15 MB of that is the duplicate `DOM26_SDIncome_legacy.RDS`. The cost is repeated computation (~13 s and high peak memory per scenario).
+- **Baseline recomputed every run.** Each scenario re-runs scripts 01–05 from scratch, including scenario 0 and invariant steps such as script 03's import of the 2018 survey's subsidy ratios onto ENCFT with `locpoly` smoothing (script 01 does similar work for ITBIS). A four-scenario comparison does all of this four times. This is the single biggest waste.
+- **Scripts are sourced, not called.** `run_pipeline_cached` uses `sys.source` into a fresh environment, intercepts `saveRDS`/`readRDS` so files pass through memory, and the scripts carry console checks, long `rm()` lists and a hard-coded debug household (`hhid == 100191`).
+- **Batch-style parameters.** Files like `sim_sub.csv` are wide (`block1..7`, `bsur1..7`, …), with rows chosen by scenario ID plus an `activo` flag. The app always forces the ID to 1 and injects override rows. The whole override layer (`sim_sub_row_override`, `sim_comp_override`, `detalle_itbis_override`, the 35-variety neutral guard) exists only to bridge the batch design and the app.
+- **Scattered decisions.** Constants (PPP lines, `icv_cortes`, heads-of-household-only rules) live inline across scripts instead of in one config. Conversely, some values kept as parameter rows will never vary in the app.
+- **Two codebases in sync.** The "port only the economics, never replace the file" rule means hand-maintaining a fork of the colleague's scripts.
+
+### Target design
+1. One slim analysis dataset, already joined and holding only the columns the model uses (`.rds`, `fst` or Parquet), plus a **precomputed baseline** (scenario 0 and invariant imputations), built offline by a separate script.
+2. One function per instrument (`simulate_itbis()`, `simulate_isr()`, `simulate_subsidy()`, `simulate_compensation()`): takes the microdata and parameters, returns that scenario's columns. Vectorised with `collapse`/`data.table` (already dependencies). No global environment, no file I/O, no prints.
+3. Parameters as long tables (instrument, distributor, block, field, value) or plain R lists per component, so the scenario-ID indirection and override hooks can be deleted. Fixed methodological constants go in one config file.
+4. One consolidation function that produces the same result structure the Simular tab reads today (`pov_gral`, `ineq`, `decsum`, `kakwani`, `*inc` tables with `{k}` suffixes), so the UI barely changes.
+5. Run simulations asynchronously (Shiny `ExtendedTask` + `mirai`) so one user's run doesn't block others on a shared Posit Connect R process.
+- Unprofiled expectation: a scenario should drop to ~1–2 s with much lower peak memory.
+
+### Guardrails
+- **Golden-output tests first.** Before touching anything, freeze the current results for a handful of representative scenarios (base only; ITBIS reform; ISR reform; custom subsidy; each compensation group and method). Refactor **one instrument at a time** until outputs match to the decimal.
+- **Preserve the Stata-replication details**: `round_stata`, specific percentile types (`quantile(type = 2)`, `Hmisc::wtd.quantile`), the `pmin(na.rm=TRUE)` fix in script 03, the ITBIS lookup by scenario ID, the `yd → yc → yz` income hierarchy.
+- **Profile first.** Measure what "too big" means on Posit Connect (bundle size, memory, or request timeout) with a memory and timing profile of one run, and prioritise accordingly.
+- **Agree on a single source of truth with the colleague** who maintains the standalone scripts. Otherwise every upstream change becomes a manual port again.
