@@ -6,7 +6,7 @@ Panel Shiny para construcción y comparación de escenarios de reforma fiscal pa
 
 ## Instalación de paquetes R
 
-Ejecutar **una sola vez** en la consola de R antes de lanzar la app:
+**Paso obligatorio antes de lanzar la app.** Ejecutar **una sola vez** en la consola de R:
 
 ```r
 install.packages(c(
@@ -23,15 +23,26 @@ install.packages(c(
 ), dependencies = TRUE)
 ```
 
+No pulse **Run App** / Play hasta que esa instalación haya terminado sin errores.
+
 ---
 
 ## Lanzar la app
 
+1. En Positron o RStudio, abra la carpeta del repositorio con **File → Open Folder…** (no solo el archivo `app.R`). Así el directorio de trabajo apunta al proyecto y la app encuentra datos y scripts.
+2. Confirme que ya instaló los paquetes de la sección anterior.
+3. Lance la app:
+
+Abra el archivo `app.R` y haga clic en **Run App**.
+
+
+Si la app no arranca o no funciona bien: detenga el servidor Shiny con **Ctrl+C** en la terminal o con el botón rojo de detener en Positron, verifique los pasos 1 y 2, y vuelva a lanzarla.
+
+También es posible, teniendo la carpeta correcta abierta correr el app desde la consola de R con el siguiente comando, pero los pasos de arriba deberían funcionar bien antes de recurrir a esto.
+
 ```r
 shiny::runApp("app.R")
 ```
-
-O desde RStudio / Positron: abrir `app.R` y hacer clic en **Run App**.
 
 ---
 
