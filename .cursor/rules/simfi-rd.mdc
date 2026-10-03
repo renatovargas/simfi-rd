@@ -21,6 +21,9 @@ R Shiny (`app.R`) fiscal microsimulation tool for the Dominican Republic. Runs a
 | `scripts/pipeline/01–05_DOM26_*.R` | The actual simulation pipeline (ITBIS → ISR → Subsidio → Compensación → Consolidation) |
 | `data/itbis_base_catalog.csv` | ITBIS product catalog with base rates (6,590 varieties) |
 | `data/params/sim_sub.csv` | Subsidy simulation parameters |
+| `data/params/sim_sgas.csv` | Fuel subsidy parameters (row 0 = no subsidy + seasonality, row 1 = reference subsidy) |
+| `R/sim_sgas_helpers.R` | Fuel subsidy: template row, defaults, `build_sim_sgas_override` / neutral row |
+| `scripts/dev/golden_outputs.R` | `freeze` / `check` golden results for 7 representative scenarios (`tests/golden/`) |
 | `app_state/autosave.rds` | Session autosave (created at runtime) |
 
 ## App screen structure (navbar)
@@ -46,15 +49,16 @@ Composer dropdowns use `"__ref__"` (not `""`) as the "no component / pre-reforma
 ### Income variable hierarchy (critical)
 ```
 yd_pc   = disposable income after ISR only
-yc_pc   = yd_pc − ΔITBIS − ΔSubsidy
+yc_pc   = yd_pc − ΔITBIS − ΔSubsidy + ΔFuelSubsidy   (fuel subsidy is a benefit: + (sub_gas_k − sub_gas0))
 yz_pc   = yc_pc + ΔCompensation   ← USE THIS for poverty/inequality
 ```
 Poverty and inequality must use `yz_{k}_pc` / column `yz_k` in result matrices, NOT `yd_` or `yc_`.
 
 ### Pipeline column naming
 All scenario-specific columns use suffix `{k}` where k = escenario number:
-`dtx_isr{k}_pc`, `itx_itb{k}_pc`, `sub_ele{k}_pc`, `neto{k}_pc`, `comp_{k}_pc`, `nitx{k}_pc`
-Delta (change) columns: `ddtx_isr{k}_pc`, `ditx_itb{k}_pc`, `dsub_ele{k}_pc`, `dcomp{k}_pc`
+`dtx_isr{k}_pc`, `itx_itb{k}_pc`, `sub_ele{k}_pc`, `sub_gas{k}_pc`, `neto{k}_pc`, `comp_{k}_pc`, `nitx{k}_pc`
+Delta (change) columns: `ddtx_isr{k}_pc`, `ditx_itb{k}_pc`, `dsub_ele{k}_pc`, `dsub_gas{k}_pc`, `dcomp{k}_pc`
+Fuel subsidy parts: `sub_cmd{k}_pc` (direct, own fuel spending) + `sub_cmi{k}_pc` (indirect, MIP price effect) = `sub_gas{k}_pc`.
 
 ## Known gotchas
 
@@ -72,6 +76,11 @@ Delta (change) columns: `ddtx_isr{k}_pc`, `ditx_itb{k}_pc`, `dsub_ele{k}_pc`, `d
 - **`icv` in script 04** — since 2026-06-25, `icv` is read from microdata (`DOM26_SDIncome.RDS`) in the `dom_ingdis` select. The old `icv = 1` constant (which disabled ICV-based compensation targeting) was removed. The `icv` column must exist in the RDS for script 04 to run. `icv` is a continuous 0–100 score, but `icv_com` (UI "Umbral ICV", `sim_comp.csv`) is a category 1–4; script 04 converts it to a score limit via `icv_cortes` (Dalenius ENCFT 2020 cut-offs, Cuadro 4.14; midpoints between categories that exactly reproduce microdata `dal_icv`). Never compare `icv` directly against `icv_com` — that selects nobody.
 - **Pipeline update integration pattern** — the pipeline scripts in `scripts/pipeline/` contain Shiny-specific additions (override hooks, forced base scenario 0, CSV reading via `fparam_csv`, headless-safe plot guards) absent from any standalone colleague versions. When integrating upstream script changes, port only the economics logic; never replace the file wholesale.
 - **DT result tables use `server = FALSE`** — all `renderDT` calls for Simular-tab result tables include `server = FALSE` to force complete client-side re-initialization when the number of scenario columns changes between runs.
+
+- **Fuel subsidy (`sim_sgas`)** — integrated 2026-10 from the colleague's `changes_to_subsidies/` scripts (economics only). Script 03 section "2. Subsidio a combustibles": direct effect = Σ months consumo × (sub/precio) × m; indirect = rate Σ (sub/precio) × estacionalidad × m × `sh_*` × 0.71 shocked on MIP sector 7 (sector 21 fixed price), `pind = dp A V`, applied to `monto_pagado_hogar_mensual` (excl. `cod_grupo` 20); ENCFT imputation like electricity but smoothed separately (`subratiosg`, no electricity filter). Base `sub_gas0 = 0` by construction. `prepare_pipeline_extras` always injects `sim_sgas_override` (user row or neutral copy of row 0 as `sim_sgas = 1`), so `sub_gas1_*` always exists. Scripts 04/05 default `sim_sgas`/`sub_gas0_pc` when absent. Script 05: `neto = difr + dif1 − dif2 − dif4 + dif3` (`dif4 = dsub_gas`); fuel % PIB divides by `v_pib` (no base to calibrate). Kakwani instrument `subg` sits between `sub` and `comp`; dashboard reads Kakwani rows **by rowname**. Not ported from the colleague: imputation loop over `sim_sub_esc`, inconsistent `yt` sign, 05 sign of `dsub_ele`, `replace_na` of all `sub*` before the eff loop (would change electricity).
+- **Fuel subsidy UI** — the user edits ONE value per fuel (RD$/galón during active months); prices, seasonality and calendar (`m1..m12`, May–Dec) are fixed from `sim_sgas.csv` row 1. Stored inside the `sub` component as `$sgas = list(custom, valores)` **only when enabled** (so older components without it still compare as "guardado"); Excel `sub` sheet rows `campo = sgas_<combustible>`. To update the baseline: `Rscript scripts/export_param_xlsx_to_csv.R ruta.xlsx --sheets sim_sgas` (exporting all sheets overwrites the app-adjusted CSVs).
+- **Fuel inputs** — `data/presim/combustibles.RDS` is the colleague's file (delivered 2026-10-02): one row per household that buys vehicle fuel (3,955), columns `{gasolinapr,gasolinare,gasoilpr,gasoilre,glp}_1..12` = monthly RD$ spending × seasonal weight (the 12 months sum to the survey monthly spending; some households are adjusted downward by the colleague), plus `q*` quantity columns (unused) and `factor_expansion` (unused; the pipeline uses survey weights). Survey varieties (articulo 072211): 1694 gasolina regular, 1695 gasolina premium, 1696 GLP vehicular, 1697 gasoil regular, 1698 gasoil premium (3149 aditivo, 3461 gas natural not used). Variety 1002 is cooking gas and is NOT part of the fuel subsidy. Keep the file name exactly `combustibles.RDS` (a lowercase `.rds` twin cannot coexist on Windows/macOS). In `sim_sgas.csv` the GLP prices equal gasolina regular and gasoil regular equals gasoil premium (likely copy errors upstream). `global_params` row "total subsidio combustibles" (29,333.8) is reference only; its unit/period is unconfirmed (model total with colleague's defaults ≈ 17,200 MM RD$/año: 9,100 direct + 8,100 indirect).
+- **Golden-output check** — run `Rscript scripts/dev/golden_outputs.R check` after any pipeline change; all 7 scenarios must report "igual". Matrices with rownames (Kakwani) accept new rows.
 
 ## UI conventions
 

@@ -40,6 +40,20 @@ prepare_pipeline_extras <- function(inputs, paths) {
     extras$sim_sub_row_override <- base_row
   }
 
+  # Subsidio a combustibles: sin personalización se inyecta la fila base (sin
+  # subsidio) como sim_sgas = 1, de modo que sub_gas1_* exista y valga 0.
+  sub_gas <- inputs$sub_gas %||% list()
+  sgas_id <- as.integer(inputs$sim_sgas %||% 1L)
+  if (isTRUE(sub_gas$custom)) {
+    extras$sim_sgas_override <- build_sim_sgas_override(
+      read_sim_sgas_template_row(paths$param_csv, 1L),
+      sub_gas$valores %||% list(),
+      sim_sgas_id = sgas_id
+    )
+  } else {
+    extras$sim_sgas_override <- build_sim_sgas_neutral(paths$param_csv, sgas_id)
+  }
+
   comp <- inputs[["comp"]] %||% list()
   if (isTRUE(comp$enabled) && !isTRUE(comp$sin_compensacion)) {
     extras$sim_comp_override <- build_sim_comp_override_row(

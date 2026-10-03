@@ -14,6 +14,8 @@
 ## ---- elec.rds
 ## ---- DOM26_gtotal.rds
 ## ---- DOM26_gtotals.rds
+## ---- combustibles.rds (consumo mensual de combustibles por hogar)
+## ---- mip2013_rd.rds
 ## -- ENCFT 2024
 ## ---- DOM26_SDIncome.dta
 ##
@@ -464,6 +466,150 @@ cat("Mean sub_ele0_pc:  ", mean(subelec$sub_ele0_pc, na.rm=TRUE), "\n") # debe �
 cat("Sum sub_ele1_pc:   ", sum(subelec$sub_ele1_pc, na.rm=TRUE), "\n")
 cat("Mean sub_ele1_pc:  ", mean(subelec$sub_ele1_pc, na.rm=TRUE), "\n") # debe ≈ 109.8
 
+# 2. Subsidio a combustibles ---------------------------------------------------
+#
+# Efecto directo: consumo mensual del hogar de cada combustible por la razón
+# subsidio / precio del mes, en los meses en que rige el subsidio (m1..m12).
+# Efecto indirecto: la tasa de subsidio ponderada entra como shock de precios
+# en el sector de derivados del petróleo de la matriz insumo-producto (modelo
+# de costos con la administración pública a precio fijo) y se aplica al gasto
+# del hogar por variedad. En el escenario base (sim_sgas = 0) el subsidio es 0.
+
+sim_sgas_esc <- if ("sim_sgas" %in% names(escenarios)) {
+  sort(unique(c(0L, as.integer(stats::na.omit(escenarios$sim_sgas)))))
+} else {
+  0L
+}
+
+sim_sgas <- read_param_csv("sim_sgas", fparam_csv) %>%
+  filter(activo == 1 | sim_sgas == 0) %>%
+  filter(sim_sgas %in% sim_sgas_esc)
+
+# La app local puede inyectar filas personalizadas (sim_sgas_override) que
+# reemplazan las del escenario simulado, conservando la fila base (0).
+if (exists("sim_sgas_override", inherits = FALSE) &&
+    is.data.frame(sim_sgas_override) && nrow(sim_sgas_override) > 0L) {
+  ov <- sim_sgas_override %>%
+    filter(sim_sgas %in% setdiff(sim_sgas_esc, 0L))
+  if (nrow(ov) > 0L) {
+    sim_sgas <- sim_sgas %>%
+      filter(!(sim_sgas %in% ov$sim_sgas)) %>%
+      bind_rows(ov) %>%
+      arrange(sim_sgas)
+  }
+}
+
+## Constantes metodológicas (COU 2018-2020 y MIP 2013)
+sgas_combustibles <- tibble::tribble(
+  ~comb,              ~col_consumo,  ~estacion,          ~participacion,
+  "gasolina_premium", "gasolinapr_", "gasolina_premium", 0.339,
+  "gasolina_regular", "gasolinare_", "gasolina_regular", 0.131,
+  "gasoil_premium",   "gasoilpr_",   "gasoil",           0.137,
+  "gasoil_regular",   "gasoilre_",   "gasoil",           0.198,
+  "glp",              "glp_",        "glp",              0.195
+)
+sgas_share_fuel  <- 0.31 + 0.28 + 0.12   # gasolina + gasoil + glp en el sector
+sgas_sector_comb <- 7                    # productos derivados del petróleo
+sgas_sector_fijo <- 21                   # administración pública, precio fijo
+
+sgas_vec <- function(fila, prefijo) {
+  vapply(1:12, function(j) {
+    v <- fila[[paste0(prefijo, j)]]
+    if (is.null(v)) NA_real_ else as.numeric(v[[1L]])
+  }, numeric(1))
+}
+
+## Estacionalidad del consumo (fila base)
+sgas_fila0 <- sim_sgas %>% filter(sim_sgas == 0)
+sgas_estacion <- lapply(
+  setNames(nm = unique(sgas_combustibles$estacion)),
+  function(g) sgas_vec(sgas_fila0, paste0(g, "_"))
+)
+
+## 2.1 Efecto directo ----------------------------------------------------------
+
+sgas_consumo <- readRDS(paste0(fpresim, "combustibles.RDS"))
+sgas_dir  <- tibble(hhid = as.numeric(haven::zap_labels(sgas_consumo$hhid)))
+sgas_tasa <- numeric(0)
+
+for (s in sim_sgas_esc) {
+  fila <- sim_sgas %>% filter(sim_sgas == s)
+  m_mes <- sgas_vec(fila, "m")
+  directo <- numeric(nrow(sgas_consumo))
+  tasa <- 0
+  for (k in seq_len(nrow(sgas_combustibles))) {
+    cb <- sgas_combustibles[k, ]
+    razon <- sgas_vec(fila, paste0(cb$comb, "_sub_")) /
+      sgas_vec(fila, paste0(cb$comb, "_precio_"))
+    peso <- coalesce(razon * m_mes, 0)
+    consumo <- vapply(1:12, function(j) {
+      coalesce(as.numeric(sgas_consumo[[paste0(cb$col_consumo, j)]]), 0)
+    }, numeric(nrow(sgas_consumo)))
+    directo <- directo + as.vector(consumo %*% peso)
+    tasa <- tasa + cb$participacion *
+      sum(coalesce(razon * sgas_estacion[[cb$estacion]] * m_mes, 0))
+  }
+  sgas_dir[[paste0("sub_cmd", s, "_hh")]] <- directo
+  sgas_tasa[as.character(s)] <- tasa * sgas_share_fuel
+}
+
+sgas_dir <- sgas_dir %>%
+  group_by(hhid) %>%
+  summarise(across(everything(), ~ sum(.x, na.rm = TRUE)), .groups = "drop")
+
+## 2.2 Efecto indirecto (modelo de costos con la MIP) --------------------------
+
+sgas_A <- readRDS(paste0(fpresim, "mip2013_rd.RDS")) %>%
+  select(-mipcat) %>%
+  as.matrix()
+sgas_n <- nrow(sgas_A)
+
+sgas_gamma <- matrix(0, nrow = sgas_n, ncol = sgas_n)
+sgas_gamma[sgas_sector_fijo, sgas_sector_fijo] <- 1
+sgas_alpha <- diag(sgas_n) - sgas_gamma
+sgas_V     <- solve(diag(sgas_n) - sgas_alpha %*% sgas_A)
+
+sgas_pind <- tibble(codigo_mip = seq_len(sgas_n))
+for (s in sim_sgas_esc) {
+  dp <- matrix(0, nrow = 1, ncol = sgas_n)
+  dp[1, sgas_sector_comb] <- sgas_tasa[[as.character(s)]]
+  sgas_pind[[paste0("pind_", s)]] <- as.numeric(dp %*% sgas_A %*% sgas_V)
+}
+
+sgas_variedades <- read_param_csv("itbis_base", fparam_csv) %>%
+  select(id_variedad, cod_grupo, codigo_mip) %>%
+  inner_join(sgas_pind, by = "codigo_mip")
+
+sgas_ind <- readRDS(paste0(fpresim, "DOM26_gtotals.RDS")) %>%
+  select(hhid, id_variedad, monto_pagado_hogar_mensual) %>%
+  haven::zap_labels() %>%
+  left_join(sgas_variedades, by = "id_variedad") %>%
+  filter(cod_grupo != 20)
+
+for (s in sim_sgas_esc) {
+  sgas_ind[[paste0("sub_cmi", s, "_hh")]] <-
+    round(sgas_ind$monto_pagado_hogar_mensual * sgas_ind[[paste0("pind_", s)]], 2)
+}
+
+sgas_hogar <- sgas_ind %>%
+  group_by(hhid, cod_grupo) %>%
+  summarise(across(starts_with("sub_cmi"), \(x) sum(x, na.rm = TRUE)),
+            .groups = "drop") %>%
+  mutate(across(starts_with("sub_cmi"), ~ round_stata(.x, 2))) %>%
+  group_by(hhid) %>%
+  summarise(across(starts_with("sub_cmi"), \(x) sum(x, na.rm = TRUE)),
+            .groups = "drop") %>%
+  left_join(sgas_dir, by = "hhid")
+
+for (s in sim_sgas_esc) {
+  cat(sprintf("Combustibles escenario %d: tasa=%.6f directo=%s indirecto=%s\n",
+              s, sgas_tasa[[as.character(s)]],
+              format(sum(sgas_hogar[[paste0("sub_cmd", s, "_hh")]], na.rm = TRUE),
+                     big.mark = ","),
+              format(sum(sgas_hogar[[paste0("sub_cmi", s, "_hh")]], na.rm = TRUE),
+                     big.mark = ",")))
+}
+
 
 # 3. Imputar resultados --------------------------------------------------------
 
@@ -490,6 +636,11 @@ base <- base %>%
   filter(!(yd_pc == 0 & ym_pc == 0)) %>%
   select(-starts_with("sub_ela"), -starts_with("sub_elb"),
          -starts_with("sub_elc")) 
+
+# Hogares sin registros de gasto en combustibles: subsidio 0, no faltante.
+base <- base %>%
+  left_join(sgas_hogar, by = "hhid") %>%
+  mutate(across(matches("^sub_cm[di][0-9]+_hh$"), ~ coalesce(.x, 0)))
 
 # Replicar exactamente:
 
@@ -610,7 +761,7 @@ base %>%
 # Calcular p99 por variable — en un solo mutate
 base <- base %>%
   mutate(across(
-    starts_with("rsub_ele") & ends_with("_pc"),
+    (starts_with("rsub_ele") | starts_with("rsub_cm")) & ends_with("_pc"),
     ~ {
       q99 <- Hmisc::wtd.quantile(.x, weights = pondera_2023,
                                  probs = 0.99, na.rm = TRUE)
@@ -636,7 +787,7 @@ subratios <- base %>%
   group_by(centil, urban) %>%
   summarise(
     across(
-      starts_with("rsub"),
+      starts_with("rsub_ele"),
       ~ weighted.mean(., w = round_stata(pondera_2023, 0)),
       .names = "{.col}"
     ),
@@ -650,6 +801,24 @@ sub_percentil <- suav_subs_ur(
   degree = 0,
   gridsize = 100
 )
+
+# Combustibles: todos los hogares (sin el filtro de usuarios de electricidad).
+subratiosg <- base %>%
+  group_by(centil, urban) %>%
+  summarise(
+    across(starts_with("rsub_cm"),
+           ~ weighted.mean(., w = round_stata(pondera_2023, 0))),
+    .groups = "drop"
+  )
+
+sub_percentilg <- suav_subs_ur(
+  data = subratiosg,
+  group_col = "urban",
+  xcol = "centil",
+  degree = 0,
+  gridsize = 100
+) %>%
+  select(urban, centil, starts_with("psub_cm"))
 
 # Verificar que los ratios ahora coinciden con Stata:
 cat("=== Ratios suavizados corregidos ===\n")
@@ -684,7 +853,8 @@ base2024 <- base2024 %>%
 		n = 100),
     urban  = as.integer(zona == 1)
   ) %>%
-  left_join(sub_percentil, by = c("urban", "centil"))
+  left_join(sub_percentil, by = c("urban", "centil")) %>%
+  left_join(sub_percentilg, by = c("urban", "centil"))
 
 base2024 %>%
 	group_by(centil) %>%
@@ -702,6 +872,18 @@ sub_cols_2024 <- lapply(sim_sub_esc, function(s) {
 
 base2024 <- bind_cols(base2024, sub_cols_2024)
 
+sgas_cols_2024 <- lapply(sim_sgas_esc, function(s) {
+  cmd <- base2024$yd_pc * base2024[[paste0("psub_cmd", s, "_pc")]]
+  cmi <- base2024$yd_pc * base2024[[paste0("psub_cmi", s, "_pc")]]
+  tibble(
+    !!paste0("sub_cmd", s, "_pc") := cmd,
+    !!paste0("sub_cmi", s, "_pc") := cmi,
+    !!paste0("sub_gas", s, "_pc") := cmd + cmi
+  )
+}) %>% bind_cols()
+
+base2024 <- bind_cols(base2024, sgas_cols_2024)
+
 
 # Sintaxis correcta de fsum con pesos en collapse:
 fsum(base2024$sub_ele0_pc, w = base2024$factor_expansion_anual, na.rm = TRUE)
@@ -713,7 +895,8 @@ base2024[, c("hhid","hhin", "trimestre","urban", "sub_ele0_pc",
 # 6. Guardar resultados  -------------------------------------------------------
 
 base2024 <- base2024 %>%
-  select(hhid, hhin, trimestre, starts_with("sub_ele"))
+  select(hhid, hhin, trimestre, starts_with("sub_ele"), starts_with("sub_gas"),
+         starts_with("sub_cmd"), starts_with("sub_cmi"))
 
 saveRDS(base2024, paste0(fdbmod, "DOM_simsubele.rds"))
 rm(list = ls(pattern = "base"))
@@ -741,6 +924,8 @@ rm(acunor, consumo2, costo_sures, eff_validos, gravar_exentos, idx_decil,
    plot_s, plot_s_ur, suav_series, suav_series_ur, suav_subs_ur)
 
 rm(calcular_pago_bloques)
+rm(list = ls(pattern = "^sgas_"))
+rm(subratiosg, dp, fila, m_mes, directo, tasa, k, cb, razon, peso, consumo, ov)
 
 # # Ver qué bandwidth usa R para cada grupo
 # for (grp in c(0, 1)) {

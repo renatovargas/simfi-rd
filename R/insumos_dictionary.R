@@ -103,6 +103,7 @@ build_insumos_live <- function(escenario, escenario_num = NULL) {
   col_isr <- paste0("ddtx_isr", k, "_pc")
   col_itb <- paste0("ditx_itb", k, "_pc")
   col_sub <- paste0("dsub_ele", k, "_pc")
+  col_gas <- paste0("dsub_gas", k, "_pc")
   decinc_nms <- names(as.data.frame(escenario$decinc))
   col_comp <- grep(paste0("^dcomp", k, "_pc$"), decinc_nms, value = TRUE)[1]
 
@@ -110,11 +111,13 @@ build_insumos_live <- function(escenario, escenario_num = NULL) {
   inc_isr <- incidence_block_for_col(escenario, col_isr, -1)
   inc_itb <- incidence_block_for_col(escenario, col_itb, -1)
   inc_sub <- incidence_block_for_col(escenario, col_sub, -1)
+  inc_gas <- incidence_block_for_col(escenario, col_gas, -1)
   inc_comp <- incidence_block_for_col(escenario, col_comp, -1)
 
   conc_isr <- concentracion_two_col(escenario, "dtx_isr0_pc", paste0("dtx_isr", k, "_pc"))
   conc_itb <- concentracion_two_col(escenario, "itx_itb0_pc", paste0("itx_itb", k, "_pc"))
   conc_sub <- concentracion_two_col(escenario, "sub_ele0_pc", paste0("sub_ele", k, "_pc"))
+  conc_gas <- concentracion_two_col(escenario, "sub_gas0_pc", paste0("sub_gas", k, "_pc"))
   conc_comp <- concentracion_comp_single(escenario, k)
 
   list(
@@ -130,6 +133,7 @@ build_insumos_live <- function(escenario, escenario_num = NULL) {
       isr = inc_isr,
       itbis = inc_itb,
       subsidios = inc_sub,
+      subsidios_combustibles = inc_gas,
       compensacion = inc_comp
     ),
     concentracion = list(
@@ -137,6 +141,7 @@ build_insumos_live <- function(escenario, escenario_num = NULL) {
       isr = conc_isr,
       itbis = conc_itb,
       subsidios = conc_sub,
+      subsidios_combustibles = conc_gas,
       compensacion = conc_comp
     )
   )

@@ -115,6 +115,13 @@ vs_sub <- fsum(DOM_results$sub_ele0_pc,
 
 # 3. Estimar escenarios (impuestos + ingresos en un solo loop) ----------------
 
+# Corridas sin columna sim_sgas en escenarios: subsidio a combustibles del base.
+if (!"sim_sgas" %in% names(escenarios)) escenarios$sim_sgas <- 0L
+if (!"sub_gas0_pc" %in% names(DOM_results)) {
+  DOM_results$sub_gas0_pc  <- 0
+  DOM_results$ssub_gas0_pc <- 0
+}
+
 variable_values <- c(0, escenarios$escenario)
 library(rlang)
 for (i in variable_values) {
@@ -122,6 +129,7 @@ for (i in variable_values) {
   nom_itbx <- paste0("itx_itb", i, "_pc")
   nom_isrx <- paste0("dtx_isr", i, "_pc")
   nom_subx <- paste0("sub_ele", i, "_pc")
+  nom_gasx <- paste0("sub_gas", i, "_pc")
   nom_yd   <- paste0("yd",  i, "_pc")
   nom_yc   <- paste0("yc",  i, "_pc")
   nom_yi   <- paste0("yi",  i, "_pc")
@@ -133,7 +141,8 @@ for (i in variable_values) {
     exprs(
       !!sym(nom_itbx) := !!sym(paste0("sitx_itb", esc_i$sim_itbis, "_pc")),
       !!sym(nom_isrx) := !!sym(paste0("sdtx_isr", esc_i$sim_renta, "_pc")),
-      !!sym(nom_subx) := !!sym(paste0("ssub_ele",  esc_i$sim_sub,   "_pc"))
+      !!sym(nom_subx) := !!sym(paste0("ssub_ele",  esc_i$sim_sub,   "_pc")),
+      !!sym(nom_gasx) := !!sym(paste0("ssub_gas",  esc_i$sim_sgas,  "_pc"))
     )
   } else {
     list()
@@ -145,7 +154,8 @@ for (i in variable_values) {
       !!!new_cols,
       !!sym(nom_yd) := yd_pc - (!!sym(nom_isrx) - dtx_isr0_pc),
       !!sym(nom_yc) := !!sym(nom_yd) -
-        ((!!sym(nom_itbx) - itx_itb0_pc) + (sub_ele0_pc - !!sym(nom_subx))),
+        ((!!sym(nom_itbx) - itx_itb0_pc) + (sub_ele0_pc - !!sym(nom_subx)) +
+           (sub_gas0_pc - !!sym(nom_gasx))),
       !!sym(nom_yi) := yd0_pc - (!!sym(nom_itbx) - itx_itb0_pc),
       !!sym(nom_ye) := yd0_pc - (sub_ele0_pc - !!sym(nom_subx))
     )
@@ -289,7 +299,7 @@ rm(dom_ingdis, DOM_results, dom_sim_irenta,
    dom_sim_itbis, dom_sim_subele, esc_i, sim_i,
    comp_precomputed, comp_pc, sim_combined, hh_demo,
    decil_i, decyd_i, exprs_estrato, exprs_yz,
-   indices, indices_yc, indices_comp, metodo_i)
+   indices, indices_yc, indices_comp, metodo_i, nom_gasx)
 rm(list = ls(pattern = "mask"))
 rm(list = ls(pattern = "nom"))
 rm(new_cols, estratos, grupo_i, i, icv_i, icv_lim, icv_cortes, sim_com_esc, sim_comp_i, valor_comp,

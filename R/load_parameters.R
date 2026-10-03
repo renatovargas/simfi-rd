@@ -42,6 +42,7 @@ scenario_inputs_to_escenarios <- function(inputs = list()) {
     sim_itbis = as.integer(inpt$sim_itbis %||% 1L),
     sim_renta = as.integer(inpt$sim_renta %||% 0L),
     sim_sub = as.integer(inpt$sim_sub %||% 0L),
+    sim_sgas = as.integer(inpt$sim_sgas %||% 1L),
     sim_com = as.integer(inpt$sim_com %||% 1L),
     des_escenario = as.character(inpt$des_escenario %||% "Simulación"),
     des_corto = as.character(inpt$des_corto %||% inpt$label %||% "Esc. 1")
@@ -57,6 +58,7 @@ default_scenario_inputs <- function() {
     sim_itbis = 1L,
     sim_renta = 0L,
     sim_sub = 0L,
+    sim_sgas = 1L,
     sim_com = 1L,
     des_escenario = "Escenario simulado",
     des_corto = "Reforma simulada"
