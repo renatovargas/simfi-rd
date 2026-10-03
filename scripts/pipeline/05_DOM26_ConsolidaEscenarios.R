@@ -48,7 +48,8 @@ macro <- list(
   pib = parm_glob$valor[str_detect(parm_glob$descripcion, "PIB")],
   itb = parm_glob$valor[str_detect(parm_glob$descripcion, "total ITBIS")],
   isr = parm_glob$valor[str_detect(parm_glob$descripcion, "renta")],
-  sub = parm_glob$valor[str_detect(parm_glob$descripcion, "subsidios")]
+  sub = parm_glob$valor[str_detect(parm_glob$descripcion, "subsidios")],
+  subg = parm_glob$valor[str_detect(parm_glob$descripcion, "combustibles")]
 )
 
 # ==============================================================================
@@ -225,6 +226,8 @@ estima_kakwani <- function(data, escenarios_nums) {
     itb  = list(base = "itx_itb0_pc", esc_prefix = "itx_itb",
       esc_suffix = "_pc", tipo = "impuesto"),
     sub  = list(base = "sub_ele0_pc", esc_prefix = "sub_ele",
+      esc_suffix = "_pc", tipo = "transferencia"),
+    subg = list(base = "sub_gas0_pc", esc_prefix = "sub_gas",
       esc_suffix = "_pc", tipo = "transferencia"),
     comp = list(base = NULL,          esc_prefix = "comp_",
       esc_suffix = "_pc", tipo = "transferencia")
@@ -545,10 +548,12 @@ nms_escenario <- function(suffix) {
     isr   = paste0("dtx_isr",  suffix, "_pc"),
     itb   = paste0("itx_itb",  suffix, "_pc"),
     sub   = paste0("sub_ele",  suffix, "_pc"),
+    subg  = paste0("sub_gas",  suffix, "_pc"),
     comp  = paste0("comp_",    suffix, "_pc"),
     difr  = paste0("ddtx_isr", suffix, "_pc"),
     dif1  = paste0("ditx_itb", suffix, "_pc"),
     dif2  = paste0("dsub_ele", suffix, "_pc"),
+    dif4  = paste0("dsub_gas", suffix, "_pc"),
     dif3  = paste0("dcomp",    suffix, "_pc"),
     neto2 = paste0("neto",     suffix, "_pc"),
     neto  = paste0("nitx",     suffix, "_pc")
@@ -569,24 +574,26 @@ preparar_deciles_una_vez <- function(data, suffix, weight_var, rank) {
   nms <- nms_escenario(suffix)
   
   vars_to_sum <- c(
-    "dtx_isr0_pc", "itx_itb0_pc", "sub_ele0_pc", "net0_pc",
-    nms$isr, nms$itb, nms$sub, nms$neto2, nms$comp,
-    nms$difr, nms$dif1, nms$dif2, nms$dif3, nms$neto
+    "dtx_isr0_pc", "itx_itb0_pc", "sub_ele0_pc", "sub_gas0_pc", "net0_pc",
+    nms$isr, nms$itb, nms$sub, nms$subg, nms$neto2, nms$comp,
+    nms$difr, nms$dif1, nms$dif2, nms$dif4, nms$dif3, nms$neto
   )
   
   # FIX: filter + mutate se ejecutan UNA sola vez
   data_mut <- data %>%
     filter(!is.na({{ rank }})) %>%
     mutate(
-      net0_pc          = dtx_isr0_pc + itx_itb0_pc - sub_ele0_pc,
-      !!sym(nms$neto2) := !!sym(nms$isr) + !!sym(nms$itb) - !!sym(nms$sub),
+      net0_pc          = dtx_isr0_pc + itx_itb0_pc - sub_ele0_pc - sub_gas0_pc,
+      !!sym(nms$neto2) := !!sym(nms$isr) + !!sym(nms$itb) - !!sym(nms$sub) -
+        !!sym(nms$subg),
       !!sym(nms$comp)  := !!sym(nms$comp) * -1,
       !!sym(nms$difr)  := !!sym(nms$isr)  - dtx_isr0_pc,
       !!sym(nms$dif1)  := !!sym(nms$itb)  - itx_itb0_pc,
       !!sym(nms$dif2)  := !!sym(nms$sub)  - sub_ele0_pc,
+      !!sym(nms$dif4)  := !!sym(nms$subg) - sub_gas0_pc,
       !!sym(nms$dif3)  := !!sym(nms$comp),
       !!sym(nms$neto)  := !!sym(nms$difr) + !!sym(nms$dif1) -
-        !!sym(nms$dif2) + !!sym(nms$dif3)
+        !!sym(nms$dif2) - !!sym(nms$dif4) + !!sym(nms$dif3)
     )
   
   # FIX: group_by + summarise se ejecutan UNA sola vez (divisor = 1)
@@ -630,7 +637,8 @@ decile_con <- function(prep) {
     mutate(
       !!sym(nms$difr) := !!sym(nms$isr) - dtx_isr0_pc,
       !!sym(nms$dif1) := !!sym(nms$itb) - itx_itb0_pc,
-      !!sym(nms$dif2) := !!sym(nms$sub) - sub_ele0_pc
+      !!sym(nms$dif2) := !!sym(nms$sub) - sub_ele0_pc,
+      !!sym(nms$dif4) := !!sym(nms$subg) - sub_gas0_pc
     )
 }
 
@@ -657,8 +665,9 @@ decile_sum <- function(prep) {
 #' FIX: recibe prep pre-computado, deriva de result_millones sin re-summarise
 decile_pib <- function(prep, v_pib, f_isr, f_itb, f_sub) {
   nms      <- prep$nms
-  vars_base <- c("dtx_isr0_pc", "itx_itb0_pc", "sub_ele0_pc", "net0_pc",
-                 nms$isr, nms$itb, nms$sub, nms$neto2, nms$comp)
+  vars_base <- c("dtx_isr0_pc", "itx_itb0_pc", "sub_ele0_pc", "sub_gas0_pc",
+                 "net0_pc", nms$isr, nms$itb, nms$sub, nms$subg, nms$neto2,
+                 nms$comp)
   
   prep$millones %>%
     select(-incpc) %>%
@@ -667,22 +676,25 @@ decile_pib <- function(prep, v_pib, f_isr, f_itb, f_sub) {
       dtx_isr0_pc      = dtx_isr0_pc      / f_isr * 100,
       itx_itb0_pc      = itx_itb0_pc      / f_itb * 100,
       sub_ele0_pc      = sub_ele0_pc      / f_sub * 100,
+      sub_gas0_pc      = sub_gas0_pc      / v_pib * 100,
       net0_pc          = net0_pc          / v_pib * 100,
       !!sym(nms$isr)   := !!sym(nms$isr)   / f_isr * 100,
       !!sym(nms$itb)   := !!sym(nms$itb)   / f_itb * 100,
       !!sym(nms$sub)   := !!sym(nms$sub)   / f_sub * 100,
+      !!sym(nms$subg)  := !!sym(nms$subg)  / v_pib * 100,
       !!sym(nms$neto2) := !!sym(nms$neto2) / v_pib * 100,
       !!sym(nms$comp)  := !!sym(nms$comp)  / v_pib * 100
     ) %>%
     # Recalcular diferencias post-escalado (igual que antes)
     mutate(
-      net0_pc          = dtx_isr0_pc + itx_itb0_pc - sub_ele0_pc,
+      net0_pc          = dtx_isr0_pc + itx_itb0_pc - sub_ele0_pc - sub_gas0_pc,
       !!sym(nms$difr)  := !!sym(nms$isr)  - dtx_isr0_pc,
       !!sym(nms$dif1)  := !!sym(nms$itb)  - itx_itb0_pc,
       !!sym(nms$dif2)  := !!sym(nms$sub)  - sub_ele0_pc,
+      !!sym(nms$dif4)  := !!sym(nms$subg) - sub_gas0_pc,
       !!sym(nms$dif3)  := !!sym(nms$comp),
       !!sym(nms$neto)  := !!sym(nms$difr) + !!sym(nms$dif1) -
-        !!sym(nms$dif2) + !!sym(nms$dif3)
+        !!sym(nms$dif2) - !!sym(nms$dif4) + !!sym(nms$dif3)
     ) %>%
     mutate(across(where(is.numeric), ~ round(., 2)))
 }

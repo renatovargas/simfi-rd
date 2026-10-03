@@ -396,7 +396,8 @@ fiscal_post_measures_mat <- function(dom_list, scen_table_hdr_named) {
       nitx_v <- gv("nitx")
       neto_v <- nitx_v - if (is.na(comp_v)) 0 else comp_v
     }
-    c(gv("dtx_isr"), gv("itx_itb"), -gv("sub_ele"), neto_v, comp_v, nitx_v)
+    c(gv("dtx_isr"), gv("itx_itb"), -gv("sub_ele"), -gv("sub_gas"), neto_v,
+      comp_v, nitx_v)
   }
 
   # Pre-reforma column uses base scenario (k = 0) from the first element of dom_list
@@ -413,6 +414,7 @@ fiscal_post_measures_mat <- function(dom_list, scen_table_hdr_named) {
     "ISR (% PIB)",
     "ITBIS (% PIB)",
     "Subsidio eléctrico (% PIB)",
+    "Subsidio a combustibles (% PIB)",
     "Neto fiscal previo a compensación (% PIB)",
     "Compensación (% PIB)",
     "Incidencia neta fiscal (% PIB)"
@@ -420,18 +422,39 @@ fiscal_post_measures_mat <- function(dom_list, scen_table_hdr_named) {
   hdr <- c("Pre-reforma", unname(scen_table_hdr_named[names(dom_list)]))
   hdr[is.na(hdr)] <- names(dom_list)[is.na(hdr)]
   colnames(mat) <- hdr
+  # Sin subsidio a combustibles en ningún escenario, la fila no aporta.
+  fila_gas <- "Subsidio a combustibles (% PIB)"
+  if (all(abs(mat[fila_gas, ]) < 1e-12)) {
+    mat <- mat[rownames(mat) != fila_gas, , drop = FALSE]
+  }
   mat
 }
 
 kakwani_summary_matrices <- function(dom_list, post_headers_chr) {
   lab_cols <- c("Pre-reforma", post_headers_chr)
   n <- length(dom_list)
-  rows <- c("ISR", "ITBIS", "Subsidio eléctrico", "Compensación")
-  ic_mat <- matrix(NA_real_, nrow = 4L, ncol = n + 1L)
-  kw_mat <- matrix(NA_real_, nrow = 4L, ncol = n + 1L)
+  rows <- c(isr = "ISR", itb = "ITBIS", sub = "Subsidio eléctrico",
+            subg = "Subsidio a combustibles", comp = "Compensación")
+  nr <- length(rows)
+  ic_mat <- matrix(NA_real_, nrow = nr, ncol = n + 1L)
+  kw_mat <- matrix(NA_real_, nrow = nr, ncol = n + 1L)
+  # Filas por nombre de instrumento; resultados sin nombres usan el orden antiguo.
+  pick_rows <- function(kk, col) {
+    out <- rep(NA_real_, nr)
+    v <- suppressWarnings(as.numeric(kk[, col]))
+    rn <- rownames(kk)
+    if (is.null(rn)) {
+      idx <- match(c("isr", "itb", "sub", "comp"), names(rows))
+      out[idx[seq_along(v)]] <- v[seq_len(min(length(v), length(idx)))]
+    } else {
+      hit <- match(names(rows), rn)
+      out[!is.na(hit)] <- v[hit[!is.na(hit)]]
+    }
+    out
+  }
   pre <- dom_list[[1]]$kakwani
-  ic_mat[, 1L] <- suppressWarnings(as.numeric(pre[, "ic_Base"]))
-  kw_mat[, 1L] <- suppressWarnings(as.numeric(pre[, "kakwani_Base"]))
+  ic_mat[, 1L] <- pick_rows(pre, "ic_Base")
+  kw_mat[, 1L] <- pick_rows(pre, "kakwani_Base")
   for (i in seq_len(n)) {
     k <- scenario_index_from_key(names(dom_list)[i])
     kk <- dom_list[[i]]$kakwani
@@ -440,13 +463,13 @@ kakwani_summary_matrices <- function(dom_list, post_headers_chr) {
       1
     ]
     if (!is.na(ic_col)) {
-      ic_mat[, i + 1L] <- suppressWarnings(as.numeric(kk[, ic_col]))
+      ic_mat[, i + 1L] <- pick_rows(kk, ic_col)
     }
     if (!is.na(kw_col)) {
-      kw_mat[, i + 1L] <- suppressWarnings(as.numeric(kk[, kw_col]))
+      kw_mat[, i + 1L] <- pick_rows(kk, kw_col)
     }
   }
-  rownames(ic_mat) <- rownames(kw_mat) <- rows
+  rownames(ic_mat) <- rownames(kw_mat) <- unname(rows)
   colnames(ic_mat) <- colnames(kw_mat) <- lab_cols
 
   # Keep only rows where at least one scenario differs from the base.
@@ -975,23 +998,24 @@ tabla_macro_region <- function(dom_list, escenario_headers = NULL) {
   # Each instrument has a delta column (d*_pc); if it is all ≈ 0, we remove
   # both that delta column and the corresponding level columns.
   pc_cols  <- grep("_pc$", names(tab), value = TRUE)
-  delta_cols <- grep("^(ddtx_isr|ditx_itb|dsub_ele|dcomp)\\d+_pc$",
+  delta_cols <- grep("^(ddtx_isr|ditx_itb|dsub_ele|dsub_gas|dcomp)\\d+_pc$",
                      pc_cols, value = TRUE)
   drop_cols <- character(0)
   for (dc in delta_cols) {
     vals <- suppressWarnings(as.numeric(tab[[dc]]))
     if (all(is.na(vals) | abs(vals) < 1e-4)) {
       # Identify the scenario number from the delta column name
-      k_str <- sub("^d(?:dtx_isr|itx_itb|sub_ele|comp)(\\d+)_pc$", "\\1",
+      k_str <- sub("^d(?:dtx_isr|itx_itb|sub_ele|sub_gas|comp)(\\d+)_pc$", "\\1",
                    dc, perl = TRUE)
       # Drop delta + both base and scenario level columns for this instrument
       stem_patterns <- list(
         ddtx_isr  = c(paste0("dtx_isr0_pc"),   paste0("dtx_isr",  k_str, "_pc")),
         ditx_itb  = c(paste0("itx_itb0_pc"),   paste0("itx_itb",  k_str, "_pc")),
         dsub_ele  = c(paste0("sub_ele0_pc"),    paste0("sub_ele",  k_str, "_pc")),
+        dsub_gas  = c(paste0("sub_gas0_pc"),    paste0("sub_gas",  k_str, "_pc")),
         dcomp     = c(paste0("comp_0_pc"),      paste0("comp_",    k_str, "_pc"))
       )
-      inst <- sub("^d(dtx_isr|itx_itb|sub_ele|comp)\\d+_pc$", "\\1",
+      inst <- sub("^d(dtx_isr|itx_itb|sub_ele|sub_gas|comp)\\d+_pc$", "\\1",
                   dc, perl = TRUE)
       related <- c(dc, stem_patterns[[inst]])
       drop_cols <- union(drop_cols, related[related %in% names(tab)])

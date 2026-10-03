@@ -213,6 +213,13 @@
       for (i in 1:7) add(nm, p$custom, nom, f, i, v[i])
     }
     for (f in .sub_sca_fields) add(nm, p$custom, nom, f, NA_integer_, p[[f]])
+    # Subsidio a combustibles (opcional): una fila sgas_<combustible> por galón.
+    if (isTRUE(p$sgas$custom)) {
+      for (cb in names(p$sgas$valores)) {
+        add(nm, p$custom, nom, paste0("sgas_", cb), NA_integer_,
+            p$sgas$valores[[cb]])
+      }
+    }
   }
   if (!length(rows)) {
     return(data.frame(componente = character(), custom = logical(),
@@ -238,6 +245,17 @@
     for (f in .sub_sca_fields) {
       ss <- sub[sub$campo == f, , drop = FALSE]
       p[[f]] <- if (nrow(ss)) suppressWarnings(as.numeric(ss$valor[1])) else NA_real_
+    }
+    # Archivos anteriores no traen filas sgas_*: sin subsidio a combustibles.
+    sg <- sub[startsWith(as.character(sub$campo), "sgas_"), , drop = FALSE]
+    if (nrow(sg)) {
+      p$sgas <- list(
+        custom = TRUE,
+        valores = stats::setNames(
+          as.list(suppressWarnings(as.numeric(sg$valor))),
+          sub("^sgas_", "", sg$campo)
+        )
+      )
     }
     out[[nm]] <- p
   }

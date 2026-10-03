@@ -7,6 +7,7 @@ autoload_dom_r <- function(root = ".") {
     "load_parameters.R",
     "isr_bracket_helpers.R",
     "sim_sub_helpers.R",
+    "sim_sgas_helpers.R",
     "pipeline_runner.R",
     "insumos_dictionary.R",
     "module_summary.R",

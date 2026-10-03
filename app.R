@@ -331,6 +331,71 @@ sub_base_ref <- tryCatch({
 }, error = function(e) NULL)
 sub_reference_ui <- build_sub_reference_ui(sub_base_ref)
 
+# Subsidio a combustibles: fila activa de sim_sgas (precios, calendario y
+# subsidio por galón de referencia). El usuario solo edita el subsidio por galón.
+sgas_tpl <- tryCatch(
+  read_sim_sgas_template_row(file.path(root, "data", "params", ""), 1L),
+  error = function(e) NULL
+)
+sgas_defaults <- if (is.null(sgas_tpl)) {
+  stats::setNames(rep(0, length(SGAS_COMBUSTIBLES)), names(SGAS_COMBUSTIBLES))
+} else {
+  sgas_default_values(sgas_tpl)
+}
+sgas_meses_txt <- local({
+  meses <- c("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+             "agosto", "septiembre", "octubre", "noviembre", "diciembre")
+  act <- if (is.null(sgas_tpl)) integer(0) else sgas_meses_activos(sgas_tpl)
+  if (!length(act)) {
+    "ningún mes"
+  } else if (all(diff(act) == 1L)) {
+    paste0("de ", meses[min(act)], " a ", meses[max(act)])
+  } else {
+    paste(meses[act], collapse = ", ")
+  }
+})
+
+sgas_inputs_ui <- function() {
+  tags$table(
+    class = "table table-sm align-middle mb-0", style = "max-width:520px;",
+    tags$thead(tags$tr(
+      tags$th("Combustible"),
+      tags$th("Subsidio (RD$/galón)")
+    )),
+    tags$tbody(lapply(names(SGAS_COMBUSTIBLES), function(cb) {
+      tags$tr(
+        tags$td(SGAS_COMBUSTIBLES[[cb]]),
+        tags$td(numericInput(paste0("sgas_val_", cb), NULL,
+                             value = unname(sgas_defaults[[cb]]),
+                             min = 0, step = 0.1, width = "140px"))
+      )
+    }))
+  )
+}
+
+sgas_reference_ui <- local({
+  if (is.null(sgas_tpl)) {
+    tags$p(class = "small text-muted", "Parámetros de referencia no disponibles.")
+  } else {
+    pr <- sgas_reference_prices(sgas_tpl)
+    tags$table(
+      class = "table table-sm small mb-0", style = "max-width:520px;",
+      tags$thead(tags$tr(
+        tags$th("Combustible"),
+        tags$th("Precio promedio (RD$/galón)"),
+        tags$th("Subsidio de referencia (RD$/galón)")
+      )),
+      tags$tbody(lapply(names(SGAS_COMBUSTIBLES), function(cb) {
+        tags$tr(
+          tags$td(SGAS_COMBUSTIBLES[[cb]]),
+          tags$td(format(round(pr[[cb]], 1), nsmall = 1, big.mark = ",")),
+          tags$td(format(round(sgas_defaults[[cb]], 1), nsmall = 1))
+        )
+      }))
+    )
+  }
+})
+
 # --- Helpers de previsualización para la pantalla Revisar ---
 
 # Productos cuya tasa efectiva difiere de la legal, dadas las listas de un escenario.
@@ -497,12 +562,27 @@ slot_detail_ui <- function(sc) {
            tags$strong("Subsidio eléctrico:"), " vigente (sin cambios).")
   }
 
+  sgas <- sc$sub_gas %||% sc$sub_ele$sgas
+  sgas_block <- if (isTRUE(sgas$custom)) {
+    vals <- vapply(names(SGAS_COMBUSTIBLES), function(cb) {
+      v <- suppressWarnings(as.numeric(sgas$valores[[cb]] %||% 0))
+      if (length(v) && is.finite(v)) v else 0
+    }, numeric(1))
+    tags$p(class = "small mb-2",
+           tags$strong("Subsidio a combustibles (RD$/galón):"), " ",
+           paste0(SGAS_COMBUSTIBLES, " ", format(round(vals, 1), nsmall = 1),
+                  collapse = "; "))
+  } else {
+    tags$p(class = "small text-muted mb-2",
+           tags$strong("Subsidio a combustibles:"), " sin subsidio.")
+  }
+
   comp_block <- tags$p(class = "small mb-0",
                        tags$strong("Compensación:"), " ",
                        comp_describe(sc$comp))
 
   tagList(itbis_block, tags$hr(class = "my-2"),
-          isr_block, sub_block, comp_block)
+          isr_block, sub_block, sgas_block, comp_block)
 }
 
 # Estilos CSS
@@ -748,7 +828,6 @@ ui <- page_navbar(
           checkboxInput("custom_sub_ele",
                       "Personalizar bloques y tarifas por distribuidora",
                       value = FALSE),
-          component_lib_bar("sub", "Guardar esta política de subsidio"),
         conditionalPanel(
           condition = "input.custom_sub_ele == true",
           p(class = "text-muted small",
@@ -780,6 +859,36 @@ ui <- page_navbar(
           tags$div(class = "mt-2", sub_reference_ui)
         )
       ),
+        card(
+          class = "mt-3",
+          card_header("Subsidio a combustibles"),
+          p(class = "text-muted small mb-2",
+            paste0("Por defecto no hay subsidio a combustibles. Active la ",
+                   "casilla para incluirlo y defina el subsidio por galón de ",
+                   "cada combustible. El subsidio aplica ", sgas_meses_txt,
+                   ", con los precios y la estacionalidad del consumo de ",
+                   "referencia.")),
+          checkboxInput("custom_sub_gas", "Incluir subsidio a combustibles",
+                        value = FALSE),
+          conditionalPanel(
+            condition = "input.custom_sub_gas == true",
+            p(class = "text-muted small mb-1",
+              "Monto que el Estado cubre por cada galón vendido durante los ",
+              "meses en que aplica el subsidio. Incluye el efecto directo en el ",
+              "gasto de los hogares y el efecto indirecto en los precios de ",
+              "otros bienes."),
+            sgas_inputs_ui()
+          ),
+          tags$details(
+            class = "mt-3",
+            tags$summary(
+              class = "text-primary", style = "cursor:pointer;",
+              "Ver precios de referencia"),
+            tags$div(class = "mt-2", sgas_reference_ui)
+          )
+        ),
+      component_lib_bar("sub",
+                        "Guardar esta política de subsidios (eléctrico y combustibles)"),
       nav_row(prev_id = "nav_3_prev", next_id = "nav_3_next")
     )
   ),
@@ -1121,7 +1230,7 @@ ui <- page_navbar(
             title = "Por instrumento",
             p(class = "small text-muted",
               "Incidencia por instrumento: efecto neto, ISR, ITBIS, ",
-              "subsidio eléctrico y compensación."),
+              "subsidio eléctrico, subsidio a combustibles y compensación."),
             navset_card_pill(
               id = "instrumento_sub",
               nav_panel("Efecto neto",
@@ -1132,6 +1241,8 @@ ui <- page_navbar(
                         plotlyOutput("dash_inst_itb_dec", height = "400px")),
               nav_panel("Subsidio eléctrico",
                         plotlyOutput("dash_inst_sub_dec", height = "400px")),
+              nav_panel("Subsidio a combustibles",
+                        plotlyOutput("dash_inst_gas_dec", height = "400px")),
               nav_panel("Compensación",
                         plotlyOutput("dash_inst_comp_dec", height = "400px"))
             )
@@ -1254,7 +1365,7 @@ server <- function(input, output, session) {
       x <- input[[paste0("sub_", pref, "_", j)]]
       if (is.null(x)) NA_real_ else suppressWarnings(as.numeric(x))
     }, numeric(1))
-    list(custom = isTRUE(input$custom_sub_ele),
+    out <- list(custom = isTRUE(input$custom_sub_ele),
          nom_subsidio = input$sub_nom %||% "",
          block = sv("block"), bsur = sv("bsur"), bnorte = sv("bnorte"),
          beste = sv("beste"), tsur = sv("tsur"), tnorte = sv("tnorte"),
@@ -1265,6 +1376,15 @@ server <- function(input, output, session) {
          otsur = suppressWarnings(as.numeric(input$sub_otsur)),
          otnorte = suppressWarnings(as.numeric(input$sub_otnorte)),
          oteste = suppressWarnings(as.numeric(input$sub_oteste)))
+    if (isTRUE(input$custom_sub_gas)) out$sgas <- capture_sgas()
+    out
+  }
+  capture_sgas <- function() {
+    list(custom = isTRUE(input$custom_sub_gas),
+         valores = as.list(vapply(names(SGAS_COMBUSTIBLES), function(cb) {
+           x <- suppressWarnings(as.numeric(input[[paste0("sgas_val_", cb)]]))
+           if (length(x) && is.finite(x)) x else 0
+         }, numeric(1))))
   }
   capture_comp <- function() {
     if (!isTRUE(input$comp_con_comp)) {
@@ -1342,6 +1462,16 @@ server <- function(input, output, session) {
                            value = if (is.finite(v)) v else NA)
       }
     }
+    apply_sgas(p$sgas)
+  }
+  apply_sgas <- function(g) {
+    g <- g %||% list(custom = FALSE)
+    updateCheckboxInput(session, "custom_sub_gas", value = isTRUE(g$custom))
+    for (cb in names(SGAS_COMBUSTIBLES)) {
+      v <- suppressWarnings(as.numeric(g$valores[[cb]] %||% sgas_defaults[[cb]]))
+      updateNumericInput(session, paste0("sgas_val_", cb),
+                         value = if (length(v) && is.finite(v)) v else sgas_defaults[[cb]])
+    }
   }
   apply_comp <- function(p) {
     enabled <- isTRUE(p$enabled) && !isTRUE(p$sin_compensacion)
@@ -1395,7 +1525,8 @@ server <- function(input, output, session) {
          sim_renta = if (isTRUE(isr_full$custom)) 1L else 0L,
          sim_sub = 1L,
          sim_com = if (isTRUE(comp_p$enabled) && !isTRUE(comp_p$sin_compensacion)) 1L else 0L,
-         itbis = itbis_p, isr = isr_full, comp = comp_p, sub_ele = sub_p)
+         itbis = itbis_p, isr = isr_full, comp = comp_p, sub_ele = sub_p,
+         sub_gas = sub_p$sgas %||% list(custom = FALSE))
   }
 
   # --- Registro de bibliotecas por pantalla (guardar / cargar) ---
@@ -1591,6 +1722,7 @@ server <- function(input, output, session) {
     tax_rv$rate_variedad <- list()
     updateCheckboxInput(session, "custom_isr", value = FALSE)
     updateCheckboxInput(session, "custom_sub_ele", value = FALSE)
+    apply_sgas(list(custom = FALSE))
     updateCheckboxInput(session, "comp_con_comp", value = FALSE)
     for (i in 1:6) {
       updateNumericInput(session, paste0("isr_li_", i),
@@ -2113,7 +2245,8 @@ server <- function(input, output, session) {
       ),
       isr     = isr,
       comp    = comp_list,
-      sub_ele = sub_ele
+      sub_ele = sub_ele,
+      sub_gas = capture_sgas()
     )
   })
 
@@ -2523,6 +2656,7 @@ server <- function(input, output, session) {
       isr          = build_block(function(k) paste0("ddtx_isr", k, "_pc")),
       itbis        = build_block(function(k) paste0("ditx_itb", k, "_pc")),
       subsidios    = build_block(function(k) paste0("dsub_ele", k, "_pc"), mult = 1),
+      combustibles = build_block(function(k) paste0("dsub_gas", k, "_pc"), mult = 1),
       compensacion = build_block(function(k) paste0("dcomp",    k, "_pc"))
     )
   })
@@ -2733,8 +2867,10 @@ server <- function(input, output, session) {
       if (grepl("^dtx_isr(\\d+)_pc$",   n)) return(paste0("ISR (",                       era(sub("^dtx_isr(\\d+)_pc$",   "\\1", n)), ")"))
       if (grepl("^ditx_itb(\\d+)_pc$",  n)) return(paste0("Δ ITBIS (",              era(sub("^ditx_itb(\\d+)_pc$",  "\\1", n)), ")"))
       if (grepl("^itx_itb(\\d+)_pc$",   n)) return(paste0("ITBIS (",                     era(sub("^itx_itb(\\d+)_pc$",   "\\1", n)), ")"))
-      if (grepl("^dsub_ele(\\d+)_pc$",  n)) return(paste0("Δ Subsidio (",           era(sub("^dsub_ele(\\d+)_pc$",  "\\1", n)), ")"))
+      if (grepl("^dsub_ele(\\d+)_pc$",  n)) return(paste0("Δ Subsidio eléctrico (",  era(sub("^dsub_ele(\\d+)_pc$",  "\\1", n)), ")"))
       if (grepl("^sub_ele(\\d+)_pc$",   n)) return(paste0("Subsidio eléctrico (", era(sub("^sub_ele(\\d+)_pc$",   "\\1", n)), ")"))
+      if (grepl("^dsub_gas(\\d+)_pc$",  n)) return(paste0("Δ Subsidio combustibles (", era(sub("^dsub_gas(\\d+)_pc$",  "\\1", n)), ")"))
+      if (grepl("^sub_gas(\\d+)_pc$",   n)) return(paste0("Subsidio a combustibles (", era(sub("^sub_gas(\\d+)_pc$",   "\\1", n)), ")"))
       if (grepl("^dcomp(\\d+)_pc$",     n)) return(paste0("Δ Compensación (", era(sub("^dcomp(\\d+)_pc$",     "\\1", n)), ")"))
       if (grepl("^comp_(\\d+)_pc$",     n)) return(paste0("Compensación (",        era(sub("^comp_(\\d+)_pc$",     "\\1", n)), ")"))
       if (grepl("^(neto|nitx)(\\d+)_pc$", n)) return(paste0("Efecto neto (",            era(sub("^(?:neto|nitx)(\\d+)_pc$", "\\1", n, perl = TRUE)), ")"))
@@ -2782,6 +2918,7 @@ server <- function(input, output, session) {
   output$dash_inst_isr_dec  <- mk_inst_plot("isr",         "ISR: deciles")
   output$dash_inst_itb_dec  <- mk_inst_plot("itbis",       "ITBIS: deciles")
   output$dash_inst_sub_dec  <- mk_inst_plot("subsidios",   "Subsidio eléctrico: deciles")
+  output$dash_inst_gas_dec  <- mk_inst_plot("combustibles", "Subsidio a combustibles: deciles")
   output$dash_inst_comp_dec <- mk_inst_plot("compensacion","Compensación: deciles")
 
   # Tablas del glosario
