@@ -1,0 +1,235 @@
+---
+title: "Simulador de escenarios fiscales"
+subtitle: "Instructivo para el usuario de simfi-rd"
+format:
+  revealjs:
+    theme: [simple, yeti.scss]
+    slide-number: true
+    embed-resources: true
+    width: 1280
+    height: 720
+execute:
+  echo: false
+  warning: false
+  message: false
+lang: es
+---
+
+## ¿Qué hace la app?
+
+::: {.columns}
+::: {.column width="55%"}
+Permite **construir y comparar escenarios de reforma fiscal** para República Dominicana.
+
+- Corre localmente en su computadora
+- No requiere servidor Shiny
+- Guía el trabajo en **seis pantallas** con botones *Anterior / Siguiente*
+:::
+::: {.column width="45%"}
+**Idea central**
+
+> Un escenario = una decisión por pantalla.
+>
+> Cada decisión guardada es un **componente**.
+:::
+:::
+
+## Antes de empezar
+
+::: {.columns}
+::: {.column width="50%"}
+### 1. Instalar paquetes
+Una sola vez, en la consola de R:
+
+```r
+install.packages(c(
+  "shiny", "bslib", "DT", "plotly",
+  "dplyr", "tidyr", "readxl", "sf",
+  ...  # lista completa en el README
+), dependencies = TRUE)
+```
+:::
+::: {.column width="50%"}
+### 2. Abrir el proyecto
+**File → Open Folder…** en Positron o RStudio (la carpeta completa, no solo `app.R`).
+
+### 3. Lanzar
+Abrir `app.R` y hacer clic en **Run App**.
+
+Alternativa:
+```r
+shiny::runApp("app.R")
+```
+:::
+:::
+
+## Las seis pantallas
+
+```{r}
+library(ggplot2)
+
+pantallas <- data.frame(
+  n = 1:6,
+  nombre = c("ITBIS", "Renta", "Subsidio", "Compensación", "Revisar", "Simular"),
+  tipo = factor(
+    c(rep("Define componentes", 4), "Compone escenarios", "Resultados"),
+    levels = c("Define componentes", "Compone escenarios", "Resultados")
+  )
+)
+
+ggplot(pantallas, aes(n, 0)) +
+  geom_segment(aes(x = 1, xend = 6, y = 0, yend = 0), colour = "grey70", linewidth = 1.5) +
+  geom_point(aes(colour = tipo), size = 28) +
+  geom_text(aes(label = n), colour = "white", size = 11, fontface = "bold") +
+  geom_text(aes(y = -0.45, label = nombre), size = 7) +
+  scale_colour_manual(values = c("#008cba", "#e99002", "#43ac6a"), name = NULL) +
+  scale_x_continuous(limits = c(0.5, 6.5)) +
+  scale_y_continuous(limits = c(-0.7, 0.5)) +
+  theme_void(base_size = 20) +
+  theme(legend.position = "bottom")
+```
+
+## 1 · ITBIS
+
+- Tasas por producto
+- Modificables por **grupo**, **subclase** o **variedad** individual
+- Filtros de búsqueda por grupo, subclase y tasa
+
+::: {.callout-tip}
+Al terminar, **guarde la decisión** como un componente de ITBIS.
+:::
+
+## 2 · Renta y 3 · Subsidio
+
+::: {.columns}
+::: {.column width="50%"}
+### Renta
+Escala del ISR personal.
+
+- Opcional
+- Personalizable por **tramos** (límites y tasas)
+:::
+::: {.column width="50%"}
+### Subsidio
+Subsidio eléctrico.
+
+- Opcional
+- Personalizable por **distribuidora** (bloques y tarifas)
+:::
+:::
+
+## 4 · Compensación
+
+Política de compensación post-reforma.
+
+- Opcional
+- Define **grupos** de hogares
+- Elige **métodos de focalización**
+
+## 5 · Revisar
+
+- **Biblioteca** de componentes guardados, por instrumento
+- **Compositor de escenarios**: elija un componente por instrumento
+- Exportar / importar en **Excel**
+- Botón **Nueva sesión** para empezar de cero (el estado se autoguarda)
+
+## 6 · Simular
+
+Ejecute los escenarios marcados y explore:
+
+::: {.columns}
+::: {.column width="50%"}
+- Pobreza
+- Desigualdad
+:::
+::: {.column width="50%"}
+- Incidencia
+- Efecto fiscal
+:::
+:::
+
+Escenarios ilimitados; se comparan **hasta cuatro** a la vez.
+
+## Cómo se arma un escenario
+
+```{r}
+#| fig-width: 13
+#| fig-height: 6.6
+#| fig-align: center
+library(ggplot2)
+
+# Componentes guardados en cada pantalla (ejemplos ilustrativos)
+comp <- data.frame(
+  pantalla = rep(1:4, times = c(3, 2, 3, 2)),
+  etiqueta = c(
+    "ITBIS\nactual", "ITBIS 18%\nuniforme", "Canasta\nexenta",
+    "ISR\nactual", "Nuevos\ntramos",
+    "Subsidio\nactual", "Focalizado", "Sin\nsubsidio",
+    "Sin\ncompensación", "Transferencia\nfocalizada"
+  )
+)
+comp$k <- ave(comp$pantalla, comp$pantalla, FUN = seq_along)
+comp$y <- ave(comp$k, comp$pantalla, FUN = function(v) rev(seq_along(v)) + (4 - length(v)) / 2)
+
+titulos <- data.frame(
+  pantalla = 1:4,
+  texto = c("1 · ITBIS", "2 · Renta", "3 · Subsidio", "4 · Compensación")
+)
+
+# Escenarios: un componente por pantalla
+esc <- data.frame(
+  escenario = rep(c("Escenario A", "Escenario B"), each = 4),
+  pantalla = rep(1:4, 2),
+  k = c(2, 1, 2, 1,   3, 2, 3, 2)
+)
+esc <- merge(esc, comp, by = c("pantalla", "k"))
+esc <- esc[order(esc$escenario, esc$pantalla), ]
+
+seg <- do.call(rbind, lapply(split(esc, esc$escenario), function(d) {
+  data.frame(
+    escenario = d$escenario[-nrow(d)],
+    x = d$pantalla[-nrow(d)], y = d$y[-nrow(d)],
+    xend = d$pantalla[-1],    yend = d$y[-1]
+  )
+}))
+
+# Desplazamiento vertical para que las rutas no se superpongan
+seg$off <- ifelse(seg$escenario == "Escenario A", 0.06, -0.06)
+
+ggplot() +
+  geom_tile(data = comp, aes(pantalla, y), width = 0.62, height = 0.8,
+            fill = "grey95", colour = "grey60") +
+  geom_segment(
+    data = seg,
+    aes(x = x + 0.31, xend = xend - 0.31, y = y + off, yend = yend + off, colour = escenario),
+    linewidth = 1.8, alpha = 0.9
+  ) +
+  geom_tile(
+    data = esc,
+    aes(pantalla, y, colour = escenario),
+    width = 0.62, height = 0.8, fill = NA, linewidth = 1.6
+  ) +
+  geom_text(data = comp, aes(pantalla, y, label = etiqueta), size = 4.2, lineheight = 0.9) +
+  geom_label(data = titulos, aes(pantalla, 4.15, label = texto),
+             fill = "#008cba", colour = "white", size = 6, fontface = "bold") +
+  annotate("text", x = 2.5, y = 0.3,
+           label = "Un componente por pantalla (excluyentes); cualquier combinación es válida",
+           size = 5.5, fontface = "italic") +
+  scale_colour_manual(values = c("Escenario A" = "#f04124", "Escenario B" = "#43ac6a"), name = NULL) +
+  scale_x_continuous(limits = c(0.5, 4.5)) +
+  scale_y_continuous(limits = c(0, 4.4)) +
+  theme_void(base_size = 18) +
+  theme(legend.position = "bottom")
+```
+
+## Resumen
+
+::: {.incremental}
+1. Cada pantalla (1 a 4) produce **componentes** guardados: sus decisiones de política.
+2. En **Revisar** se elige **un componente por pantalla** para formar un escenario.
+3. En **Simular** se ejecutan los escenarios y se comparan (hasta cuatro).
+
+Más detalles y video de instrucciones: `README.md`.
+:::
+
+

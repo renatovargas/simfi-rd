@@ -1,0 +1,45 @@
+/*-- scss:defaults --*/
+// Paleta inspirada en Bootswatch Yeti
+$body-bg: #ffffff;
+$body-color: #333333;
+$link-color: #008cba;
+$selection-bg: #008cba;
+
+$presentation-heading-font: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+$presentation-heading-color: #222222;
+$presentation-heading-font-weight: 700;
+$presentation-font-size-root: 34px;
+
+$font-family-sans-serif: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+/*-- scss:rules --*/
+@import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap");
+
+.reveal h1, .reveal h2, .reveal h3 {
+  text-transform: none;
+  letter-spacing: -0.5px;
+}
+
+.reveal .slides section h2 {
+  border-bottom: 4px solid #008cba;
+  padding-bottom: 0.2em;
+  margin-bottom: 0.6em;
+  text-align: left;
+}
+
+.reveal .title-slide h1 { color: #008cba; }
+.reveal .title-slide .subtitle { color: #5a5a5a; }
+
+.reveal blockquote {
+  border-left: 6px solid #008cba;
+  background: #f4fafc;
+  box-shadow: none;
+  padding: 0.6em 1em;
+  width: 100%;
+}
+
+.reveal pre code { border-radius: 4px; }
+.reveal code { color: #e99002; }
+.reveal pre code { color: inherit; }
+
+.reveal .slide-number { color: #008cba; background: transparent; }
