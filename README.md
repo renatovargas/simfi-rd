@@ -56,7 +56,7 @@ La app abre en la pestaña **Instructivo**, que explica cómo se combinan compon
 
 | Pantalla | Contenido |
 |----------|-----------|
-| **Instructivo** | Idea central (un escenario = un componente por pantalla), diagramas de las pantallas y de cómo se arma un escenario, y aviso del subsidio a combustibles. |
+| **Instructivo** | Idea central (un escenario es una combinación de componentes, mutuamente excluyentes en cada pantalla), diagramas de las pantallas y de cómo se arma un escenario, y aviso del subsidio a combustibles. |
 | **1 · ITBIS** | Tasas por producto, modificables por grupo, subclase o variedad individual. Filtros de búsqueda por grupo, subclase y tasa. |
 | **2 · Renta** | Escala del ISR personal: opcional, personalizable por tramos (límites y tasas). |
 | **3 · Subsidio** | Subsidio eléctrico (opcional, por distribuidora: bloques y tarifas) y subsidio a combustibles (opcional: RD$/galón por combustible, período y precios). |

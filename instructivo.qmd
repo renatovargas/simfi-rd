@@ -29,7 +29,7 @@ Permite **construir y comparar escenarios de reforma fiscal** para República Do
 ::: {.callout-note appearance="simple"}
 ## Idea central
 
-Un escenario es **una decisión por pantalla**. Cada decisión guardada es un **componente**.
+Un escenario es una **combinación de componentes**. Es decir, de decisiones que son mutuamente excluyentes en cada pantalla. Cada decisión guardada en una pantalla es un **componente**.
 :::
 
 ## Antes de empezar

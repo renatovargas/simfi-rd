@@ -18,7 +18,7 @@
     "href": "instructivo.html#qué-hace-la-app",
     "title": "Instructivo",
     "section": "¿Qué hace la app?",
-    "text": "¿Qué hace la app?\nPermite construir y comparar escenarios de reforma fiscal para República Dominicana. Corre localmente en su computadora, no requiere servidor Shiny y guía el trabajo en seis pantallas con botones Anterior / Siguiente.\n\n\n\n\n\n\nNotaIdea central\n\n\n\nUn escenario es una decisión por pantalla. Cada decisión guardada es un componente."
+    "text": "¿Qué hace la app?\nPermite construir y comparar escenarios de reforma fiscal para República Dominicana. Corre localmente en su computadora, no requiere servidor Shiny y guía el trabajo en seis pantallas con botones Anterior / Siguiente.\n\n\n\n\n\n\nNotaIdea central\n\n\n\nUn escenario es una combinación de componentes. Es decir, de decisiones que son mutuamente excluyentes en cada pantalla. Cada decisión guardada en una pantalla es un componente."
   },
   {
     "objectID": "instructivo.html#antes-de-empezar",
