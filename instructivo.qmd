@@ -8,6 +8,14 @@ lang: es
 #| include: false
 library(ggplot2)
 azul <- "#008cba"; naranja <- "#e99002"; verde <- "#43ac6a"; rojo <- "#f04124"
+
+# Los diagramas también se guardan en www/img/ para la pestaña «Instructivo»
+# de la app, de modo que ambos se actualizan con quarto render.
+guardar_para_app <- function(p, archivo, ancho, alto) {
+  dir.create("www/img", recursive = TRUE, showWarnings = FALSE)
+  ggsave(file.path("www/img", archivo), p, width = ancho, height = alto,
+         dpi = 150, bg = "white")
+}
 ```
 
 ## Descargue el material
@@ -50,7 +58,7 @@ pantallas <- data.frame(
   )
 )
 
-ggplot(pantallas, aes(n, 0)) +
+p_pantallas <- ggplot(pantallas, aes(n, 0)) +
   geom_segment(aes(x = 1, xend = 6, y = 0, yend = 0), colour = "grey70", linewidth = 1.5) +
   geom_point(aes(colour = tipo), size = 20) +
   geom_text(aes(label = n), colour = "white", size = 8, fontface = "bold") +
@@ -61,6 +69,8 @@ ggplot(pantallas, aes(n, 0)) +
   guides(colour = guide_legend(override.aes = list(size = 6))) +
   theme_void(base_size = 16) +
   theme(legend.position = "bottom")
+guardar_para_app(p_pantallas, "pantallas.png", 11, 3.2)
+p_pantallas
 ```
 
 Las pantallas 1 a 4 definen componentes; la 5 los combina en escenarios y la 6 muestra los resultados. Las pantallas 2, 3 y 4 son opcionales: si no se cambia nada, el escenario usa la política vigente.
@@ -166,7 +176,7 @@ seg <- do.call(rbind, lapply(split(esc, esc$escenario), function(d) {
 }))
 seg$off <- ifelse(seg$escenario == "Escenario A", 0.06, -0.06)
 
-ggplot() +
+p_escenario <- ggplot() +
   geom_tile(data = comp, aes(pantalla, y), width = 0.62, height = 0.8,
             fill = "grey95", colour = "grey60") +
   geom_segment(
@@ -190,6 +200,8 @@ ggplot() +
   scale_y_continuous(limits = c(0, 4.4)) +
   theme_void(base_size = 15) +
   theme(legend.position = "bottom")
+guardar_para_app(p_escenario, "escenario.png", 11, 5.6)
+p_escenario
 ```
 
 ## Resumen

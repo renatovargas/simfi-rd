@@ -697,6 +697,71 @@ ui <- page_navbar(
   ),
   fillable = FALSE,
 
+  # Instructivo: cómo se arman los escenarios (diagramas generados por
+  # instructivo.qmd en www/img/ al correr quarto render).
+  nav_panel(
+    title = "Instructivo",
+    icon  = icon("book-open"),
+    div(class = "container-fluid py-2", style = "max-width:1100px;",
+      card(
+        card_header("Cómo usar el simulador"),
+        p(HTML(paste0(
+          "La app permite <strong>construir y comparar escenarios de reforma ",
+          "fiscal</strong> para República Dominicana. El trabajo se organiza en ",
+          "seis pantallas que se recorren con los botones ",
+          "<em>Anterior / Siguiente</em>."))),
+        div(class = "alert alert-primary small mb-3", role = "note",
+          HTML(paste0("<strong>Idea central:</strong> un escenario es una ",
+                      "decisión por pantalla. Cada decisión guardada es un ",
+                      "<strong>componente</strong>."))),
+        tags$img(src = "img/pantallas.png", class = "img-fluid mx-auto d-block",
+                 style = "max-height:240px;",
+                 alt = paste("Seis pantallas en secuencia: ITBIS, Renta, Subsidio y",
+                             "Compensación definen componentes; Revisar compone",
+                             "escenarios; Simular muestra resultados.")),
+        tags$ul(class = "list-unstyled mt-3",
+          tags$li(tags$strong("1 · ITBIS: "),
+                  "tasas por producto, por grupo, subclase o variedad."),
+          tags$li(tags$strong("2 · Renta: "),
+                  "escala del ISR personal por tramos (opcional)."),
+          tags$li(tags$strong("3 · Subsidio: "),
+                  "subsidio eléctrico por distribuidora y subsidio a combustibles ",
+                  "por galón, con período y precios ajustables (opcionales)."),
+          tags$li(tags$strong("4 · Compensación: "),
+                  "a quién se compensa y cómo se calcula el monto (opcional)."),
+          tags$li(tags$strong("5 · Revisar: "),
+                  "se elige un componente por pantalla para formar cada escenario; ",
+                  "exportar e importar en Excel."),
+          tags$li(tags$strong("6 · Simular: "),
+                  "se ejecutan los escenarios marcados (hasta cuatro) y se comparan ",
+                  "pobreza, desigualdad, incidencia y efecto fiscal.")
+        ),
+        p(class = "small text-muted mb-0",
+          "Al terminar cada pantalla de la 1 a la 4, guarde la decisión con el botón ",
+          "«Guardar esta política…». Si no cambia una pantalla, el escenario usa la ",
+          "política vigente.")
+      ),
+      card(
+        class = "mt-3",
+        card_header("Cómo se arma un escenario"),
+        tags$img(src = "img/escenario.png", class = "img-fluid mx-auto d-block",
+                 alt = paste("Cuatro columnas de componentes guardados. Dos escenarios",
+                             "eligen un componente distinto en cada columna.")),
+        p(class = "small text-muted mt-2 mb-0",
+          "Los componentes de una misma pantalla son excluyentes: un escenario toma ",
+          "uno de cada pantalla, y cualquier combinación es válida. Los nombres del ",
+          "diagrama son ilustrativos.")
+      ),
+      sgas_aviso_ui(class = "mt-3", editar = FALSE),
+      p(class = "small",
+        "Instructivo completo, instalación y descarga: ",
+        tags$a(href = "https://renatovargas.github.io/simfi-rd/instructivo.html",
+               target = "_blank", rel = "noopener",
+               "renatovargas.github.io/simfi-rd")),
+      nav_row(next_id = "nav_0_next", next_label = "Comenzar: 1 · ITBIS →")
+    )
+  ),
+
   # Pantalla 1: ITBIS
   nav_panel(
     title = "1 · ITBIS",
@@ -1875,6 +1940,7 @@ server <- function(input, output, session) {
   go_to <- function(panel_title)
     updateNavbarPage(session, "main_nav", selected = panel_title)
 
+  observeEvent(input$nav_0_next,    go_to("1 · ITBIS"))
   observeEvent(input$nav_1_next,    go_to("2 · Renta"))
   observeEvent(input$nav_2_prev,    go_to("1 · ITBIS"))
   observeEvent(input$nav_2_next,    go_to("3 · Subsidio"))
