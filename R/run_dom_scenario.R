@@ -48,7 +48,9 @@ prepare_pipeline_extras <- function(inputs, paths) {
     extras$sim_sgas_override <- build_sim_sgas_override(
       read_sim_sgas_template_row(paths$param_csv, 1L),
       sub_gas$valores %||% list(),
-      sim_sgas_id = sgas_id
+      sim_sgas_id = sgas_id,
+      meses = sub_gas$meses,
+      precios = sub_gas$precios
     )
   } else {
     extras$sim_sgas_override <- build_sim_sgas_neutral(paths$param_csv, sgas_id)

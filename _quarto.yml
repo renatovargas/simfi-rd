@@ -1,0 +1,36 @@
+project:
+  type: website
+  render:
+    - index.qmd
+    - instructivo.qmd
+  execute-dir: project
+  output-dir: docs
+
+lang: es
+
+website:
+  title: "simfi-rd"
+  site-url: https://renatovargas.github.io/simfi-rd/
+  repo-url: https://github.com/renatovargas/simfi-rd
+  navbar:
+    left:
+      - href: index.qmd
+        text: Inicio
+      - href: instructivo.qmd
+        text: Instructivo
+    right:
+      - icon: github
+        href: https://github.com/renatovargas/simfi-rd
+        aria-label: Repositorio en GitHub
+
+execute:
+  echo: false
+  warning: false
+  message: false
+  freeze: auto
+
+format:
+  html:
+    theme: yeti
+    css: styles.css
+    toc: true

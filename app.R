@@ -331,45 +331,86 @@ sub_base_ref <- tryCatch({
 }, error = function(e) NULL)
 sub_reference_ui <- build_sub_reference_ui(sub_base_ref)
 
-# Subsidio a combustibles: fila activa de sim_sgas (precios, calendario y
-# subsidio por galón de referencia). El usuario solo edita el subsidio por galón.
+# Subsidio a combustibles: fila activa de sim_sgas (precios mensuales 2025,
+# calendario y subsidio por galón de referencia). La persona usuaria edita el
+# subsidio por galón y, si quiere, el período y un precio único por combustible.
 sgas_tpl <- tryCatch(
   read_sim_sgas_template_row(file.path(root, "data", "params", ""), 1L),
   error = function(e) NULL
 )
-sgas_defaults <- if (is.null(sgas_tpl)) {
-  stats::setNames(rep(0, length(SGAS_COMBUSTIBLES)), names(SGAS_COMBUSTIBLES))
-} else {
-  sgas_default_values(sgas_tpl)
+sgas_zero <- stats::setNames(rep(0, length(SGAS_COMBUSTIBLES)), names(SGAS_COMBUSTIBLES))
+sgas_defaults <- if (is.null(sgas_tpl)) sgas_zero else sgas_default_values(sgas_tpl)
+sgas_last_px  <- if (is.null(sgas_tpl)) sgas_zero else sgas_last_prices(sgas_tpl)
+sgas_meses_def <- if (is.null(sgas_tpl)) 5:12 else sgas_meses_activos(sgas_tpl)
+if (!length(sgas_meses_def)) sgas_meses_def <- 5:12
+sgas_meses_txt <- sgas_meses_texto(sgas_meses_def)
+sgas_mes_choices <- stats::setNames(as.character(1:12), tools::toTitleCase(SGAS_MESES))
+
+# Aviso de vigencia de los datos (pantalla 3, Revisar y resultados).
+sgas_aviso_ui <- function(class = "mb-3", editar = TRUE) {
+  div(
+    class = paste("alert alert-warning small", class), role = "note",
+    tags$strong("Aviso: módulo con fines ilustrativos. "),
+    "Los precios, el calendario del subsidio y los patrones de consumo de ",
+    "combustibles de este módulo corresponden a 2025, los datos más recientes ",
+    "disponibles al construir la herramienta. Por la volatilidad del mercado de ",
+    "combustibles, las condiciones de precios han cambiado de forma sustancial ",
+    "desde entonces. Los resultados ilustran el método y el orden de magnitud ",
+    "de los efectos; no son una estimación vigente del costo fiscal ni del ",
+    "efecto distributivo de un subsidio, y no deben usarse para tomar ",
+    "decisiones sin antes actualizar los precios y los montos con información ",
+    "actual.",
+    if (editar) " Puede ingresar precios actuales en esta pantalla."
+    else " Los precios se ajustan en la pantalla 3 · Subsidio."
+  )
 }
-sgas_meses_txt <- local({
-  meses <- c("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
-             "agosto", "septiembre", "octubre", "noviembre", "diciembre")
-  act <- if (is.null(sgas_tpl)) integer(0) else sgas_meses_activos(sgas_tpl)
-  if (!length(act)) {
-    "ningún mes"
-  } else if (all(diff(act) == 1L)) {
-    paste0("de ", meses[min(act)], " a ", meses[max(act)])
-  } else {
-    paste(meses[act], collapse = ", ")
-  }
-})
 
 sgas_inputs_ui <- function() {
-  tags$table(
-    class = "table table-sm align-middle mb-0", style = "max-width:520px;",
-    tags$thead(tags$tr(
-      tags$th("Combustible"),
-      tags$th("Subsidio (RD$/galón)")
-    )),
-    tags$tbody(lapply(names(SGAS_COMBUSTIBLES), function(cb) {
-      tags$tr(
-        tags$td(SGAS_COMBUSTIBLES[[cb]]),
-        tags$td(numericInput(paste0("sgas_val_", cb), NULL,
-                             value = unname(sgas_defaults[[cb]]),
-                             min = 0, step = 0.1, width = "140px"))
-      )
-    }))
+  tagList(
+    h6(class = "mt-2", "Período del subsidio"),
+    p(class = "text-muted small mb-1",
+      "Meses del año en que rige el subsidio. Si el mes inicial es posterior ",
+      "al final, el período cruza el fin de año."),
+    div(class = "d-flex flex-wrap gap-3 align-items-end",
+      selectInput("sgas_mes_ini", "Desde", choices = sgas_mes_choices,
+                  selected = as.character(sgas_meses_def[1]), width = "160px"),
+      selectInput("sgas_mes_fin", "Hasta", choices = sgas_mes_choices,
+                  selected = as.character(sgas_meses_def[length(sgas_meses_def)]),
+                  width = "160px")
+    ),
+    h6(class = "mt-2", "Precios"),
+    radioButtons(
+      "sgas_precio_modo", NULL,
+      choices = c("Precios mensuales de referencia (2025)" = "ref",
+                  "Precio único por combustible (por ejemplo, el precio actual)" = "unico"),
+      selected = "ref"
+    ),
+    h6(class = "mt-2", "Subsidio por galón"),
+    tags$table(
+      class = "table table-sm align-middle mb-0", style = "max-width:620px;",
+      tags$thead(tags$tr(
+        tags$th("Combustible"),
+        tags$th("Subsidio (RD$/galón)"),
+        tags$th(conditionalPanel("input.sgas_precio_modo == 'unico'",
+                                 "Precio (RD$/galón)"))
+      )),
+      tags$tbody(lapply(names(SGAS_COMBUSTIBLES), function(cb) {
+        tags$tr(
+          tags$td(SGAS_COMBUSTIBLES[[cb]]),
+          tags$td(numericInput(paste0("sgas_val_", cb), NULL,
+                               value = unname(sgas_defaults[[cb]]),
+                               min = 0, step = 0.1, width = "140px")),
+          tags$td(conditionalPanel(
+            "input.sgas_precio_modo == 'unico'",
+            numericInput(paste0("sgas_px_", cb), NULL,
+                         value = unname(sgas_last_px[[cb]]),
+                         min = 0, step = 0.1, width = "140px")))
+        )
+      }))
+    ),
+    p(class = "text-muted small mt-1 mb-0",
+      "El precio único reemplaza los precios mensuales de 2025 en todos los ",
+      "meses. El valor inicial es el precio de diciembre de 2025.")
   )
 }
 
@@ -377,21 +418,37 @@ sgas_reference_ui <- local({
   if (is.null(sgas_tpl)) {
     tags$p(class = "small text-muted", "Parámetros de referencia no disponibles.")
   } else {
-    pr <- sgas_reference_prices(sgas_tpl)
-    tags$table(
-      class = "table table-sm small mb-0", style = "max-width:520px;",
-      tags$thead(tags$tr(
-        tags$th("Combustible"),
-        tags$th("Precio promedio (RD$/galón)"),
-        tags$th("Subsidio de referencia (RD$/galón)")
-      )),
-      tags$tbody(lapply(names(SGAS_COMBUSTIBLES), function(cb) {
-        tags$tr(
-          tags$td(SGAS_COMBUSTIBLES[[cb]]),
-          tags$td(format(round(pr[[cb]], 1), nsmall = 1, big.mark = ",")),
-          tags$td(format(round(sgas_defaults[[cb]], 1), nsmall = 1))
+    mes_abr <- substr(tools::toTitleCase(SGAS_MESES), 1, 3)
+    act <- sgas_meses_activos(sgas_tpl)
+    th_mes <- function(j) {
+      tags$th(class = "text-end",
+              style = if (j %in% act) "background:rgba(13,110,253,.08);" else NULL,
+              mes_abr[j])
+    }
+    div(
+      p(class = "small text-muted mb-1",
+        "Precios mensuales de 2025 en RD$ por galón. Las columnas resaltadas ",
+        "son los meses del subsidio de referencia (", sgas_meses_txt, ")."),
+      div(style = "overflow-x:auto;",
+        tags$table(
+          class = "table table-sm small mb-0",
+          tags$thead(tags$tr(
+            tags$th("Combustible"), lapply(1:12, th_mes),
+            tags$th(class = "text-end", "Subsidio de referencia")
+          )),
+          tags$tbody(lapply(names(SGAS_COMBUSTIBLES), function(cb) {
+            tags$tr(
+              tags$td(SGAS_COMBUSTIBLES[[cb]]),
+              lapply(1:12, function(j) {
+                v <- suppressWarnings(as.numeric(sgas_tpl[[paste0(cb, "_precio_", j)]]))
+                tags$td(class = "text-end",
+                        if (length(v) && is.finite(v)) format(round(v), big.mark = ",") else "—")
+              }),
+              tags$td(class = "text-end", format(round(sgas_defaults[[cb]], 1), nsmall = 1))
+            )
+          }))
         )
-      }))
+      )
     )
   }
 })
@@ -568,10 +625,25 @@ slot_detail_ui <- function(sc) {
       v <- suppressWarnings(as.numeric(sgas$valores[[cb]] %||% 0))
       if (length(v) && is.finite(v)) v else 0
     }, numeric(1))
+    px_txt <- if (length(sgas$precios)) {
+      pv <- vapply(names(SGAS_COMBUSTIBLES), function(cb) {
+        v <- suppressWarnings(as.numeric(sgas$precios[[cb]] %||% NA_real_))
+        if (length(v) && is.finite(v)) v else NA_real_
+      }, numeric(1))
+      paste0(" Precio único (RD$/galón): ",
+             paste0(SGAS_COMBUSTIBLES, " ", format(round(pv, 1), nsmall = 1),
+                    collapse = "; "), ".")
+    } else {
+      " Precios mensuales de referencia (2025)."
+    }
     tags$p(class = "small mb-2",
            tags$strong("Subsidio a combustibles (RD$/galón):"), " ",
            paste0(SGAS_COMBUSTIBLES, " ", format(round(vals, 1), nsmall = 1),
-                  collapse = "; "))
+                  collapse = "; "),
+           ". Período: ", sgas_meses_texto(sgas$meses %||% sgas_meses_def), ".",
+           px_txt,
+           tags$span(class = "text-muted",
+                     " Datos de 2025, con fines ilustrativos."))
   } else {
     tags$p(class = "small text-muted mb-2",
            tags$strong("Subsidio a combustibles:"), " sin subsidio.")
@@ -862,12 +934,13 @@ ui <- page_navbar(
         card(
           class = "mt-3",
           card_header("Subsidio a combustibles"),
+          sgas_aviso_ui(),
           p(class = "text-muted small mb-2",
             paste0("Por defecto no hay subsidio a combustibles. Active la ",
                    "casilla para incluirlo y defina el subsidio por galón de ",
-                   "cada combustible. El subsidio aplica ", sgas_meses_txt,
-                   ", con los precios y la estacionalidad del consumo de ",
-                   "referencia.")),
+                   "cada combustible. En la referencia, el subsidio aplica ",
+                   sgas_meses_txt, " con los precios mensuales de 2025; puede ",
+                   "cambiar el período y usar precios actuales.")),
           checkboxInput("custom_sub_gas", "Incluir subsidio a combustibles",
                         value = FALSE),
           conditionalPanel(
@@ -883,7 +956,7 @@ ui <- page_navbar(
             class = "mt-3",
             tags$summary(
               class = "text-primary", style = "cursor:pointer;",
-              "Ver precios de referencia"),
+              "Ver precios de referencia (2025)"),
             tags$div(class = "mt-2", sgas_reference_ui)
           )
         ),
@@ -1242,6 +1315,7 @@ ui <- page_navbar(
               nav_panel("Subsidio eléctrico",
                         plotlyOutput("dash_inst_sub_dec", height = "400px")),
               nav_panel("Subsidio a combustibles",
+                        sgas_aviso_ui(class = "mt-2 mb-2", editar = FALSE),
                         plotlyOutput("dash_inst_gas_dec", height = "400px")),
               nav_panel("Compensación",
                         plotlyOutput("dash_inst_comp_dec", height = "400px"))
@@ -1380,11 +1454,25 @@ server <- function(input, output, session) {
     out
   }
   capture_sgas <- function() {
-    list(custom = isTRUE(input$custom_sub_gas),
+    out <- list(custom = isTRUE(input$custom_sub_gas),
          valores = as.list(vapply(names(SGAS_COMBUSTIBLES), function(cb) {
            x <- suppressWarnings(as.numeric(input[[paste0("sgas_val_", cb)]]))
            if (length(x) && is.finite(x)) x else 0
          }, numeric(1))))
+    # Período y precios solo se guardan si difieren de la referencia, para que
+    # los componentes guardados antes de esta opción sigan siendo iguales.
+    meses <- sgas_meses_rango(input$sgas_mes_ini %||% sgas_meses_def[1],
+                              input$sgas_mes_fin %||% sgas_meses_def[length(sgas_meses_def)])
+    if (length(meses) && !identical(meses, as.integer(sgas_meses_def))) {
+      out$meses <- meses
+    }
+    if (identical(input$sgas_precio_modo, "unico")) {
+      out$precios <- as.list(vapply(names(SGAS_COMBUSTIBLES), function(cb) {
+        x <- suppressWarnings(as.numeric(input[[paste0("sgas_px_", cb)]]))
+        if (length(x) && is.finite(x) && x > 0) x else unname(sgas_last_px[[cb]])
+      }, numeric(1)))
+    }
+    out
   }
   capture_comp <- function() {
     if (!isTRUE(input$comp_con_comp)) {
@@ -1471,7 +1559,15 @@ server <- function(input, output, session) {
       v <- suppressWarnings(as.numeric(g$valores[[cb]] %||% sgas_defaults[[cb]]))
       updateNumericInput(session, paste0("sgas_val_", cb),
                          value = if (length(v) && is.finite(v)) v else sgas_defaults[[cb]])
+      px <- suppressWarnings(as.numeric(g$precios[[cb]] %||% sgas_last_px[[cb]]))
+      updateNumericInput(session, paste0("sgas_px_", cb),
+                         value = if (length(px) && is.finite(px)) px else sgas_last_px[[cb]])
     }
+    meses <- as.integer(g$meses %||% sgas_meses_def)
+    updateSelectInput(session, "sgas_mes_ini", selected = as.character(meses[1]))
+    updateSelectInput(session, "sgas_mes_fin", selected = as.character(meses[length(meses)]))
+    updateRadioButtons(session, "sgas_precio_modo",
+                       selected = if (length(g$precios)) "unico" else "ref")
   }
   apply_comp <- function(p) {
     enabled <- isTRUE(p$enabled) && !isTRUE(p$sin_compensacion)

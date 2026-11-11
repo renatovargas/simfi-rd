@@ -1,0 +1,79 @@
+[
+  {
+    "objectID": "instructivo.html",
+    "href": "instructivo.html",
+    "title": "Instructivo",
+    "section": "",
+    "text": "Descargue la app desde la página principal. El archivo contiene la app, los datos y el código del simulador."
+  },
+  {
+    "objectID": "instructivo.html#descargue-el-material",
+    "href": "instructivo.html#descargue-el-material",
+    "title": "Instructivo",
+    "section": "",
+    "text": "Descargue la app desde la página principal. El archivo contiene la app, los datos y el código del simulador."
+  },
+  {
+    "objectID": "instructivo.html#qué-hace-la-app",
+    "href": "instructivo.html#qué-hace-la-app",
+    "title": "Instructivo",
+    "section": "¿Qué hace la app?",
+    "text": "¿Qué hace la app?\nPermite construir y comparar escenarios de reforma fiscal para República Dominicana. Corre localmente en su computadora, no requiere servidor Shiny y guía el trabajo en seis pantallas con botones Anterior / Siguiente.\n\n\n\n\n\n\nNotaIdea central\n\n\n\nUn escenario es una decisión por pantalla. Cada decisión guardada es un componente."
+  },
+  {
+    "objectID": "instructivo.html#antes-de-empezar",
+    "href": "instructivo.html#antes-de-empezar",
+    "title": "Instructivo",
+    "section": "Antes de empezar",
+    "text": "Antes de empezar\n\nInstalar paquetes. Una sola vez, en la consola de R. La lista completa está en la página principal.\nAbrir el proyecto. En Positron o RStudio, use File → Open Folder… y elija la carpeta completa, no solo app.R.\nLanzar. Abra app.R y haga clic en Run App. Como alternativa, en la consola:\n\nshiny::runApp(\"app.R\")"
+  },
+  {
+    "objectID": "instructivo.html#las-seis-pantallas",
+    "href": "instructivo.html#las-seis-pantallas",
+    "title": "Instructivo",
+    "section": "Las seis pantallas",
+    "text": "Las seis pantallas\n\n\n\n\n\n\n\n\n\nLas pantallas 1 a 4 definen componentes; la 5 los combina en escenarios y la 6 muestra los resultados. Las pantallas 2, 3 y 4 son opcionales: si no se cambia nada, el escenario usa la política vigente.\n\n1 · ITBIS\n\nTasas por producto, modificables por grupo, subclase o variedad individual.\nPestaña Por clasificación: elija un grupo, una subclase o una variedad, indique la nueva tasa y presione Aplicar tasa.\nPestaña Por tasa: liste todos los productos que tienen una tasa determinada, aunque pertenezcan a grupos distintos, selecciónelos y aplique la nueva tasa.\nEmpezar de cero restablece todas las pantallas a la situación vigente.\n\n\n\n\n\n\n\nTip\n\n\n\nAl terminar cada pantalla, guarde la decisión como un componente con el botón «Guardar esta política…». Un componente guardado queda disponible en «5 · Revisar».\n\n\n\n\n2 · Renta\nEscala del impuesto sobre la renta (ISR) personal. Es opcional y se personaliza por tramos: límites y tasas.\n\n\n3 · Subsidio\nLa pantalla tiene dos partes, que se guardan juntas en un solo componente de subsidio.\n\nSubsidio eléctrico. Opcional y personalizable por distribuidora (Edesur, Edenorte, Edeeste): límites de los bloques de consumo, cargo fijo y tarifa por kWh de cada bloque, y tarifa de los bloques iniciales.\nSubsidio a combustibles. Desactivado por defecto. Al activarlo se define el subsidio en RD$ por galón de gasolina premium, gasolina regular, gasoil premium, gasoil regular y GLP. El cálculo incluye el efecto directo en el gasto de los hogares en combustibles y el efecto indirecto en los precios de otros bienes.\n\nPeríodo del subsidio: meses Desde / Hasta en que rige el subsidio. La referencia es de mayo a diciembre. Si el mes inicial es posterior al final, el período cruza el fin de año.\nPrecios: se pueden usar los precios mensuales de referencia de 2025 o un precio único por combustible, por ejemplo el precio actual, que reemplaza los de 2025 en todos los meses.\n«Ver precios de referencia (2025)» muestra la tabla de precios mensuales y el subsidio de referencia.\n\n\n\n\n\n\n\n\nAdvertenciaSubsidio a combustibles: módulo con fines ilustrativos\n\n\n\nLos precios, el calendario del subsidio y los patrones de consumo de combustibles de este módulo corresponden a 2025, los datos más recientes disponibles al construir la herramienta. Por la volatilidad del mercado de combustibles, las condiciones de precios han cambiado de forma sustancial desde entonces. Los resultados ilustran el método y el orden de magnitud de los efectos; no son una estimación vigente del costo fiscal ni del efecto distributivo de un subsidio, y no deben usarse para tomar decisiones sin antes actualizar los precios y los montos con información actual.\n\n\n\n\n4 · Compensación\nTransferencia compensatoria posterior a la reforma. Es opcional; al activarla se responden dos preguntas:\n\n¿Quién recibe la compensación? Beneficiarios de Supérate, hogares hasta cierto decil de ingreso u hogares con Índice de Calidad de Vida (ICV) hasta cierto umbral.\n¿Cómo se calcula el monto? Como la pérdida neta promedio causada por la reforma en los hogares hasta cierto decil, o como un valor fijo mensual en RD$ por hogar.\n\n\n\n5 · Revisar\n\nComponer un escenario: escriba un nombre y elija un componente guardado por pantalla, o «Parámetros pre-reforma (referencia)» para dejar esa pantalla sin cambios. Luego presione Agregar escenario a la lista.\nEscenarios guardados: marque hasta cuatro para comparar. «Ver detalle» muestra las tasas y los parámetros de cada uno.\nGuardar / compartir: exporte los componentes y escenarios a Excel, o importe un archivo con ese formato. Antes de importar, presione Nueva sesión (borrar todo) para limpiar el ambiente de trabajo.\nEl estado se guarda automáticamente y se restaura al abrir la app de nuevo.\n\n\n\n6 · Simular\nPresione Ejecutar microsimulación para correr los escenarios marcados y explore los resultados:\n\n\n\n\n\n\n\nVista\nContenido\n\n\n\n\nResumen\nPobreza general, pobreza extrema, línea internacional, desigualdad, efecto fiscal y cuadros\n\n\nIncidencia\nEfectos por deciles, estrato, área, jefe de hogar, tipo de hogar y macrorregiones\n\n\nPor instrumento\nEfecto neto, ISR, ITBIS, subsidio eléctrico, subsidio a combustibles y compensación, por deciles\n\n\n\nLos escenarios son ilimitados; se comparan hasta cuatro a la vez."
+  },
+  {
+    "objectID": "instructivo.html#cómo-se-arma-un-escenario",
+    "href": "instructivo.html#cómo-se-arma-un-escenario",
+    "title": "Instructivo",
+    "section": "Cómo se arma un escenario",
+    "text": "Cómo se arma un escenario"
+  },
+  {
+    "objectID": "instructivo.html#resumen",
+    "href": "instructivo.html#resumen",
+    "title": "Instructivo",
+    "section": "Resumen",
+    "text": "Resumen\n\nCada pantalla (1 a 4) produce componentes guardados: sus decisiones de política.\nEn Revisar se elige un componente por pantalla para formar un escenario.\nEn Simular se ejecutan los escenarios y se comparan (hasta cuatro).\n\nSi la app no arranca, vea las indicaciones de la página principal o el vídeo de instrucciones."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Simulador de escenarios fiscales para República Dominicana",
+    "section": "",
+    "text": "Aplicación para construir y comparar escenarios de reforma fiscal en República Dominicana: ITBIS, impuesto sobre la renta, subsidio eléctrico, subsidio a combustibles y transferencias compensatorias. Para cada escenario estima los efectos sobre la pobreza, la desigualdad, la incidencia por grupos de hogares y el resultado fiscal.\nLa app se corre en su propia computadora y no requiere un servidor Shiny. Esta página es estática y no ejecuta la simulación."
+  },
+  {
+    "objectID": "index.html#requisitos-e-instalación",
+    "href": "index.html#requisitos-e-instalación",
+    "title": "Simulador de escenarios fiscales para República Dominicana",
+    "section": "Requisitos e instalación",
+    "text": "Requisitos e instalación\n\nInstale la versión actual de R y un entorno de trabajo, como Positron o RStudio.\nInstale los paquetes una sola vez desde la consola de R:\n\ninstall.packages(c(\n  # Shiny / UI\n  \"shiny\", \"bslib\", \"DT\", \"plotly\", \"RColorBrewer\",\n  # Tidyverse core\n  \"dplyr\", \"tidyr\", \"tibble\", \"readr\", \"stringr\", \"purrr\",\n  # Datos\n  \"readxl\", \"openxlsx\", \"data.table\", \"janitor\", \"labelled\", \"haven\",\n  # Estadística / econometría\n  \"scales\", \"KernSmooth\", \"collapse\", \"rlang\", \"statar\", \"Hmisc\",\n  # Misceláneos (requeridos por el pipeline)\n  \"sf\", \"ggplot2\", \"gt\", \"jsonlite\"\n), dependencies = TRUE)\n\nDescargue el archivo zip con el botón de arriba y descomprímalo.\nAbra la carpeta completa en Positron (File → Open Folder…) o en RStudio, no solo el archivo app.R. Las rutas de la app son relativas a esa carpeta.\nAbra app.R y haga clic en Run App. También puede lanzarla desde la consola de R:\n\nshiny::runApp(\"app.R\")\nSi la app no arranca o no funciona bien, detenga el servidor (con Ctrl+C en la consola o el botón rojo de detener en Positron), verifique que la carpeta abierta es la raíz del proyecto y que los paquetes se instalaron sin errores, y vuelva a lanzarla.\nHay también un vídeo con las instrucciones para correr la app en una computadora personal."
+  },
+  {
+    "objectID": "index.html#flujo-de-uso",
+    "href": "index.html#flujo-de-uso",
+    "title": "Simulador de escenarios fiscales para República Dominicana",
+    "section": "Flujo de uso",
+    "text": "Flujo de uso\nLa app guía el trabajo en seis pantallas que se recorren con los botones Anterior / Siguiente:\n\n\n\n\n\n\n\nPantalla\nContenido\n\n\n\n\n1 · ITBIS\nTasas por producto, modificables por grupo, subclase o variedad individual.\n\n\n2 · Renta\nEscala del ISR personal: opcional, personalizable por tramos (límites y tasas).\n\n\n3 · Subsidio\nSubsidio eléctrico por distribuidora (bloques y tarifas) y subsidio a combustibles por galón: ambos opcionales.\n\n\n4 · Compensación\nTransferencia compensatoria posterior a la reforma: opcional, con grupos y métodos de focalización.\n\n\n5 · Revisar\nBiblioteca de componentes guardados, compositor de escenarios y exportación / importación en Excel.\n\n\n6 · Simular\nEjecuta los escenarios marcados y muestra pobreza, desigualdad, incidencia y efecto fiscal.\n\n\n\nSe pueden construir escenarios ilimitados y comparar hasta cuatro a la vez. Para un recorrido detallado, con diagramas, vea el instructivo."
+  },
+  {
+    "objectID": "index.html#guardar-el-trabajo",
+    "href": "index.html#guardar-el-trabajo",
+    "title": "Simulador de escenarios fiscales para República Dominicana",
+    "section": "Guardar el trabajo",
+    "text": "Guardar el trabajo\nLa app guarda el estado automáticamente y lo restaura al abrirse de nuevo. En «5 · Revisar» se puede exportar la biblioteca y los escenarios a Excel, importarlos de vuelta o empezar una Nueva sesión (borrar todo)."
+  }
+]

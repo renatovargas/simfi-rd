@@ -1,0 +1,15 @@
+# Archivos que no forman parte de la descarga de la app (zip de GitHub).
+# Siguen en el repositorio; solo se excluyen de "Download ZIP" y de git archive.
+docs/ export-ignore
+_freeze/ export-ignore
+_quarto.yml export-ignore
+index.qmd export-ignore
+instructivo.qmd export-ignore
+styles.css export-ignore
+slides/ export-ignore
+tests/ export-ignore
+scripts/dev/ export-ignore
+.cursor/ export-ignore
+.RData export-ignore
+.Rhistory export-ignore
+.gitattributes export-ignore

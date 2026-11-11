@@ -219,6 +219,16 @@
         add(nm, p$custom, nom, paste0("sgas_", cb), NA_integer_,
             p$sgas$valores[[cb]])
       }
+      # Precio único por galón (opcional) y período (opcional, mes 1..12).
+      for (cb in names(p$sgas$precios)) {
+        add(nm, p$custom, nom, paste0("sgasprecio_", cb), NA_integer_,
+            p$sgas$precios[[cb]])
+      }
+      if (length(p$sgas$meses)) {
+        for (mm in p$sgas$meses) {
+          add(nm, p$custom, nom, "sgasmes", as.integer(mm), 1)
+        }
+      }
     }
   }
   if (!length(rows)) {
@@ -256,6 +266,19 @@
           sub("^sgas_", "", sg$campo)
         )
       )
+      sp <- sub[startsWith(as.character(sub$campo), "sgasprecio_"), , drop = FALSE]
+      if (nrow(sp)) {
+        p$sgas$precios <- stats::setNames(
+          as.list(suppressWarnings(as.numeric(sp$valor))),
+          sub("^sgasprecio_", "", sp$campo)
+        )
+      }
+      sm <- sub[as.character(sub$campo) == "sgasmes", , drop = FALSE]
+      if (nrow(sm)) {
+        mm <- suppressWarnings(as.integer(sm$indice))
+        mm <- mm[!is.na(mm) & mm >= 1L & mm <= 12L]
+        if (length(mm)) p$sgas$meses <- mm
+      }
     }
     out[[nm]] <- p
   }

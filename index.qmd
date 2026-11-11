@@ -1,0 +1,72 @@
+---
+title: "Simulador de escenarios fiscales para República Dominicana"
+subtitle: "simfi-rd"
+lang: es
+---
+
+Aplicación para construir y comparar escenarios de reforma fiscal en República Dominicana: ITBIS, impuesto sobre la renta, subsidio eléctrico, subsidio a combustibles y transferencias compensatorias. Para cada escenario estima los efectos sobre la pobreza, la desigualdad, la incidencia por grupos de hogares y el resultado fiscal.
+
+::: {.descarga}
+[Descargar la app](https://github.com/renatovargas/simfi-rd/archive/refs/heads/main.zip){.btn .btn-primary .btn-lg}
+
+El archivo contiene la app, los datos y el código del simulador.
+:::
+
+La app se corre en su propia computadora y no requiere un servidor Shiny. Esta página es estática y no ejecuta la simulación.
+
+::: {.callout-warning}
+## Subsidio a combustibles: módulo con fines ilustrativos
+
+Los precios, el calendario del subsidio y los patrones de consumo de combustibles que usa la app corresponden a 2025, los datos más recientes disponibles al construir la herramienta. Por la volatilidad del mercado de combustibles, las condiciones de precios han cambiado de forma sustancial desde entonces. Los resultados de este módulo ilustran el método y el orden de magnitud de los efectos; no son una estimación vigente del costo fiscal ni del efecto distributivo de un subsidio, y no deben usarse para tomar decisiones sin antes actualizar los precios y los montos con información actual. La pantalla «3 · Subsidio» permite ingresar precios actuales.
+:::
+
+## Requisitos e instalación
+
+1. Instale la versión actual de [R](https://cran.r-project.org/) y un entorno de trabajo, como [Positron](https://positron.posit.co/) o [RStudio](https://posit.co/download/rstudio-desktop/).
+2. Instale los paquetes **una sola vez** desde la consola de R:
+
+```r
+install.packages(c(
+  # Shiny / UI
+  "shiny", "bslib", "DT", "plotly", "RColorBrewer",
+  # Tidyverse core
+  "dplyr", "tidyr", "tibble", "readr", "stringr", "purrr",
+  # Datos
+  "readxl", "openxlsx", "data.table", "janitor", "labelled", "haven",
+  # Estadística / econometría
+  "scales", "KernSmooth", "collapse", "rlang", "statar", "Hmisc",
+  # Misceláneos (requeridos por el pipeline)
+  "sf", "ggplot2", "gt", "jsonlite"
+), dependencies = TRUE)
+```
+
+3. Descargue el archivo zip con el botón de arriba y descomprímalo.
+4. Abra la **carpeta completa** en Positron (*File → Open Folder…*) o en RStudio, no solo el archivo `app.R`. Las rutas de la app son relativas a esa carpeta.
+5. Abra `app.R` y haga clic en **Run App**. También puede lanzarla desde la consola de R:
+
+```r
+shiny::runApp("app.R")
+```
+
+Si la app no arranca o no funciona bien, detenga el servidor (con **Ctrl+C** en la consola o el botón rojo de detener en Positron), verifique que la carpeta abierta es la raíz del proyecto y que los paquetes se instalaron sin errores, y vuelva a lanzarla.
+
+Hay también un [vídeo con las instrucciones para correr la app en una computadora personal](https://youtu.be/jXF6b9S3hiI).
+
+## Flujo de uso
+
+La app guía el trabajo en seis pantallas que se recorren con los botones **Anterior / Siguiente**:
+
+| Pantalla | Contenido |
+|---|---|
+| **1 · ITBIS** | Tasas por producto, modificables por grupo, subclase o variedad individual. |
+| **2 · Renta** | Escala del ISR personal: opcional, personalizable por tramos (límites y tasas). |
+| **3 · Subsidio** | Subsidio eléctrico por distribuidora (bloques y tarifas) y subsidio a combustibles por galón: ambos opcionales. |
+| **4 · Compensación** | Transferencia compensatoria posterior a la reforma: opcional, con grupos y métodos de focalización. |
+| **5 · Revisar** | Biblioteca de componentes guardados, compositor de escenarios y exportación / importación en Excel. |
+| **6 · Simular** | Ejecuta los escenarios marcados y muestra pobreza, desigualdad, incidencia y efecto fiscal. |
+
+Se pueden construir escenarios ilimitados y comparar hasta cuatro a la vez. Para un recorrido detallado, con diagramas, vea el [instructivo](instructivo.qmd).
+
+## Guardar el trabajo
+
+La app guarda el estado automáticamente y lo restaura al abrirse de nuevo. En «5 · Revisar» se puede exportar la biblioteca y los escenarios a Excel, importarlos de vuelta o empezar una **Nueva sesión (borrar todo)**.

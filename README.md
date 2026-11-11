@@ -4,6 +4,8 @@ Panel Shiny para construcción y comparación de escenarios de reforma fiscal pa
 
 [Vídeo de instrucciones para correr la aplicación en una computadora personal](https://youtu.be/jXF6b9S3hiI).
 
+**Sitio con descarga e instructivo:** <https://renatovargas.github.io/simfi-rd/>
+
 ---
 
 ## Instalación de paquetes R
@@ -56,7 +58,7 @@ La app guía al analista por seis pantallas secuenciales con botones **Anterior 
 |----------|-----------|
 | **1 · ITBIS** | Tasas por producto, modificables por grupo, subclase o variedad individual. Filtros de búsqueda por grupo, subclase y tasa. |
 | **2 · Renta** | Escala del ISR personal: opcional, personalizable por tramos (límites y tasas). |
-| **3 · Subsidio** | Política de subsidio eléctrico: opcional, personalizable por distribuidora (bloques y tarifas). |
+| **3 · Subsidio** | Subsidio eléctrico (opcional, por distribuidora: bloques y tarifas) y subsidio a combustibles (opcional: RD$/galón por combustible, período y precios). |
 | **4 · Compensación** | Política de compensación post-reforma: opcional, con grupos y métodos de focalización. |
 | **5 · Revisar** | Biblioteca de componentes guardados por instrumento; compositor de escenarios; exportar / importar en Excel. |
 | **6 · Simular** | Ejecutar los escenarios marcados y explorar resultados (pobreza, desigualdad, incidencia, efecto fiscal). |
@@ -68,3 +70,22 @@ Se pueden construir **escenarios ilimitados** y comparar **hasta cuatro** simult
 ## Gestión de sesión
 
 La app guarda el estado automáticamente (`app_state/autosave.rds`) y lo restaura al iniciar. Para empezar desde cero use el botón **Nueva sesión (borrar todo)** en **5 · Revisar**.
+
+---
+
+## Subsidio a combustibles: aviso
+
+Los precios, el calendario del subsidio y los patrones de consumo de combustibles corresponden a 2025, los datos más recientes disponibles al construir la herramienta. Por la volatilidad del mercado, las condiciones de precios han cambiado de forma sustancial desde entonces. Los resultados de este módulo tienen fines ilustrativos: no son una estimación vigente del costo fiscal ni del efecto distributivo, y no deben usarse para tomar decisiones sin actualizar antes precios y montos. En la pantalla **3 · Subsidio** se puede cambiar el período del subsidio y usar un precio único por combustible (por ejemplo, el precio actual) en lugar de los precios mensuales de 2025.
+
+---
+
+## Sitio web (GitHub Pages)
+
+El sitio se genera con Quarto desde `index.qmd` e `instructivo.qmd` (configuración en `_quarto.yml`) y se publica desde la carpeta `docs/` de la rama `main`. Para actualizarlo, desde la raíz del repo:
+
+```bash
+quarto render
+```
+
+y haga commit de `docs/` y `_freeze/`. El archivo `.gitattributes` excluye del zip de descarga el sitio, las slides, las pruebas y los archivos de desarrollo.
+
