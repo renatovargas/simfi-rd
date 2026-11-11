@@ -52,10 +52,11 @@ shiny::runApp("app.R")
 
 ## Flujo de trabajo
 
-La app guía al analista por seis pantallas secuenciales con botones **Anterior / Siguiente**:
+La app abre en la pestaña **Instructivo**, que explica cómo se combinan componentes en escenarios, con dos diagramas y un enlace al [instructivo completo](https://renatovargas.github.io/simfi-rd/instructivo.html). El botón **Comenzar: 1 · ITBIS** lleva a la primera de las seis pantallas secuenciales, que se recorren con los botones **Anterior / Siguiente**:
 
 | Pantalla | Contenido |
 |----------|-----------|
+| **Instructivo** | Idea central (un escenario = un componente por pantalla), diagramas de las pantallas y de cómo se arma un escenario, y aviso del subsidio a combustibles. |
 | **1 · ITBIS** | Tasas por producto, modificables por grupo, subclase o variedad individual. Filtros de búsqueda por grupo, subclase y tasa. |
 | **2 · Renta** | Escala del ISR personal: opcional, personalizable por tramos (límites y tasas). |
 | **3 · Subsidio** | Subsidio eléctrico (opcional, por distribuidora: bloques y tarifas) y subsidio a combustibles (opcional: RD$/galón por combustible, período y precios). |
@@ -87,5 +88,5 @@ El sitio se genera con Quarto desde `index.qmd` e `instructivo.qmd` (configuraci
 quarto render
 ```
 
-y haga commit de `docs/` y `_freeze/`. El archivo `.gitattributes` excluye del zip de descarga el sitio y los archivos de desarrollo.
+y haga commit de `docs/`, `_freeze/` y `www/img/`. `instructivo.qmd` guarda también los dos diagramas en `www/img/`, que usa la pestaña **Instructivo** de la app, así que un solo render actualiza los diagramas del sitio y de la app. El texto de la pestaña es un resumen que está en `app.R`: si cambia el flujo de una pantalla, actualícelo ahí y en `instructivo.qmd`. El archivo `.gitattributes` excluye del zip de descarga el sitio y los archivos de desarrollo.
 
