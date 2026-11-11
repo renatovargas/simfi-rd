@@ -87,5 +87,5 @@ El sitio se genera con Quarto desde `index.qmd` e `instructivo.qmd` (configuraci
 quarto render
 ```
 
-y haga commit de `docs/` y `_freeze/`. El archivo `.gitattributes` excluye del zip de descarga el sitio, las slides, las pruebas y los archivos de desarrollo.
+y haga commit de `docs/` y `_freeze/`. El archivo `.gitattributes` excluye del zip de descarga el sitio, las pruebas y los archivos de desarrollo.
 
