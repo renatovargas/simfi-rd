@@ -1,3 +1,7 @@
 app_state/
 Rplots.pdf
+.DS_Store
 changes_to_subsidies/
+.Rproj.user/
+/.quarto/
+**/*.quarto_ipynb
