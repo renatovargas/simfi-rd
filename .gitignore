@@ -5,3 +5,5 @@ changes_to_subsidies/
 .Rproj.user/
 /.quarto/
 **/*.quarto_ipynb
+.RData
+.Rhistory

@@ -10,6 +10,4 @@ slides/ export-ignore
 tests/ export-ignore
 scripts/dev/ export-ignore
 .cursor/ export-ignore
-.RData export-ignore
-.Rhistory export-ignore
 .gitattributes export-ignore
