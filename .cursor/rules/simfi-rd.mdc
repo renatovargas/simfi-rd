@@ -23,7 +23,7 @@ R Shiny (`app.R`) fiscal microsimulation tool for the Dominican Republic. Runs a
 | `data/params/sim_sub.csv` | Subsidy simulation parameters |
 | `data/params/sim_sgas.csv` | Fuel subsidy parameters (row 0 = no subsidy + seasonality, row 1 = reference subsidy) |
 | `R/sim_sgas_helpers.R` | Fuel subsidy: template row, defaults, `build_sim_sgas_override` / neutral row |
-| `scripts/dev/golden_outputs.R` | `freeze` / `check` golden results for 7 representative scenarios (`tests/golden/`) |
+| `scripts/dev/golden_outputs.R` | `freeze` / `check` golden results for 7 representative scenarios (`tests/golden/`, local only: git-ignored, run `freeze` first on a fresh clone) |
 | `app_state/autosave.rds` | Session autosave (created at runtime) |
 
 ## App screen structure (navbar)

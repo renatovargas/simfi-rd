@@ -7,3 +7,4 @@ changes_to_subsidies/
 **/*.quarto_ipynb
 .RData
 .Rhistory
+tests/golden/
