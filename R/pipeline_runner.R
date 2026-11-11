@@ -47,7 +47,6 @@ run_pipeline_cached <- function(
   e$fpresim <- paths$fpresim
   e$fdbmod <- paths$fdbmod
   e$fparam_csv <- paths$param_csv
-  e$fgeodata <- paths$fgeodata
   e$fr_params <- paths$fr_params
   e$path_o <- paths$root
   e$escenarios <- escenarios

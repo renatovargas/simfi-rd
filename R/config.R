@@ -4,7 +4,6 @@
 #   - data/params    — parámetros CSV + dom_params.R
 #   - data/presim    — microdatos previos a la simulación (RDS)
 #   - data/mod       — salidas opcionales del pipeline (DOM_insumos.rds, etc.)
-#   - data/geodata   — shapefiles / capas
 
 trail <- function(...) paste0(file.path(...), .Platform$file.sep)
 
@@ -15,7 +14,6 @@ get_dom_paths <- function(root = ".") {
   fpresim   <- trail(root, "data", "presim")
   fdbmod    <- trail(root, "data", "mod")
   fr_params <- trail(root, "data", "params")
-  fgeodata  <- trail(root, "data", "geodata")
 
   # Los scripts históricos usan `finput` en paste0(finput, "DOMCEQ_DIncome.RDS").
   # En este repo esos insumos viven en data/presim/.
@@ -37,7 +35,6 @@ get_dom_paths <- function(root = ".") {
     fpresim          = fpresim,
     fdbmod           = fdbmod,
     fr_params        = fr_params,
-    fgeodata         = fgeodata,
     param_csv        = param_csv,
     pipeline_dir     = file.path(root, "scripts", "pipeline"),
     insumos_rds      = file.path(fdbmod, "DOM_insumos.rds"),

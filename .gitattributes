@@ -6,7 +6,5 @@ _quarto.yml export-ignore
 index.qmd export-ignore
 instructivo.qmd export-ignore
 styles.css export-ignore
-tests/ export-ignore
 scripts/dev/ export-ignore
-.cursor/ export-ignore
 .gitattributes export-ignore

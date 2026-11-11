@@ -11,7 +11,6 @@ autoload_dom_r <- function(root = ".") {
     "pipeline_runner.R",
     "insumos_dictionary.R",
     "module_summary.R",
-    "analyst_fixture_scenario.R",
     "dom_dashboard_charts.R",
     "itbis_catalog_builder.R",
     "run_dom_scenario.R",

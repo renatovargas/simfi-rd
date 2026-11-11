@@ -39,9 +39,7 @@ finput <- paths$finput
 fpresim <- paths$fpresim
 fdbmod <- paths$fdbmod
 fparam_csv <- paths$param_csv
-fgeodata <- paths$fgeodata
 fr_params <- paths$fr_params
-path_o <- root ## compat: 06_DOM26_Reportes.R usa path_o/resultados/
 
 ## 2. Importar archivos --------------------------------------------------------
 
@@ -75,7 +73,6 @@ source(file.path(script_dir, "05_DOM26_ConsolidaEscenarios.R"))
 proc.time() - ptm5
 
 ptm6 <- proc.time()
-source(file.path(script_dir, "06_DOM26_Reportes.R"))
 proc.time() - ptm6
 
 proc.time() - ptm1

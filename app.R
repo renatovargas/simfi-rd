@@ -1158,13 +1158,6 @@ ui <- page_navbar(
                            class = "btn-primary w-100"),
               p(class = "small text-muted mt-1 mb-0",
                 "Corre los escenarios marcados para comparar.")
-              # div(
-              #   actionButton("run_test", icon("flask"),
-              #                label = " Ejecutar prueba",
-              #                class = "btn-outline-primary mt-2 w-100"),
-              #   p(class = "small text-muted mt-1 mb-0",
-              #     "Escenario de referencia del repositorio.")
-              # )
             ),
             div(
               uiOutput("run_msg"),
@@ -2613,11 +2606,6 @@ server <- function(input, output, session) {
     if (length(marked) > 4L) marked <- marked[1:4]
     slots <- lapply(marked, compose_scenario_inputs)
     sim_res_rv(run_multi_dom(slots, paths()))
-  })
-
-  observeEvent(input$run_test, {
-    inp <- read_analyst_fixture_scenario_inputs(root)
-    sim_res_rv(run_multi_dom(list(inp), paths()))
   })
 
   sim_res <- reactive(sim_res_rv())
