@@ -46,7 +46,7 @@
     "href": "instructivo.html#resumen",
     "title": "Instructivo",
     "section": "Resumen",
-    "text": "Resumen\n\nCada pantalla (1 a 4) produce componentes guardados: sus decisiones de política.\nEn Revisar se elige un componente por pantalla para formar un escenario.\nEn Simular se ejecutan los escenarios y se comparan (hasta cuatro).\n\nSi la app no arranca, vea las indicaciones de la página principal o el vídeo de instrucciones."
+    "text": "Resumen\n\nCada pantalla (1 a 4) produce componentes guardados: sus decisiones de política.\nEn Revisar se forma cada escenario como una combinación de componentes: uno de cada pantalla, porque los de una misma pantalla son mutuamente excluyentes.\nEn Simular se ejecutan los escenarios y se comparan (hasta cuatro).\n\nSi la app no arranca, vea las indicaciones de la página principal o el vídeo de instrucciones."
   },
   {
     "objectID": "index.html",

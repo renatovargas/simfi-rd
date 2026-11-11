@@ -347,10 +347,12 @@ sgas_meses_txt <- sgas_meses_texto(sgas_meses_def)
 sgas_mes_choices <- stats::setNames(as.character(1:12), tools::toTitleCase(SGAS_MESES))
 
 # Aviso de vigencia de los datos (pantalla 3, Revisar y resultados).
-sgas_aviso_ui <- function(class = "mb-3", editar = TRUE) {
+# `titulo`: fuera de la pantalla 3 conviene nombrar el módulo y la pantalla.
+sgas_aviso_ui <- function(class = "mb-3", editar = TRUE,
+                          titulo = "Aviso: módulo con fines ilustrativos. ") {
   div(
     class = paste("alert alert-warning small", class), role = "note",
-    tags$strong("Aviso: módulo con fines ilustrativos. "),
+    tags$strong(titulo),
     "Los precios, el calendario del subsidio y los patrones de consumo de ",
     "combustibles de este módulo corresponden a 2025, los datos más recientes ",
     "disponibles al construir la herramienta. Por la volatilidad del mercado de ",
@@ -732,8 +734,9 @@ ui <- page_navbar(
           tags$li(tags$strong("4 · Compensación: "),
                   "a quién se compensa y cómo se calcula el monto (opcional)."),
           tags$li(tags$strong("5 · Revisar: "),
-                  "se elige un componente por pantalla para formar cada escenario; ",
-                  "exportar e importar en Excel."),
+                  "cada escenario se forma como una combinación de componentes, ",
+                  "uno de cada pantalla, porque los de una misma pantalla son ",
+                  "mutuamente excluyentes; exportar e importar en Excel."),
           tags$li(tags$strong("6 · Simular: "),
                   "se ejecutan los escenarios marcados (hasta cuatro) y se comparan ",
                   "pobreza, desigualdad, incidencia y efecto fiscal.")
@@ -750,11 +753,14 @@ ui <- page_navbar(
                  alt = paste("Cuatro columnas de componentes guardados. Dos escenarios",
                              "eligen un componente distinto en cada columna.")),
         p(class = "small text-muted mt-2 mb-0",
-          "Los componentes de una misma pantalla son excluyentes: un escenario toma ",
-          "uno de cada pantalla, y cualquier combinación es válida. Los nombres del ",
-          "diagrama son ilustrativos.")
+          "Un escenario es una combinación de componentes. Los componentes de una ",
+          "misma pantalla son mutuamente excluyentes: un escenario toma uno de cada ",
+          "pantalla, y cualquier combinación es válida. Los nombres del diagrama son ",
+          "ilustrativos.")
       ),
-      sgas_aviso_ui(class = "mt-3", editar = FALSE),
+      sgas_aviso_ui(class = "mt-3", editar = FALSE,
+                    titulo = paste0("Aviso sobre el módulo de subsidio a combustibles ",
+                                    "(pantalla 3 · Subsidio): fines ilustrativos. ")),
       p(class = "small",
         "Instructivo completo, instalación y descarga: ",
         tags$a(href = "https://renatovargas.github.io/simfi-rd/instructivo.html",

@@ -158,7 +158,7 @@ titulos <- data.frame(
   texto = c("1 · ITBIS", "2 · Renta", "3 · Subsidio", "4 · Compensación")
 )
 
-# Escenarios: un componente por pantalla
+# Escenarios: combinaciones de componentes (uno por pantalla)
 esc <- data.frame(
   escenario = rep(c("Escenario A", "Escenario B"), each = 4),
   pantalla = rep(1:4, 2),
@@ -193,7 +193,7 @@ p_escenario <- ggplot() +
   geom_label(data = titulos, aes(pantalla, 4.15, label = texto),
              fill = azul, colour = "white", size = 5, fontface = "bold") +
   annotate("text", x = 2.5, y = 0.3,
-           label = "Un componente por pantalla (excluyentes); cualquier combinación es válida",
+           label = "Componentes mutuamente excluyentes en cada pantalla; cualquier combinación es válida",
            size = 4.5, fontface = "italic") +
   scale_colour_manual(values = c("Escenario A" = rojo, "Escenario B" = verde), name = NULL) +
   scale_x_continuous(limits = c(0.5, 4.5)) +
@@ -207,7 +207,7 @@ p_escenario
 ## Resumen
 
 1. Cada pantalla (1 a 4) produce **componentes** guardados: sus decisiones de política.
-2. En **Revisar** se elige **un componente por pantalla** para formar un escenario.
+2. En **Revisar** se forma cada escenario como una **combinación de componentes**: uno de cada pantalla, porque los de una misma pantalla son mutuamente excluyentes.
 3. En **Simular** se ejecutan los escenarios y se comparan (hasta cuatro).
 
 Si la app no arranca, vea las indicaciones de la [página principal](index.qmd#requisitos-e-instalación) o el [vídeo de instrucciones](https://youtu.be/jXF6b9S3hiI).
