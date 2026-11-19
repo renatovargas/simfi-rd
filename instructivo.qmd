@@ -94,7 +94,14 @@ Escala del impuesto sobre la renta (ISR) personal. Es opcional y se personaliza 
 
 La pantalla tiene dos partes, que se guardan juntas en un solo componente de subsidio.
 
-- **Subsidio eléctrico.** Opcional y personalizable por **distribuidora** (Edesur, Edenorte, Edeeste): límites de los bloques de consumo, cargo fijo y tarifa por kWh de cada bloque, y tarifa de los bloques iniciales.
+- **Subsidio eléctrico.** Opcional y personalizable por **distribuidora** (Edesur, Edenorte, Edeeste): límites de los bloques de consumo, cargo fijo y tarifa por kWh de cada bloque, y tarifa de los bloques iniciales. Al activar la personalización, los campos parten de las tarifas vigentes.
+
+  - **Cómo se calcula:** el subsidio de cada hogar es el costo de la electricidad que consume (kWh × costo de referencia) menos lo que paga según las tarifas. Si lo que paga cubre el costo, el subsidio es cero.
+  - **Para reducir el subsidio**, suba las tarifas (RD$/kWh); para aumentarlo, bájelas. Si cambia solo los bloques altos, el ajuste recae en los hogares de mayor consumo.
+  - **Consumo bajo:** los hogares que consumen hasta 200 kWh/mes (límite del bloque 3 en la tarifa vigente) pagan la tarifa de bloques iniciales por todo su consumo. Las tarifas de los bloques 1 y 2 se aplican a los hogares que consumen más.
+  - **Límites y cargo fijo:** el límite de un bloque es el consumo en que empieza. El cargo fijo del bloque 1 se cobra a quienes no llegan al bloque 2; el del bloque 2, a todos los demás.
+  - **Costo de referencia:** costo de suministrar un kWh. Cámbielo solo para actualizar ese costo.
+
 - **Subsidio a combustibles.** Desactivado por defecto. Al activarlo se define el **subsidio en RD$ por galón** de gasolina premium, gasolina regular, gasoil premium, gasoil regular y GLP. El cálculo incluye el efecto directo en el gasto de los hogares en combustibles y el efecto indirecto en los precios de otros bienes.
 
   - **Período del subsidio:** meses *Desde* / *Hasta* en que rige el subsidio. La referencia es de mayo a diciembre. Si el mes inicial es posterior al final, el período cruza el fin de año.
@@ -130,6 +137,8 @@ Presione **Ejecutar microsimulación** para correr los escenarios marcados y exp
 | Resumen | Pobreza general, pobreza extrema, línea internacional, desigualdad, efecto fiscal y cuadros |
 | Incidencia | Efectos por deciles, estrato, área, jefe de hogar, tipo de hogar y macrorregiones |
 | Por instrumento | Efecto neto, ISR, ITBIS, subsidio eléctrico, subsidio a combustibles y compensación, por deciles |
+
+En *Incidencia → Macrorregiones*, la tabla muestra para cada instrumento el valor pre-reforma, el del escenario elegido y la diferencia (Δ), y omite los instrumentos que el escenario no cambia. En la situación pre-reforma no hay subsidio a combustibles, por eso esa columna vale cero.
 
 Los escenarios son ilimitados; se comparan **hasta cuatro** a la vez.
 

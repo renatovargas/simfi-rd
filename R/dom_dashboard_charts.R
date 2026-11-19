@@ -957,7 +957,7 @@ region_label <- function(code) {
     x == "Total",
     "Total (país)",
     sprintf(
-      "%s (macroregión %s)",
+      "%s (macrorregión %s)",
       MACRO_REGION_NAMES[x] %||% paste("Región", x),
       x
     )
@@ -968,27 +968,14 @@ region_label <- function(code) {
 tabla_macro_region <- function(dom_list, escenario_headers = NULL) {
   tab <- bind_rows(lapply(seq_along(dom_list), function(i) {
     df <- zap_labelled_df(as.data.frame(dom_list[[i]]$depinc))
-    df <- df %>%
-      mutate(
-        `Clave región` = as_chr_safe(.data$macro_region),
-        `Nombre región` = vapply(
-          as_chr_safe(.data$macro_region),
-          function(k) {
-            as.character(MACRO_REGION_NAMES[k] %||% "")
-          },
-          character(1)
-        ),
-        `Etiqueta región` = region_label(.data$macro_region)
-      )
+    df$`Región` <- region_label(df$macro_region)
     sk <- names(dom_list)[i]
     df$Escenario <- as.character(escenario_headers[sk] %||% sk)
     df
   })) %>%
     select(
       Escenario,
-      `Clave región`,
-      `Nombre región`,
-      `Etiqueta región`,
+      `Región`,
       dplyr::ends_with("_pc")
     )
 
@@ -1009,11 +996,11 @@ tabla_macro_region <- function(dom_list, escenario_headers = NULL) {
                    dc, perl = TRUE)
       # Drop delta + both base and scenario level columns for this instrument
       stem_patterns <- list(
-        ddtx_isr  = c(paste0("dtx_isr0_pc"),   paste0("dtx_isr",  k_str, "_pc")),
-        ditx_itb  = c(paste0("itx_itb0_pc"),   paste0("itx_itb",  k_str, "_pc")),
-        dsub_ele  = c(paste0("sub_ele0_pc"),    paste0("sub_ele",  k_str, "_pc")),
-        dsub_gas  = c(paste0("sub_gas0_pc"),    paste0("sub_gas",  k_str, "_pc")),
-        dcomp     = c(paste0("comp_0_pc"),      paste0("comp_",    k_str, "_pc"))
+        dtx_isr   = c(paste0("dtx_isr0_pc"),   paste0("dtx_isr",  k_str, "_pc")),
+        itx_itb   = c(paste0("itx_itb0_pc"),   paste0("itx_itb",  k_str, "_pc")),
+        sub_ele   = c(paste0("sub_ele0_pc"),    paste0("sub_ele",  k_str, "_pc")),
+        sub_gas   = c(paste0("sub_gas0_pc"),    paste0("sub_gas",  k_str, "_pc")),
+        comp      = c(paste0("comp_0_pc"),      paste0("comp_",    k_str, "_pc"))
       )
       inst <- sub("^d(dtx_isr|itx_itb|sub_ele|sub_gas|comp)\\d+_pc$", "\\1",
                   dc, perl = TRUE)
@@ -1024,5 +1011,22 @@ tabla_macro_region <- function(dom_list, escenario_headers = NULL) {
   if (length(drop_cols)) {
     tab <- tab[, setdiff(names(tab), drop_cols), drop = FALSE]
   }
-  tab
+
+  # Agrupar por instrumento (pre-reforma, escenario, Δ) para que el valor del
+  # escenario quede junto a su referencia y no al final de la tabla.
+  grupos <- list(
+    c("^dtx_isr\\d+_pc$",  "^ddtx_isr\\d+_pc$"),
+    c("^itx_itb\\d+_pc$",  "^ditx_itb\\d+_pc$"),
+    c("^sub_ele\\d+_pc$",  "^dsub_ele\\d+_pc$"),
+    c("^sub_gas\\d+_pc$",  "^dsub_gas\\d+_pc$"),
+    c("^comp_\\d+_pc$",    "^dcomp\\d+_pc$"),
+    c("^(net|neto)\\d+_pc$", "^nitx\\d+_pc$")
+  )
+  pc <- grep("_pc$", names(tab), value = TRUE)
+  orden <- unlist(lapply(grupos, function(g) {
+    niv <- sort(grep(g[1], pc, value = TRUE))
+    c(niv, grep(g[2], pc, value = TRUE))
+  }))
+  orden <- c(orden, setdiff(pc, orden))
+  tab[, c("Escenario", "Región", orden), drop = FALSE]
 }

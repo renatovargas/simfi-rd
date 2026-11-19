@@ -134,7 +134,7 @@ sub_limits_table <- function() {
     class = "sub-ele-tbl", style = "max-width:360px;",
     tags$thead(tags$tr(
       tags$th(style = "width:70px;", "Bloque"),
-      tags$th("Límite de consumo (kWh/mes)")
+      tags$th("Límite inferior (kWh/mes)")
     )),
     tags$tbody(lapply(1:7, function(j) {
       tags$tr(
@@ -197,7 +197,7 @@ build_sub_reference_ui <- function(ref) {
       tags$table(
         class = "sub-ele-tbl",
         tags$thead(tags$tr(
-          tags$th("Bloque"), tags$th("Límite kWh"),
+          tags$th("Bloque"), tags$th("Desde (kWh/mes)"),
           tags$th("Edesur: cargo fijo"), tags$th("Edesur: RD$/kWh"),
           tags$th("Edenorte: cargo fijo"), tags$th("Edenorte: RD$/kWh"),
           tags$th("Edeeste: cargo fijo"), tags$th("Edeeste: RD$/kWh")
@@ -330,6 +330,37 @@ sub_base_ref <- tryCatch({
   read_sim_sub_template_row(file.path(root, "data", "params", ""), 0L)
 }, error = function(e) NULL)
 sub_reference_ui <- build_sub_reference_ui(sub_base_ref)
+
+# Consumo (kWh/mes) hasta el que se cobra la tarifa de bloques iniciales:
+# límite inferior del bloque 3 en la tarifa vigente.
+sub_kwh_iniciales <- local({
+  v <- suppressWarnings(as.numeric(sub_base_ref$block3 %||% NA))
+  if (length(v) == 1L && is.finite(v)) format(v, big.mark = ",") else "200"
+})
+
+# Explicación breve de cómo se calcula el subsidio eléctrico y cómo ajustarlo.
+sub_ele_ayuda_ui <- function() {
+  tags$ul(class = "small text-muted mb-2 ps-3",
+    tags$li(tags$strong("Cómo se calcula: "),
+            "el subsidio de cada hogar es el costo de la electricidad que consume ",
+            "(kWh × costo de referencia) menos lo que paga según las tarifas. Si ",
+            "lo que paga cubre el costo, el subsidio es cero."),
+    tags$li(tags$strong("Para reducir el subsidio, "),
+            "suba las tarifas (RD$/kWh); para aumentarlo, bájelas. Si cambia solo ",
+            "los bloques altos, el ajuste recae en los hogares de mayor consumo."),
+    tags$li(tags$strong("Consumo bajo: "),
+            "los hogares que consumen hasta ", sub_kwh_iniciales,
+            " kWh/mes (límite del bloque 3) pagan la tarifa de bloques iniciales ",
+            "por todo su consumo. Las tarifas de los bloques 1 y 2 se aplican a ",
+            "los hogares que consumen más."),
+    tags$li(tags$strong("Límites y cargo fijo: "),
+            "el límite de un bloque es el consumo en que empieza. El cargo fijo ",
+            "del bloque 1 se cobra a quienes no llegan al bloque 2; el del ",
+            "bloque 2, a todos los demás."),
+    tags$li(tags$strong("Costo de referencia: "),
+            "costo de suministrar un kWh. Cámbielo solo para actualizar ese costo.")
+  )
+}
 
 # Subsidio a combustibles: fila activa de sim_sgas (precios mensuales 2025,
 # calendario y subsidio por galón de referencia). La persona usuaria edita el
@@ -970,17 +1001,18 @@ ui <- page_navbar(
             "Por defecto se usa el subsidio eléctrico vigente. ",
             "Active la personalización para ajustar los bloques de consumo ",
             "y las tarifas de cada distribuidora."),
+          sub_ele_ayuda_ui(),
           checkboxInput("custom_sub_ele",
                       "Personalizar bloques y tarifas por distribuidora",
                       value = FALSE),
         conditionalPanel(
           condition = "input.custom_sub_ele == true",
           p(class = "text-muted small",
-            "Cada bloque de consumo cobra un ",
-            tags$strong("cargo fijo (RD$)"),
-            " más una ", tags$strong("tarifa por consumo (RD$/kWh)"),
-            ". Defina los límites de cada bloque y, para cada distribuidora, ",
-            "el cargo fijo y la tarifa. Deje vacíos los bloques que no use."),
+            "Los campos parten de las tarifas vigentes. Defina los límites de ",
+            "cada bloque y, para cada distribuidora, el ",
+            tags$strong("cargo fijo (RD$)"), " y la ",
+            tags$strong("tarifa (RD$/kWh)"),
+            ". Deje vacíos los bloques que no use."),
           h6("Límites de consumo por bloque"),
           p(class = "text-muted small mb-1",
             "Estos límites son comunes a las tres distribuidoras."),
@@ -1357,8 +1389,8 @@ ui <- page_navbar(
                         plotlyOutput("dash_inc_sex", height = "400px")),
               nav_panel("Tipo de hogar",
                         plotlyOutput("dash_inc_cat", height = "400px")),
-              nav_panel("Macroregiones",
-                selectInput("dash_macro_esc", "Escenario para mapa",
+              nav_panel("Macrorregiones",
+                selectInput("dash_macro_esc", "Escenario",
                             choices = NULL, width = "100%"),
                 card(card_header("Incidencia neta por macrorregión"),
                      DTOutput("dash_tbl_reg", height = "420px"))
@@ -3031,7 +3063,8 @@ server <- function(input, output, session) {
       if (grepl("^sub_gas(\\d+)_pc$",   n)) return(paste0("Subsidio a combustibles (", era(sub("^sub_gas(\\d+)_pc$",   "\\1", n)), ")"))
       if (grepl("^dcomp(\\d+)_pc$",     n)) return(paste0("Δ Compensación (", era(sub("^dcomp(\\d+)_pc$",     "\\1", n)), ")"))
       if (grepl("^comp_(\\d+)_pc$",     n)) return(paste0("Compensación (",        era(sub("^comp_(\\d+)_pc$",     "\\1", n)), ")"))
-      if (grepl("^(neto|nitx)(\\d+)_pc$", n)) return(paste0("Efecto neto (",            era(sub("^(?:neto|nitx)(\\d+)_pc$", "\\1", n, perl = TRUE)), ")"))
+      if (grepl("^nitx(\\d+)_pc$",      n)) return(paste0("Δ Efecto neto (",          era(sub("^nitx(\\d+)_pc$",      "\\1", n)), ")"))
+      if (grepl("^(net|neto)(\\d+)_pc$", n)) return(paste0("Efecto neto (",            era(sub("^(?:net|neto)(\\d+)_pc$", "\\1", n, perl = TRUE)), ")"))
       nm
     }
     colnames(df) <- vapply(colnames(df), rename_one, character(1))
@@ -3048,7 +3081,12 @@ server <- function(input, output, session) {
                               escenario_headers = scenario_headers_named())
     tab <- rename_depinc_cols(tab, scenario_headers_named())
     datatable(tab, rownames = FALSE,
-              caption = "Valores expresados como porcentaje del ingreso disponible.",
+              caption = paste(
+                "Valores expresados como porcentaje del ingreso disponible.",
+                "Para cada instrumento se muestra el valor pre-reforma, el del",
+                "escenario y la diferencia (Δ); se omiten los instrumentos que",
+                "el escenario no cambia. En la situación pre-reforma no hay",
+                "subsidio a combustibles, por eso esa columna vale cero."),
               extensions = "Buttons",
               options = list(destroy = TRUE, scrollX = TRUE, dom = "Bftip", pageLength = 12,
                              buttons = list("csv", "excel")))
