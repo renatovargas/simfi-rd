@@ -256,7 +256,7 @@
       ss <- sub[sub$campo == f, , drop = FALSE]
       p[[f]] <- if (nrow(ss)) suppressWarnings(as.numeric(ss$valor[1])) else NA_real_
     }
-    # Archivos anteriores no traen filas sgas_*: sin subsidio a combustibles.
+    # Sin filas sgas_*: subsidio a combustibles vigente (sin cambios).
     sg <- sub[startsWith(as.character(sub$campo), "sgas_"), , drop = FALSE]
     if (nrow(sg)) {
       p$sgas <- list(

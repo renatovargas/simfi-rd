@@ -473,7 +473,8 @@ cat("Mean sub_ele1_pc:  ", mean(subelec$sub_ele1_pc, na.rm=TRUE), "\n") # debe �
 # Efecto indirecto: la tasa de subsidio ponderada entra como shock de precios
 # en el sector de derivados del petróleo de la matriz insumo-producto (modelo
 # de costos con la administración pública a precio fijo) y se aplica al gasto
-# del hogar por variedad. En el escenario base (sim_sgas = 0) el subsidio es 0.
+# del hogar por variedad. El escenario base (sim_sgas = 0) incluye el subsidio
+# vigente (el aplicado en 2025); los escenarios se comparan contra él.
 
 sim_sgas_esc <- if ("sim_sgas" %in% names(escenarios)) {
   sort(unique(c(0L, as.integer(stats::na.omit(escenarios$sim_sgas)))))

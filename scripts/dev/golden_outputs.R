@@ -5,7 +5,7 @@
 ##   Rscript scripts/dev/golden_outputs.R check    # compara contra lo guardado
 ##
 ## Cada escenario se arma con la misma estructura que compose_scenario_inputs()
-## en app.R. Con el subsidio a combustibles desactivado, `check` debe pasar.
+## en app.R. Sin personalizar el subsidio a combustibles, `check` debe pasar.
 
 suppressPackageStartupMessages({
   library(dplyr)

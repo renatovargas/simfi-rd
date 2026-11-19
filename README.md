@@ -59,7 +59,7 @@ La app abre en la pestaña **Instructivo**, que explica cómo se combinan compon
 | **Instructivo** | Idea central (un escenario es una combinación de componentes, mutuamente excluyentes en cada pantalla), diagramas de las pantallas y de cómo se arma un escenario, y aviso del subsidio a combustibles. |
 | **1 · ITBIS** | Tasas por producto, modificables por grupo, subclase o variedad individual. Filtros de búsqueda por grupo, subclase y tasa. |
 | **2 · Renta** | Escala del ISR personal: opcional, personalizable por tramos (límites y tasas). |
-| **3 · Subsidio** | Subsidio eléctrico (opcional, por distribuidora: bloques y tarifas) y subsidio a combustibles (opcional: RD$/galón por combustible, período y precios). |
+| **3 · Subsidio** | Subsidio eléctrico (opcional, por distribuidora: bloques y tarifas) y subsidio a combustibles (por defecto el vigente, de 2025; personalizable: RD$/galón por combustible, período y precios). |
 | **4 · Compensación** | Política de compensación post-reforma: opcional, con grupos y métodos de focalización. |
 | **5 · Revisar** | Biblioteca de componentes guardados por instrumento; compositor de escenarios; exportar / importar en Excel. |
 | **6 · Simular** | Ejecutar los escenarios marcados y explorar resultados (pobreza, desigualdad, incidencia, efecto fiscal). |

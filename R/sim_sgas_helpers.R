@@ -16,7 +16,7 @@ SGAS_COMBUSTIBLES <- c(
 )
 
 #' @param param_csv_dir Directorio `paths$param_csv`.
-#' @param sim_sgas_id Índice `sim_sgas` (0 = sin subsidio).
+#' @param sim_sgas_id Índice `sim_sgas` (0 = subsidio vigente del pre-reforma).
 #' @return Una fila (`tibble`) con columnas como en `sim_sgas.csv`.
 read_sim_sgas_template_row <- function(param_csv_dir, sim_sgas_id = 1L) {
   df <- read_param_csv("sim_sgas", param_csv_dir) %>%
@@ -135,7 +135,7 @@ build_sim_sgas_override <- function(template_row, valores, sim_sgas_id = 1L,
   out
 }
 
-#' Fila neutra: copia de la fila base (sin subsidio) con índice `sim_sgas_id`.
+#' Fila neutra: copia de la fila base (subsidio vigente) con índice `sim_sgas_id`.
 build_sim_sgas_neutral <- function(param_csv_dir, sim_sgas_id = 1L) {
   out <- read_sim_sgas_template_row(param_csv_dir, 0L)
   out$sim_sgas <- as.integer(sim_sgas_id)

@@ -102,12 +102,12 @@ La pantalla tiene dos partes, que se guardan juntas en un solo componente de sub
   - **Límites y cargo fijo:** el límite de un bloque es el consumo en que empieza. El cargo fijo del bloque 1 se cobra a quienes no llegan al bloque 2; el del bloque 2, a todos los demás.
   - **Costo de referencia:** costo de suministrar un kWh. Cámbielo solo para actualizar ese costo.
 
-- **Subsidio a combustibles.** Desactivado por defecto: la situación pre-reforma no incluye subsidio a combustibles, por eso en los resultados su valor pre-reforma es cero. Al activarlo se define el **subsidio en RD$ por galón** de gasolina premium, gasolina regular, gasoil premium, gasoil regular y GLP. El cálculo incluye el efecto directo en el gasto de los hogares en combustibles y el efecto indirecto en los precios de otros bienes.
+- **Subsidio a combustibles.** Por defecto se usa el subsidio vigente: el aplicado en 2025, de mayo a diciembre, con los precios mensuales de 2025. La situación pre-reforma lo incluye, igual que el subsidio eléctrico vigente. Al activar la personalización se cambia el **subsidio en RD$ por galón** de gasolina premium, gasolina regular, gasoil premium, gasoil regular y GLP. Si se reduce, el ingreso de los hogares baja frente al pre-reforma; si se aumenta, sube. Para simular su eliminación, ponga los montos en cero. El cálculo incluye el efecto directo en el gasto de los hogares en combustibles y el efecto indirecto en los precios de otros bienes.
 
-  - **Subsidio por galón:** los montos iniciales son los del subsidio aplicado en 2025. Son solo un punto de partida para simular y se pueden cambiar.
-  - **Período del subsidio:** meses *Desde* / *Hasta* en que rige el subsidio. El valor inicial es de mayo a diciembre, como en 2025. Si el mes inicial es posterior al final, el período cruza el fin de año.
+  - **Subsidio por galón:** los campos parten del subsidio vigente.
+  - **Período del subsidio:** meses *Desde* / *Hasta* en que rige el subsidio. El subsidio vigente rige de mayo a diciembre. Si el mes inicial es posterior al final, el período cruza el fin de año.
   - **Precios:** se pueden usar los precios mensuales de 2025 o un **precio único por combustible**, por ejemplo el precio actual, que reemplaza los de 2025 en todos los meses.
-  - «Ver precios y subsidio de 2025» muestra la tabla de precios mensuales y el subsidio por galón aplicado en 2025.
+  - «Ver precios y subsidio vigente (2025)» muestra la tabla de precios mensuales y el subsidio vigente por galón.
 
 ::: {.callout-warning}
 ## Subsidio a combustibles: módulo con fines ilustrativos
@@ -139,7 +139,7 @@ Presione **Ejecutar microsimulación** para correr los escenarios marcados y exp
 | Incidencia | Efectos por deciles, estrato, área, jefe de hogar, tipo de hogar y macrorregiones |
 | Por instrumento | Efecto neto, ISR, ITBIS, subsidio eléctrico, subsidio a combustibles y compensación, por deciles |
 
-En *Incidencia → Macrorregiones*, la tabla muestra para cada instrumento el valor pre-reforma, el del escenario elegido y la diferencia (Δ), y omite los instrumentos que el escenario no cambia. En la situación pre-reforma no hay subsidio a combustibles, por eso esa columna vale cero.
+En *Incidencia → Macrorregiones*, la tabla muestra para cada instrumento el valor pre-reforma, el del escenario elegido y la diferencia (Δ), y omite los instrumentos que el escenario no cambia.
 
 Los escenarios son ilimitados; se comparan **hasta cuatro** a la vez.
 

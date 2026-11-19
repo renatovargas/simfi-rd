@@ -362,11 +362,11 @@ sub_ele_ayuda_ui <- function() {
   )
 }
 
-# Subsidio a combustibles: fila activa de sim_sgas (precios mensuales 2025,
-# calendario y subsidio por galón aplicado en 2025). La persona usuaria edita el
+# Subsidio a combustibles: fila base de sim_sgas (subsidio vigente: el aplicado
+# en 2025, con su calendario y los precios mensuales de 2025). La persona usuaria edita el
 # subsidio por galón y, si quiere, el período y un precio único por combustible.
 sgas_tpl <- tryCatch(
-  read_sim_sgas_template_row(file.path(root, "data", "params", ""), 1L),
+  read_sim_sgas_template_row(file.path(root, "data", "params", ""), 0L),
   error = function(e) NULL
 )
 sgas_zero <- stats::setNames(rep(0, length(SGAS_COMBUSTIBLES)), names(SGAS_COMBUSTIBLES))
@@ -461,16 +461,14 @@ sgas_reference_ui <- local({
     div(
       p(class = "small text-muted mb-1",
         paste0("Precios mensuales de 2025 en RD$ por galón. Las columnas ",
-               "resaltadas son los meses en que se aplicó el subsidio en 2025 (",
-               sgas_meses_txt, "). El subsidio de 2025 es el valor inicial de ",
-               "cada combustible al activar la casilla; no forma parte de la ",
-               "situación pre-reforma.")),
+               "resaltadas son los meses en que rige el subsidio vigente (",
+               sgas_meses_txt, ").")),
       div(style = "overflow-x:auto;",
         tags$table(
           class = "table table-sm small mb-0",
           tags$thead(tags$tr(
             tags$th("Combustible"), lapply(1:12, th_mes),
-            tags$th(class = "text-end", "Subsidio 2025 (RD$/galón)")
+            tags$th(class = "text-end", "Subsidio vigente (RD$/galón)")
           )),
           tags$tbody(lapply(names(SGAS_COMBUSTIBLES), function(cb) {
             tags$tr(
@@ -682,7 +680,7 @@ slot_detail_ui <- function(sc) {
                      " Datos de 2025, con fines ilustrativos."))
   } else {
     tags$p(class = "small text-muted mb-2",
-           tags$strong("Subsidio a combustibles:"), " sin subsidio.")
+           tags$strong("Subsidio a combustibles:"), " vigente (sin cambios).")
   }
 
   comp_block <- tags$p(class = "small mb-0",
@@ -1044,29 +1042,28 @@ ui <- page_navbar(
           card_header("Subsidio a combustibles"),
           sgas_aviso_ui(),
           p(class = "text-muted small mb-2",
-            paste0("Por defecto no hay subsidio a combustibles: la situación ",
-                   "pre-reforma no lo incluye, por eso en los resultados su ",
-                   "valor pre-reforma es cero. Active la casilla para simular ",
-                   "un subsidio y defina el monto por galón de cada combustible. ",
-                   "Los montos iniciales son los del subsidio aplicado en 2025 (",
-                   sgas_meses_txt, ", con los precios mensuales de 2025); puede ",
-                   "cambiarlos, cambiar el período y usar precios actuales.")),
-          checkboxInput("custom_sub_gas", "Incluir subsidio a combustibles",
+            paste0("Por defecto se usa el subsidio a combustibles vigente: el ",
+                   "aplicado en 2025 (", sgas_meses_txt, ", con los precios ",
+                   "mensuales de 2025). Active la personalización para cambiar ",
+                   "el monto por galón, el período o los precios.")),
+          checkboxInput("custom_sub_gas", "Personalizar subsidio a combustibles",
                         value = FALSE),
           conditionalPanel(
             condition = "input.custom_sub_gas == true",
             p(class = "text-muted small mb-1",
               "Monto que el Estado cubre por cada galón vendido durante los ",
-              "meses en que aplica el subsidio. Incluye el efecto directo en el ",
-              "gasto de los hogares y el efecto indirecto en los precios de ",
-              "otros bienes."),
+              "meses en que aplica el subsidio. Los campos parten del subsidio ",
+              "vigente. Si lo reduce, el ingreso de los hogares baja frente al ",
+              "pre-reforma; si lo aumenta, sube. Para eliminarlo, ponga los ",
+              "montos en cero. Incluye el efecto directo en el gasto de los ",
+              "hogares y el efecto indirecto en los precios de otros bienes."),
             sgas_inputs_ui()
           ),
           tags$details(
             class = "mt-3",
             tags$summary(
               class = "text-primary", style = "cursor:pointer;",
-              "Ver precios y subsidio de 2025"),
+              "Ver precios y subsidio vigente (2025)"),
             tags$div(class = "mt-2", sgas_reference_ui)
           )
         ),
@@ -3090,8 +3087,7 @@ server <- function(input, output, session) {
                 "Valores expresados como porcentaje del ingreso disponible.",
                 "Para cada instrumento se muestra el valor pre-reforma, el del",
                 "escenario y la diferencia (Δ); se omiten los instrumentos que",
-                "el escenario no cambia. En la situación pre-reforma no hay",
-                "subsidio a combustibles, por eso esa columna vale cero."),
+                "el escenario no cambia."),
               extensions = "Buttons",
               options = list(destroy = TRUE, scrollX = TRUE, dom = "Bftip", pageLength = 12,
                              buttons = list("csv", "excel")))
