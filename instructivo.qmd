@@ -102,11 +102,12 @@ La pantalla tiene dos partes, que se guardan juntas en un solo componente de sub
   - **Límites y cargo fijo:** el límite de un bloque es el consumo en que empieza. El cargo fijo del bloque 1 se cobra a quienes no llegan al bloque 2; el del bloque 2, a todos los demás.
   - **Costo de referencia:** costo de suministrar un kWh. Cámbielo solo para actualizar ese costo.
 
-- **Subsidio a combustibles.** Desactivado por defecto. Al activarlo se define el **subsidio en RD$ por galón** de gasolina premium, gasolina regular, gasoil premium, gasoil regular y GLP. El cálculo incluye el efecto directo en el gasto de los hogares en combustibles y el efecto indirecto en los precios de otros bienes.
+- **Subsidio a combustibles.** Desactivado por defecto: la situación pre-reforma no incluye subsidio a combustibles, por eso en los resultados su valor pre-reforma es cero. Al activarlo se define el **subsidio en RD$ por galón** de gasolina premium, gasolina regular, gasoil premium, gasoil regular y GLP. El cálculo incluye el efecto directo en el gasto de los hogares en combustibles y el efecto indirecto en los precios de otros bienes.
 
-  - **Período del subsidio:** meses *Desde* / *Hasta* en que rige el subsidio. La referencia es de mayo a diciembre. Si el mes inicial es posterior al final, el período cruza el fin de año.
-  - **Precios:** se pueden usar los precios mensuales de referencia de 2025 o un **precio único por combustible**, por ejemplo el precio actual, que reemplaza los de 2025 en todos los meses.
-  - «Ver precios de referencia (2025)» muestra la tabla de precios mensuales y el subsidio de referencia.
+  - **Subsidio por galón:** los montos iniciales son los del subsidio aplicado en 2025. Son solo un punto de partida para simular y se pueden cambiar.
+  - **Período del subsidio:** meses *Desde* / *Hasta* en que rige el subsidio. El valor inicial es de mayo a diciembre, como en 2025. Si el mes inicial es posterior al final, el período cruza el fin de año.
+  - **Precios:** se pueden usar los precios mensuales de 2025 o un **precio único por combustible**, por ejemplo el precio actual, que reemplaza los de 2025 en todos los meses.
+  - «Ver precios y subsidio de 2025» muestra la tabla de precios mensuales y el subsidio por galón aplicado en 2025.
 
 ::: {.callout-warning}
 ## Subsidio a combustibles: módulo con fines ilustrativos

@@ -363,7 +363,7 @@ sub_ele_ayuda_ui <- function() {
 }
 
 # Subsidio a combustibles: fila activa de sim_sgas (precios mensuales 2025,
-# calendario y subsidio por galón de referencia). La persona usuaria edita el
+# calendario y subsidio por galón aplicado en 2025). La persona usuaria edita el
 # subsidio por galón y, si quiere, el período y un precio único por combustible.
 sgas_tpl <- tryCatch(
   read_sim_sgas_template_row(file.path(root, "data", "params", ""), 1L),
@@ -414,7 +414,7 @@ sgas_inputs_ui <- function() {
     h6(class = "mt-2", "Precios"),
     radioButtons(
       "sgas_precio_modo", NULL,
-      choices = c("Precios mensuales de referencia (2025)" = "ref",
+      choices = c("Precios mensuales de 2025" = "ref",
                   "Precio único por combustible (por ejemplo, el precio actual)" = "unico"),
       selected = "ref"
     ),
@@ -460,14 +460,17 @@ sgas_reference_ui <- local({
     }
     div(
       p(class = "small text-muted mb-1",
-        "Precios mensuales de 2025 en RD$ por galón. Las columnas resaltadas ",
-        "son los meses del subsidio de referencia (", sgas_meses_txt, ")."),
+        paste0("Precios mensuales de 2025 en RD$ por galón. Las columnas ",
+               "resaltadas son los meses en que se aplicó el subsidio en 2025 (",
+               sgas_meses_txt, "). El subsidio de 2025 es el valor inicial de ",
+               "cada combustible al activar la casilla; no forma parte de la ",
+               "situación pre-reforma.")),
       div(style = "overflow-x:auto;",
         tags$table(
           class = "table table-sm small mb-0",
           tags$thead(tags$tr(
             tags$th("Combustible"), lapply(1:12, th_mes),
-            tags$th(class = "text-end", "Subsidio de referencia")
+            tags$th(class = "text-end", "Subsidio 2025 (RD$/galón)")
           )),
           tags$tbody(lapply(names(SGAS_COMBUSTIBLES), function(cb) {
             tags$tr(
@@ -667,7 +670,7 @@ slot_detail_ui <- function(sc) {
              paste0(SGAS_COMBUSTIBLES, " ", format(round(pv, 1), nsmall = 1),
                     collapse = "; "), ".")
     } else {
-      " Precios mensuales de referencia (2025)."
+      " Precios mensuales de 2025."
     }
     tags$p(class = "small mb-2",
            tags$strong("Subsidio a combustibles (RD$/galón):"), " ",
@@ -1041,11 +1044,13 @@ ui <- page_navbar(
           card_header("Subsidio a combustibles"),
           sgas_aviso_ui(),
           p(class = "text-muted small mb-2",
-            paste0("Por defecto no hay subsidio a combustibles. Active la ",
-                   "casilla para incluirlo y defina el subsidio por galón de ",
-                   "cada combustible. En la referencia, el subsidio aplica ",
-                   sgas_meses_txt, " con los precios mensuales de 2025; puede ",
-                   "cambiar el período y usar precios actuales.")),
+            paste0("Por defecto no hay subsidio a combustibles: la situación ",
+                   "pre-reforma no lo incluye, por eso en los resultados su ",
+                   "valor pre-reforma es cero. Active la casilla para simular ",
+                   "un subsidio y defina el monto por galón de cada combustible. ",
+                   "Los montos iniciales son los del subsidio aplicado en 2025 (",
+                   sgas_meses_txt, ", con los precios mensuales de 2025); puede ",
+                   "cambiarlos, cambiar el período y usar precios actuales.")),
           checkboxInput("custom_sub_gas", "Incluir subsidio a combustibles",
                         value = FALSE),
           conditionalPanel(
@@ -1061,7 +1066,7 @@ ui <- page_navbar(
             class = "mt-3",
             tags$summary(
               class = "text-primary", style = "cursor:pointer;",
-              "Ver precios de referencia (2025)"),
+              "Ver precios y subsidio de 2025"),
             tags$div(class = "mt-2", sgas_reference_ui)
           )
         ),
